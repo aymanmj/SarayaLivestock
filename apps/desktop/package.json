@@ -1,0 +1,52 @@
+{
+  "name": "saraya-livestock-desktop",
+  "version": "1.0.0",
+  "private": true,
+  "description": "منظومة سرايا لإدارة مزارع الماشية والألبان والتسمين - Saraya Livestock ERP Desktop Station",
+  "main": "dist/main.js",
+  "author": "Saraya Solutions",
+  "scripts": {
+    "start": "electron .",
+    "dev": "tsc && electron .",
+    "build": "tsc",
+    "prepare:web": "npm --prefix ../web run build && node scripts/prepare-web.mjs",
+    "pack:win": "npm run prepare:web && tsc && electron-builder --win nsis --x64",
+    "pack:win:dir": "npm run prepare:web && tsc && electron-builder --win dir --x64"
+  },
+  "build": {
+    "appId": "com.saraya.livestock",
+    "productName": "سرايا لإدارة الماشية والألبان",
+    "directories": {
+      "output": "dist-electron"
+    },
+    "asar": true,
+    "artifactName": "SarayaLivestock-Client-${version}-${arch}-Setup.${ext}",
+    "files": [
+      "dist/**/*",
+      "web-dist/**/*"
+    ],
+    "win": {
+      "target": "nsis",
+      "executableName": "SarayaLivestock",
+      "requestedExecutionLevel": "asInvoker"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "سرايا لإدارة الماشية والألبان",
+      "uninstallDisplayName": "سرايا لإدارة الماشية والألبان",
+      "language": "1025",
+      "deleteAppDataOnUninstall": false
+    }
+  },
+  "dependencies": {
+    "electron-updater": "^6.3.9"
+  },
+  "devDependencies": {
+    "electron": "^32.0.1",
+    "electron-builder": "^24.13.3",
+    "typescript": "^5.5.4"
+  }
+}

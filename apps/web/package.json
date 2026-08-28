@@ -1,0 +1,36 @@
+{
+  "name": "@saraya/web",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "لوحة التحكم وإدارة مزارع الماشية والألبان - Saraya Livestock Web & Desktop UI",
+  "scripts": {
+    "dev": "vite",
+    "typecheck": "tsc --noEmit",
+    "build": "vite build",
+    "preview": "vite preview",
+    "openapi:generate": "node scripts/generate-openapi.mjs",
+    "openapi:check": "node scripts/generate-openapi.mjs --check",
+    "api:check-boundaries": "node scripts/check-api-boundaries.mjs"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5.102.4",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.439.0",
+    "openapi-fetch": "0.17.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tailwind-merge": "^2.5.2"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.5",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "autoprefixer": "^10.4.20",
+    "openapi-typescript": "7.13.0",
+    "postcss": "^8.4.45",
+    "tailwindcss": "^3.4.10",
+    "typescript": "^5.5.4",
+    "vite": "^5.4.3"
+  }
+}

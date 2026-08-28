@@ -1,0 +1,41 @@
+{
+  "name": "saraya-livestock",
+  "version": "1.0.0",
+  "private": true,
+  "description": "منظومة سرايا لإدارة مزارع الماشية والألبان والتسمين - Saraya Livestock & Dairy Farm ERP",
+  "author": "Saraya Team",
+  "license": "UNLICENSED",
+  "scripts": {
+    "dev:api": "cd apps/api && npm run dev",
+    "dev:web": "cd apps/web && npm run dev",
+    "desktop:start": "cd apps/desktop && npm start",
+    "desktop:dev": "cd apps/desktop && npm run dev",
+    "build:api": "cd apps/api && npm run build",
+    "build:web": "cd apps/web && npm run build",
+    "typecheck:web": "cd apps/web && npm run typecheck",
+    "build:desktop": "cd apps/desktop && npm run build",
+    "build:all": "npm run build:api && npm run build:web && npm run build:desktop",
+    "db:generate": "cd apps/api && npx prisma generate",
+    "db:migrate": "cd apps/api && npx prisma migrate deploy",
+    "db:inspect": "cd apps/api && npm run db:inspect",
+    "db:backup": "cd apps/api && npm run db:backup",
+    "db:restore:staging": "cd apps/api && npm run db:restore:staging",
+    "db:migrate:safe": "cd apps/api && npm run db:migrate:safe",
+    "db:adopt:dry-run": "cd apps/api && npm run db:adopt:dry-run",
+    "db:adopt:execute": "cd apps/api && npm run db:adopt:execute",
+    "db:push:dev": "cd apps/api && npx prisma db push",
+    "db:studio": "cd apps/api && npx prisma studio",
+    "db:seed:demo": "cd apps/api && npm run prisma:seed:demo",
+    "contracts:generate": "cd apps/api && npm run openapi:generate && cd ../web && npm run openapi:generate",
+    "contracts:check": "cd apps/api && npm run openapi:check && cd ../.. && node scripts/check-openapi-contract.mjs && cd apps/web && npm run openapi:check && npm run api:check-boundaries",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,css,md}\""
+  },
+  "devDependencies": {
+    "prettier": "^3.5.0",
+    "typescript": "^5.8.0"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  }
+}

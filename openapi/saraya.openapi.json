@@ -1,0 +1,6620 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/api/v1/audit-events": {
+      "get": {
+        "operationId": "Audit_list",
+        "parameters": [
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 200,
+              "type": "number"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "farmId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "entityType",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "maxLength": 80,
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditEventPageResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Audit"
+        ]
+      }
+    },
+    "/api/v1/security/vault-status": {
+      "get": {
+        "operationId": "Security_getVaultStatus",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VaultStatusResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Security"
+        ]
+      }
+    },
+    "/api/v1/security/rotate-secret": {
+      "post": {
+        "operationId": "Security_rotateSecret",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RotateSecretDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RotateSecretResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Security"
+        ]
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "operationId": "Auth_login",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthenticationResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/v1/auth/refresh": {
+      "post": {
+        "operationId": "Auth_refresh",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshTokenDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthenticationResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/v1/auth/logout": {
+      "post": {
+        "operationId": "Auth_logout",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshTokenDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/v1/auth/logout-all": {
+      "post": {
+        "operationId": "Auth_logoutAll",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LogoutAllResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/v1/auth/register": {
+      "post": {
+        "operationId": "Auth_register",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterUserDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegisteredUserResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/v1/auth/profile": {
+      "get": {
+        "operationId": "Auth_getProfile",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserProfileResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/v1/users": {
+      "get": {
+        "operationId": "Users_findAll",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UserAdministrationResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Users"
+        ]
+      }
+    },
+    "/api/v1/users/{id}": {
+      "get": {
+        "operationId": "Users_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserAdministrationResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Users"
+        ]
+      }
+    },
+    "/api/v1/users/{id}/role": {
+      "patch": {
+        "operationId": "Users_updateRole",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserRoleDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserMutationResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Users"
+        ]
+      }
+    },
+    "/api/v1/users/{id}/toggle-status": {
+      "patch": {
+        "operationId": "Users_toggleStatus",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserMutationResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Users"
+        ]
+      }
+    },
+    "/api/v1/users/{id}/reset-password": {
+      "patch": {
+        "operationId": "Users_resetPassword",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetPasswordDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResetPasswordResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Users"
+        ]
+      }
+    },
+    "/api/v1/license/info": {
+      "get": {
+        "operationId": "License_getLicenseInfo",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LicenseStatusResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "License"
+        ]
+      }
+    },
+    "/api/v1/license/hardware-id": {
+      "get": {
+        "operationId": "License_getHardwareId",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HardwareIdResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "License"
+        ]
+      }
+    },
+    "/api/v1/license/activate": {
+      "post": {
+        "operationId": "License_activateLicense",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ActivateLicenseDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LicenseStatusResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "License"
+        ]
+      }
+    },
+    "/api/v1/accounting/chart-of-accounts": {
+      "get": {
+        "operationId": "Accounting_getChartOfAccounts",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AccountWithChildrenResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Accounting"
+        ]
+      }
+    },
+    "/api/v1/accounting/accounts": {
+      "post": {
+        "operationId": "Accounting_createAccount",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "UUID v4 unique to this operational request and reused only for an identical retry",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAccountDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Accounting"
+        ]
+      }
+    },
+    "/api/v1/accounting/fiscal-years": {
+      "get": {
+        "operationId": "Accounting_getFiscalYears",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FiscalYearResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Accounting"
+        ]
+      },
+      "post": {
+        "operationId": "Accounting_createFiscalYear",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "UUID v4 unique to this operational request and reused only for an identical retry",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateFiscalYearDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FiscalYearResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Accounting"
+        ]
+      }
+    },
+    "/api/v1/accounting/journal-entries": {
+      "get": {
+        "operationId": "Accounting_getJournalEntries",
+        "parameters": [
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/JournalEntryResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Accounting"
+        ]
+      },
+      "post": {
+        "operationId": "Accounting_createJournalEntry",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "UUID v4 unique to this operational request and reused only for an identical retry",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateJournalEntryDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JournalEntryResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Accounting"
+        ]
+      }
+    },
+    "/api/v1/accounting/trial-balance": {
+      "get": {
+        "operationId": "Accounting_getTrialBalance",
+        "parameters": [
+          {
+            "name": "fiscalYearId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrialBalanceResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Accounting"
+        ]
+      }
+    },
+    "/api/v1/accounting/income-statement": {
+      "get": {
+        "operationId": "Accounting_getIncomeStatement",
+        "parameters": [
+          {
+            "name": "fiscalYearId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncomeStatementResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Accounting"
+        ]
+      }
+    },
+    "/api/v1/accounting/balance-sheet": {
+      "get": {
+        "operationId": "Accounting_getBalanceSheet",
+        "parameters": [
+          {
+            "name": "fiscalYearId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BalanceSheetResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Accounting"
+        ]
+      }
+    },
+    "/api/v1/accounting/periods/{id}/close": {
+      "patch": {
+        "operationId": "Accounting_closePeriod",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "UUID v4 unique to this operational request and reused only for an identical retry",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FiscalPeriodResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Accounting"
+        ]
+      }
+    },
+    "/api/v1/accounting/periods/{id}/reopen": {
+      "patch": {
+        "operationId": "Accounting_reopenPeriod",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "UUID v4 unique to this operational request and reused only for an identical retry",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FiscalPeriodResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Accounting"
+        ]
+      }
+    },
+    "/api/v1/accounting/fiscal-years/{id}/rollover": {
+      "post": {
+        "operationId": "Accounting_rolloverFiscalYear",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "UUID v4 unique to this operational request and reused only for an identical retry",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RolloverFiscalYearDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FiscalYearRolloverResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Accounting"
+        ]
+      }
+    },
+    "/api/v1/animals": {
+      "post": {
+        "operationId": "Animals_create",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "UUID v4 unique to this operational request and reused only for an identical retry",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAnimalDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnimalResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Animals"
+        ]
+      },
+      "get": {
+        "operationId": "Animals_findAll",
+        "parameters": [
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ACTIVE",
+                "SOLD",
+                "CULLED",
+                "DECEASED",
+                "QUARANTINED"
+              ]
+            }
+          },
+          {
+            "name": "barnId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "maxLength": 100,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AnimalResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Animals"
+        ]
+      }
+    },
+    "/api/v1/animals/{id}": {
+      "get": {
+        "operationId": "Animals_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnimalDetailResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Animals"
+        ]
+      }
+    },
+    "/api/v1/animals/{id}/life-stage": {
+      "patch": {
+        "operationId": "Animals_updateLifeStage",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "UUID v4 unique to this operational request and reused only for an identical retry",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAnimalLifeStageDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnimalRecordResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Animals"
+        ]
+      }
+    },
+    "/api/v1/animals/{id}/barn": {
+      "patch": {
+        "operationId": "Animals_updateBarn",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "UUID v4 unique to this operational request and reused only for an identical retry",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAnimalBarnDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnimalRecordResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Animals"
+        ]
+      }
+    },
+    "/api/v1/barns": {
+      "get": {
+        "operationId": "Barns_findAll",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BarnSummaryResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Barns"
+        ]
+      }
+    },
+    "/api/v1/milking/log": {
+      "post": {
+        "operationId": "Milking_logMilk",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "UUID v4 unique to this operational request and reused only for an identical retry",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LogMilkDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecordMilkResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Milking"
+        ]
+      }
+    },
+    "/api/v1/milking/daily-summary": {
+      "get": {
+        "operationId": "Milking_getDailySummary",
+        "parameters": [
+          {
+            "name": "date",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DailyMilkingSummaryResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Milking"
+        ]
+      }
+    },
+    "/api/v1/breeding/inseminate": {
+      "post": {
+        "operationId": "Breeding_recordInsemination",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "UUID v4 unique to this operational request and reused only for an identical retry",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InseminateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BreedingRecordWithAnimalResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Breeding"
+        ]
+      }
+    },
+    "/api/v1/breeding/{id}/pd-result": {
+      "patch": {
+        "operationId": "Breeding_recordPdResult",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "UUID v4 unique to this operational request and reused only for an identical retry",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordPregnancyResultDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BreedingRecordWithAnimalResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Breeding"
+        ]
+      }
+    },
+    "/api/v1/breeding/{id}/calving": {
+      "post": {
+        "operationId": "Breeding_recordCalving",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "UUID v4 unique to this operational request and reused only for an identical retry",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordCalvingDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecordCalvingResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Breeding"
+        ]
+      }
+    },
+    "/api/v1/breeding/upcoming-tasks": {
+      "get": {
+        "operationId": "Breeding_getUpcomingTasks",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BreedingTasksResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Breeding"
+        ]
+      }
+    },
+    "/api/v1/breeding/all": {
+      "get": {
+        "operationId": "Breeding_getAllRecords",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BreedingRecordWithAnimalResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Breeding"
+        ]
+      }
+    },
+    "/api/v1/health/treatment": {
+      "post": {
+        "operationId": "Health_recordTreatment",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "UUID v4 unique to this operational request and reused only for an identical retry",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTreatmentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecordTreatmentResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Health"
+        ]
+      }
+    },
+    "/api/v1/health/quarantine-list": {
+      "get": {
+        "operationId": "Health_getActiveQuarantineList",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/QuarantinedAnimalResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Health"
+        ]
+      }
+    },
+    "/api/v1/fattening/weight": {
+      "post": {
+        "operationId": "Fattening_recordWeight",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "UUID v4 unique to this operational request and reused only for an identical retry",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordWeightDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecordedWeightResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Fattening"
+        ]
+      }
+    },
+    "/api/v1/fattening/performance": {
+      "get": {
+        "operationId": "Fattening_getPerformance",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FatteningPerformanceResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Fattening"
+        ]
+      }
+    },
+    "/api/v1/reports/executive-dashboard": {
+      "get": {
+        "operationId": "Reports_getDashboard",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExecutiveDashboardResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "لوحة المؤشرات التنفيذية للقطيع والإنتاج",
+        "tags": [
+          "reports"
+        ]
+      }
+    },
+    "/api/v1/reports/financial-overview": {
+      "get": {
+        "operationId": "Reports_getFinancialOverview",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinancialOverviewResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "التحليل المالي وحساب تكلفة اللتر وكيلو اللحم (IAS 41)",
+        "tags": [
+          "reports"
+        ]
+      }
+    },
+    "/api/v1/reports/culling-candidates": {
+      "get": {
+        "operationId": "Reports_getCullingCandidates",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CullingCandidateResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "الماشية المرشحة للاستبعاد لعدم الجدوى الاقتصادية",
+        "tags": [
+          "reports"
+        ]
+      }
+    },
+    "/api/v1/reports/export/{type}": {
+      "get": {
+        "operationId": "Reports_getExportData",
+        "parameters": [
+          {
+            "name": "type",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "animals",
+                "milking",
+                "breeding",
+                "nutrition",
+                "culling"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "oneOf": [
+                      {
+                        "$ref": "#/components/schemas/AnimalRecordResponseDto"
+                      },
+                      {
+                        "$ref": "#/components/schemas/MilkLogWithAnimalResponseDto"
+                      },
+                      {
+                        "$ref": "#/components/schemas/BreedingRecordWithAnimalResponseDto"
+                      },
+                      {
+                        "$ref": "#/components/schemas/FeedIngredientResponseDto"
+                      },
+                      {
+                        "$ref": "#/components/schemas/CullingCandidateResponseDto"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "تجهيز بيانات التصدير لكشوفات المزرعة",
+        "tags": [
+          "reports"
+        ]
+      }
+    },
+    "/api/v1/nutrition/formulate-least-cost": {
+      "post": {
+        "operationId": "Nutrition_calculateLeastCost",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FormulateLeastCostDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeastCostRationResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "حساب أرخص تركيبة علفية TMR تغطي الاحتياج البروتيني",
+        "tags": [
+          "nutrition"
+        ]
+      }
+    },
+    "/api/v1/nutrition/dispense": {
+      "post": {
+        "operationId": "Nutrition_dispenseFeed",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "UUID v4 unique to this operational request and reused only for an identical retry",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DispenseFeedDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DispenseFeedResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "صرف عليقة للحظيرة مع الخصم المخزني والترحيل المالي",
+        "tags": [
+          "nutrition"
+        ]
+      }
+    },
+    "/api/v1/nutrition/stock": {
+      "get": {
+        "operationId": "Nutrition_getStock",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FeedIngredientResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "عرض أرصدة مخزون المواد العلفية وتنبيهات النواقص",
+        "tags": [
+          "nutrition"
+        ]
+      }
+    },
+    "/api/v1/nutrition/ingredients": {
+      "post": {
+        "operationId": "Nutrition_createIngredient",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "UUID v4 unique to this operational request and reused only for an identical retry",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateFeedIngredientDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeedIngredientResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "إضافة مادة علفية جديدة إلى المستودع",
+        "tags": [
+          "nutrition"
+        ]
+      }
+    },
+    "/api/v1/nutrition/ingredients/{id}/stock": {
+      "patch": {
+        "operationId": "Nutrition_updateStock",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "UUID v4 unique to this operational request and reused only for an identical retry",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateFeedStockDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeedIngredientResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "تغذية رصيد مادة علفية (استلام شحنة واردة)",
+        "tags": [
+          "nutrition"
+        ]
+      }
+    },
+    "/api/v1/nutrition/formulas": {
+      "get": {
+        "operationId": "Nutrition_getFormulas",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FeedFormulaResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "عرض قائمة الخلطات والعلائق المعتمدة",
+        "tags": [
+          "nutrition"
+        ]
+      },
+      "post": {
+        "operationId": "Nutrition_createFormula",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "UUID v4 unique to this operational request and reused only for an identical retry",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateFeedFormulaDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeedFormulaResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "حفظ تركيبة علفية جديدة TMR",
+        "tags": [
+          "nutrition"
+        ]
+      }
+    },
+    "/api/v1/nutrition/distributions": {
+      "get": {
+        "operationId": "Nutrition_getDistributions",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FeedDistributionResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "سجل حركات صرف وتوزيع الأعلاف للحظائر",
+        "tags": [
+          "nutrition"
+        ]
+      }
+    },
+    "/api/v1/system/health/live": {
+      "get": {
+        "operationId": "SystemHealth_liveness",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LivenessResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "system"
+        ]
+      }
+    },
+    "/api/v1/system/health/ready": {
+      "get": {
+        "operationId": "SystemHealth_readiness",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadinessResponseDto"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Database is unavailable or the required migration is absent."
+          }
+        },
+        "tags": [
+          "system"
+        ]
+      }
+    }
+  },
+  "info": {
+    "title": "منظومة سرايا لإدارة مزارع الماشية والألبان والتسمين - SarayaLivestock API",
+    "description": "واجهات برمجة التطبيقات المتكاملة لإدارة القطيع، التناسل، الحلب، التسمين، التغذية، والمالية",
+    "version": "1.0",
+    "contact": {}
+  },
+  "tags": [
+    {
+      "name": "animals",
+      "description": "إدارة سجلات الحيوانات وشجرة النسب"
+    },
+    {
+      "name": "milking",
+      "description": "تسجيل الحلبات ومطابقة الخزان العام"
+    },
+    {
+      "name": "breeding",
+      "description": "محرك التناسل وحسابات الولادات والتجفيف"
+    },
+    {
+      "name": "health",
+      "description": "السجل البيطري وصمام أمان فترة التحريم"
+    },
+    {
+      "name": "fattening",
+      "description": "سجلات الوزن ومعدل التحويل الغذائي ADG"
+    },
+    {
+      "name": "nutrition",
+      "description": "محرك تركيب العلائق بأقل تكلفة وصرف المخزون"
+    },
+    {
+      "name": "reports",
+      "description": "التقارير التنفيذية ولوحة التحكم"
+    }
+  ],
+  "servers": [],
+  "components": {
+    "securitySchemes": {
+      "bearer": {
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "type": "http",
+        "description": "Short-lived access token bound to a revocable server session"
+      }
+    },
+    "schemas": {
+      "AuditEventResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "orgId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "farmId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          },
+          "actorUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "action": {
+            "type": "string"
+          },
+          "entityType": {
+            "type": "string"
+          },
+          "entityId": {
+            "type": "string",
+            "nullable": true
+          },
+          "httpMethod": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "statusCode": {
+            "type": "number"
+          },
+          "ipAddress": {
+            "type": "string",
+            "nullable": true
+          },
+          "userAgent": {
+            "type": "string",
+            "nullable": true
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": true,
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "orgId",
+          "farmId",
+          "actorUserId",
+          "action",
+          "entityType",
+          "entityId",
+          "httpMethod",
+          "path",
+          "statusCode",
+          "ipAddress",
+          "userAgent",
+          "metadata",
+          "createdAt"
+        ]
+      },
+      "AuditEventPageResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AuditEventResponseDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "items",
+          "nextCursor"
+        ]
+      },
+      "SecretMetadataResponseDto": {
+        "type": "object",
+        "properties": {
+          "keyName": {
+            "type": "string"
+          },
+          "version": {
+            "type": "number"
+          },
+          "lastRotated": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "source": {
+            "enum": [
+              "HASHICORP_VAULT",
+              "ENVIRONMENT"
+            ],
+            "type": "string"
+          },
+          "rotationAvailable": {
+            "type": "boolean"
+          },
+          "rotationUnavailableReason": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "keyName",
+          "version",
+          "lastRotated",
+          "source",
+          "rotationAvailable",
+          "rotationUnavailableReason"
+        ]
+      },
+      "SecretAuditLogResponseDto": {
+        "type": "object",
+        "properties": {
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "action": {
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "timestamp",
+          "action",
+          "key",
+          "status"
+        ]
+      },
+      "VaultStatusResponseDto": {
+        "type": "object",
+        "properties": {
+          "isVaultOnline": {
+            "type": "boolean"
+          },
+          "vaultAddr": {
+            "type": "string"
+          },
+          "activeSecretsCount": {
+            "type": "number"
+          },
+          "secrets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SecretMetadataResponseDto"
+            }
+          },
+          "recentAuditLogs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SecretAuditLogResponseDto"
+            }
+          }
+        },
+        "required": [
+          "isVaultOnline",
+          "vaultAddr",
+          "activeSecretsCount",
+          "secrets",
+          "recentAuditLogs"
+        ]
+      },
+      "RotateSecretDto": {
+        "type": "object",
+        "properties": {
+          "keyName": {
+            "type": "string",
+            "enum": [
+              "JWT_SECRET"
+            ]
+          }
+        },
+        "required": [
+          "keyName"
+        ]
+      },
+      "RotateSecretResponseDto": {
+        "type": "object",
+        "properties": {
+          "keyName": {
+            "type": "string"
+          },
+          "version": {
+            "type": "number"
+          },
+          "lastRotated": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "source": {
+            "enum": [
+              "HASHICORP_VAULT",
+              "ENVIRONMENT"
+            ],
+            "type": "string"
+          },
+          "rotationAvailable": {
+            "type": "boolean"
+          },
+          "rotationUnavailableReason": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "keyName",
+          "version",
+          "lastRotated",
+          "source",
+          "rotationAvailable",
+          "rotationUnavailableReason"
+        ]
+      },
+      "LoginDto": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 200
+          }
+        },
+        "required": [
+          "username",
+          "password"
+        ]
+      },
+      "UserRole": {
+        "type": "string",
+        "enum": [
+          "SUPER_ADMIN",
+          "FARM_MANAGER",
+          "VETERINARIAN",
+          "MILKER",
+          "ACCOUNTANT",
+          "WORKER"
+        ]
+      },
+      "AuthUserResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "username": {
+            "type": "string"
+          },
+          "fullName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "nullable": true
+          },
+          "role": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/UserRole"
+              }
+            ]
+          },
+          "farmId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "id",
+          "username",
+          "fullName",
+          "email",
+          "role",
+          "farmId"
+        ]
+      },
+      "AuthenticationResponseDto": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string"
+          },
+          "refreshToken": {
+            "type": "string",
+            "description": "Returned only to the trusted Electron channel."
+          },
+          "user": {
+            "$ref": "#/components/schemas/AuthUserResponseDto"
+          },
+          "permissions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "accessToken",
+          "user",
+          "permissions"
+        ]
+      },
+      "RefreshTokenDto": {
+        "type": "object",
+        "properties": {
+          "refreshToken": {
+            "type": "string",
+            "minLength": 32,
+            "maxLength": 200
+          }
+        }
+      },
+      "MessageResponseDto": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ]
+      },
+      "LogoutAllResponseDto": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "sessionsRevoked": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "message",
+          "sessionsRevoked"
+        ]
+      },
+      "RegisterUserDto": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 50,
+            "pattern": "^[a-zA-Z0-9._-]+$"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 12,
+            "maxLength": 200
+          },
+          "fullName": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 150
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "SUPER_ADMIN",
+              "FARM_MANAGER",
+              "VETERINARIAN",
+              "MILKER",
+              "ACCOUNTANT",
+              "WORKER"
+            ]
+          },
+          "farmId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "username",
+          "password",
+          "fullName"
+        ]
+      },
+      "RegisteredUserResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "username": {
+            "type": "string"
+          },
+          "fullName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "nullable": true
+          },
+          "role": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/UserRole"
+              }
+            ]
+          },
+          "farmId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "username",
+          "fullName",
+          "email",
+          "role",
+          "farmId",
+          "createdAt"
+        ]
+      },
+      "UserProfileResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "username": {
+            "type": "string"
+          },
+          "fullName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "nullable": true
+          },
+          "role": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/UserRole"
+              }
+            ]
+          },
+          "farmId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "permissions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "username",
+          "fullName",
+          "email",
+          "role",
+          "farmId",
+          "isActive",
+          "createdAt",
+          "permissions"
+        ]
+      },
+      "UserFarmResponseDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "UserAdministrationResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "username": {
+            "type": "string"
+          },
+          "fullName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "nullable": true
+          },
+          "role": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/UserRole"
+              }
+            ]
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "farmId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "farm": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/UserFarmResponseDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "username",
+          "fullName",
+          "email",
+          "role",
+          "isActive",
+          "farmId",
+          "createdAt",
+          "farm"
+        ]
+      },
+      "UpdateUserRoleDto": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "SUPER_ADMIN",
+              "FARM_MANAGER",
+              "VETERINARIAN",
+              "MILKER",
+              "ACCOUNTANT",
+              "WORKER"
+            ]
+          }
+        },
+        "required": [
+          "role"
+        ]
+      },
+      "UserMutationResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "username": {
+            "type": "string"
+          },
+          "fullName": {
+            "type": "string"
+          },
+          "role": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/UserRole"
+              }
+            ]
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "username",
+          "fullName",
+          "role",
+          "isActive"
+        ]
+      },
+      "ResetPasswordDto": {
+        "type": "object",
+        "properties": {
+          "password": {
+            "type": "string",
+            "minLength": 12,
+            "maxLength": 200
+          }
+        },
+        "required": [
+          "password"
+        ]
+      },
+      "ResetPasswordResponseDto": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ]
+      },
+      "LicenseDetailsResponseDto": {
+        "type": "object",
+        "properties": {
+          "licenseId": {
+            "type": "string"
+          },
+          "companyName": {
+            "type": "string"
+          },
+          "plan": {
+            "enum": [
+              "TRIAL",
+              "STANDARD",
+              "ENTERPRISE",
+              "LIFETIME"
+            ],
+            "type": "string"
+          },
+          "issuedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "daysRemaining": {
+            "type": "number"
+          },
+          "maxAnimals": {
+            "type": "number"
+          },
+          "isPerpetual": {
+            "type": "boolean"
+          },
+          "allowedModules": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "licenseId",
+          "companyName",
+          "plan",
+          "issuedAt",
+          "expiresAt",
+          "daysRemaining",
+          "maxAnimals",
+          "isPerpetual",
+          "allowedModules"
+        ]
+      },
+      "LicenseStatusResponseDto": {
+        "type": "object",
+        "properties": {
+          "isValid": {
+            "type": "boolean"
+          },
+          "status": {
+            "enum": [
+              "ACTIVE",
+              "WARNING_EXPIRING_SOON",
+              "EXPIRED",
+              "TAMPERED_CLOCK",
+              "UNLICENSED",
+              "INVALID_HARDWARE"
+            ],
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "isReadOnly": {
+            "type": "boolean"
+          },
+          "hardwareId": {
+            "type": "string"
+          },
+          "details": {
+            "$ref": "#/components/schemas/LicenseDetailsResponseDto"
+          }
+        },
+        "required": [
+          "isValid",
+          "status",
+          "message",
+          "isReadOnly",
+          "hardwareId"
+        ]
+      },
+      "HardwareIdResponseDto": {
+        "type": "object",
+        "properties": {
+          "hardwareId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "hardwareId"
+        ]
+      },
+      "ActivateLicenseDto": {
+        "type": "object",
+        "properties": {
+          "licenseKey": {
+            "type": "string",
+            "maxLength": 16384
+          }
+        },
+        "required": [
+          "licenseKey"
+        ]
+      },
+      "AccountCategory": {
+        "type": "string",
+        "enum": [
+          "ASSET",
+          "LIABILITY",
+          "EQUITY",
+          "REVENUE",
+          "EXPENSE"
+        ]
+      },
+      "AccountResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "farmId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": "string",
+            "nullable": true
+          },
+          "category": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AccountCategory"
+              }
+            ]
+          },
+          "parentId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          },
+          "currentBalance": {
+            "type": "string",
+            "pattern": "^-?\\d+(?:\\.\\d{1,3})?$",
+            "example": "1250.000"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "isSystemLocked": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "farmId",
+          "code",
+          "name",
+          "nameEn",
+          "category",
+          "parentId",
+          "currentBalance",
+          "isActive",
+          "isSystemLocked",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "AccountWithChildrenResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "farmId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": "string",
+            "nullable": true
+          },
+          "category": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AccountCategory"
+              }
+            ]
+          },
+          "parentId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          },
+          "currentBalance": {
+            "type": "string",
+            "pattern": "^-?\\d+(?:\\.\\d{1,3})?$",
+            "example": "1250.000"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "isSystemLocked": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "children": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AccountResponseDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "farmId",
+          "code",
+          "name",
+          "nameEn",
+          "category",
+          "parentId",
+          "currentBalance",
+          "isActive",
+          "isSystemLocked",
+          "createdAt",
+          "updatedAt",
+          "children"
+        ]
+      },
+      "CreateAccountDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "pattern": "^\\d{2,20}$"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "nameEn": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "EXPENSE",
+              "ASSET",
+              "LIABILITY",
+              "EQUITY",
+              "REVENUE"
+            ]
+          },
+          "parentId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "category"
+        ]
+      },
+      "FiscalStatus": {
+        "type": "string",
+        "enum": [
+          "OPEN",
+          "CLOSED"
+        ]
+      },
+      "FiscalPeriodResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fiscalYearId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "periodNumber": {
+            "type": "number"
+          },
+          "periodName": {
+            "type": "string"
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/FiscalStatus"
+              }
+            ]
+          },
+          "closedAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "fiscalYearId",
+          "periodNumber",
+          "periodName",
+          "startDate",
+          "endDate",
+          "status",
+          "closedAt",
+          "createdAt"
+        ]
+      },
+      "FiscalYearResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "yearName": {
+            "type": "string"
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/FiscalStatus"
+              }
+            ]
+          },
+          "farmId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "isCurrent": {
+            "type": "boolean"
+          },
+          "closedAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "closedBy": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "periods": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FiscalPeriodResponseDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "yearName",
+          "status",
+          "farmId",
+          "startDate",
+          "endDate",
+          "isCurrent",
+          "closedAt",
+          "closedBy",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "JournalEntryType": {
+        "type": "string",
+        "enum": [
+          "MANUAL",
+          "FEED_DISPENSE",
+          "MILK_SALE",
+          "CATTLE_SALE",
+          "CALVING_CAPITALIZE",
+          "MORTALITY_LOSS",
+          "OPENING_BALANCE",
+          "YEAR_END_CLOSING"
+        ]
+      },
+      "JournalEntryStatus": {
+        "type": "string",
+        "enum": [
+          "DRAFT",
+          "POSTED",
+          "VOIDED"
+        ]
+      },
+      "CostCenterType": {
+        "type": "string",
+        "enum": [
+          "DAIRY_PRODUCTION",
+          "FATTENING_PRODUCTION",
+          "BREEDING_REPLACEMENT",
+          "GENERAL_OVERHEAD"
+        ]
+      },
+      "CostCenterResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "farmId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CostCenterType"
+              }
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "farmId",
+          "name",
+          "type",
+          "createdAt"
+        ]
+      },
+      "JournalEntryLineResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "journalEntryId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "accountId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "costCenterId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          },
+          "debit": {
+            "type": "string",
+            "pattern": "^-?\\d+(?:\\.\\d{1,3})?$"
+          },
+          "credit": {
+            "type": "string",
+            "pattern": "^-?\\d+(?:\\.\\d{1,3})?$"
+          },
+          "memo": {
+            "type": "string",
+            "nullable": true
+          },
+          "account": {
+            "$ref": "#/components/schemas/AccountResponseDto"
+          },
+          "costCenter": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CostCenterResponseDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "journalEntryId",
+          "accountId",
+          "costCenterId",
+          "debit",
+          "credit",
+          "memo",
+          "account",
+          "costCenter"
+        ]
+      },
+      "JournalEntryResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "farmId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fiscalYearId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fiscalPeriodId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          },
+          "entryNumber": {
+            "type": "string"
+          },
+          "entryDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "type": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/JournalEntryType"
+              }
+            ]
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/JournalEntryStatus"
+              }
+            ]
+          },
+          "description": {
+            "type": "string"
+          },
+          "referenceId": {
+            "type": "string",
+            "nullable": true
+          },
+          "totalDebit": {
+            "type": "string",
+            "pattern": "^-?\\d+(?:\\.\\d{1,3})?$"
+          },
+          "totalCredit": {
+            "type": "string",
+            "pattern": "^-?\\d+(?:\\.\\d{1,3})?$"
+          },
+          "postedAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "postedBy": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/JournalEntryLineResponseDto"
+            }
+          },
+          "fiscalYear": {
+            "$ref": "#/components/schemas/FiscalYearResponseDto"
+          }
+        },
+        "required": [
+          "id",
+          "farmId",
+          "fiscalYearId",
+          "fiscalPeriodId",
+          "entryNumber",
+          "entryDate",
+          "type",
+          "status",
+          "description",
+          "referenceId",
+          "totalDebit",
+          "totalCredit",
+          "postedAt",
+          "postedBy",
+          "createdAt",
+          "updatedAt",
+          "lines"
+        ]
+      },
+      "JournalLineDto": {
+        "type": "object",
+        "properties": {
+          "accountId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "costCenterId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "debit": {
+            "type": "number",
+            "minimum": 0
+          },
+          "credit": {
+            "type": "number",
+            "minimum": 0
+          },
+          "memo": {
+            "type": "string",
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "accountId",
+          "debit",
+          "credit"
+        ]
+      },
+      "CreateJournalEntryDto": {
+        "type": "object",
+        "properties": {
+          "fiscalYearId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fiscalPeriodId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "entryDate": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "MANUAL",
+              "FEED_DISPENSE",
+              "MILK_SALE",
+              "CATTLE_SALE",
+              "CALVING_CAPITALIZE",
+              "MORTALITY_LOSS",
+              "OPENING_BALANCE",
+              "YEAR_END_CLOSING"
+            ]
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "referenceId": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "lines": {
+            "minItems": 2,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/JournalLineDto"
+            }
+          }
+        },
+        "required": [
+          "entryDate",
+          "description",
+          "lines"
+        ]
+      },
+      "FiscalYearSummaryResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "yearName": {
+            "type": "string"
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/FiscalStatus"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "yearName",
+          "status"
+        ]
+      },
+      "TrialBalanceRowResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "category": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AccountCategory"
+              }
+            ]
+          },
+          "totalDebit": {
+            "type": "number"
+          },
+          "totalCredit": {
+            "type": "number"
+          },
+          "netDebit": {
+            "type": "number"
+          },
+          "netCredit": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "category",
+          "totalDebit",
+          "totalCredit",
+          "netDebit",
+          "netCredit"
+        ]
+      },
+      "TrialBalanceResponseDto": {
+        "type": "object",
+        "properties": {
+          "fiscalYear": {
+            "$ref": "#/components/schemas/FiscalYearSummaryResponseDto"
+          },
+          "asOfDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "isBalanced": {
+            "type": "boolean"
+          },
+          "totalDebits": {
+            "type": "number"
+          },
+          "totalCredits": {
+            "type": "number"
+          },
+          "accounts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TrialBalanceRowResponseDto"
+            }
+          }
+        },
+        "required": [
+          "fiscalYear",
+          "asOfDate",
+          "isBalanced",
+          "totalDebits",
+          "totalCredits",
+          "accounts"
+        ]
+      },
+      "IncomeStatementResponseDto": {
+        "type": "object",
+        "properties": {
+          "fiscalYear": {
+            "$ref": "#/components/schemas/FiscalYearSummaryResponseDto"
+          },
+          "period": {
+            "type": "string"
+          },
+          "totalRevenue": {
+            "type": "number"
+          },
+          "totalExpenses": {
+            "type": "number"
+          },
+          "netProfit": {
+            "type": "number"
+          },
+          "profitMarginPct": {
+            "type": "number"
+          },
+          "revenues": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TrialBalanceRowResponseDto"
+            }
+          },
+          "expenses": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TrialBalanceRowResponseDto"
+            }
+          }
+        },
+        "required": [
+          "fiscalYear",
+          "period",
+          "totalRevenue",
+          "totalExpenses",
+          "netProfit",
+          "profitMarginPct",
+          "revenues",
+          "expenses"
+        ]
+      },
+      "BalanceSheetResponseDto": {
+        "type": "object",
+        "properties": {
+          "fiscalYear": {
+            "$ref": "#/components/schemas/FiscalYearSummaryResponseDto"
+          },
+          "asOfDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "totalAssets": {
+            "type": "number"
+          },
+          "totalLiabilities": {
+            "type": "number"
+          },
+          "totalEquity": {
+            "type": "number"
+          },
+          "isBalanced": {
+            "type": "boolean"
+          },
+          "assets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TrialBalanceRowResponseDto"
+            }
+          },
+          "liabilities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TrialBalanceRowResponseDto"
+            }
+          },
+          "equity": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TrialBalanceRowResponseDto"
+            }
+          }
+        },
+        "required": [
+          "fiscalYear",
+          "asOfDate",
+          "totalAssets",
+          "totalLiabilities",
+          "totalEquity",
+          "isBalanced",
+          "assets",
+          "liabilities",
+          "equity"
+        ]
+      },
+      "CreateFiscalYearDto": {
+        "type": "object",
+        "properties": {
+          "yearName": {
+            "type": "string",
+            "pattern": "^\\d{4}$"
+          },
+          "startDate": {
+            "type": "string"
+          },
+          "endDate": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "yearName",
+          "startDate",
+          "endDate"
+        ]
+      },
+      "RolloverFiscalYearDto": {
+        "type": "object",
+        "properties": {
+          "nextYearName": {
+            "type": "string",
+            "pattern": "^\\d{4}$"
+          }
+        },
+        "required": [
+          "nextYearName"
+        ]
+      },
+      "FiscalYearRolloverResponseDto": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          },
+          "closedYear": {
+            "type": "string"
+          },
+          "newYear": {
+            "type": "string"
+          },
+          "netProfitTransferred": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "success",
+          "message",
+          "closedYear",
+          "newYear",
+          "netProfitTransferred"
+        ]
+      },
+      "CreateAnimalDto": {
+        "type": "object",
+        "properties": {
+          "barnId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tagNumber": {
+            "type": "string",
+            "pattern": "^[\\p{L}\\p{N}._/-]{1,50}$"
+          },
+          "rfidTag": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "species": {
+            "type": "string",
+            "default": "CATTLE",
+            "enum": [
+              "CATTLE",
+              "SHEEP",
+              "GOAT"
+            ]
+          },
+          "breed": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "gender": {
+            "type": "string",
+            "default": "FEMALE",
+            "enum": [
+              "FEMALE",
+              "MALE"
+            ]
+          },
+          "purpose": {
+            "type": "string",
+            "default": "DAIRY",
+            "enum": [
+              "DAIRY",
+              "BEEF",
+              "DUAL",
+              "BREEDING"
+            ]
+          },
+          "currentLifeStage": {
+            "type": "string",
+            "default": "CALF",
+            "enum": [
+              "CALF",
+              "WEANED",
+              "HEIFER",
+              "PREGNANT_HEIFER",
+              "LACTATING",
+              "DRY",
+              "FATTENING",
+              "SIRE"
+            ]
+          },
+          "birthDate": {
+            "type": "string"
+          },
+          "entryWeightKg": {
+            "type": "number",
+            "minimum": 0.1,
+            "maximum": 5000
+          },
+          "purchasePrice": {
+            "type": "number",
+            "minimum": 0
+          },
+          "motherId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fatherSemenCode": {
+            "type": "string",
+            "maxLength": 100
+          }
+        },
+        "required": [
+          "tagNumber"
+        ]
+      },
+      "Species": {
+        "type": "string",
+        "enum": [
+          "CATTLE",
+          "SHEEP",
+          "GOAT"
+        ]
+      },
+      "Gender": {
+        "type": "string",
+        "enum": [
+          "FEMALE",
+          "MALE"
+        ]
+      },
+      "Purpose": {
+        "type": "string",
+        "enum": [
+          "DAIRY",
+          "BEEF",
+          "DUAL",
+          "BREEDING"
+        ]
+      },
+      "AnimalStatus": {
+        "type": "string",
+        "enum": [
+          "ACTIVE",
+          "SOLD",
+          "CULLED",
+          "DECEASED",
+          "QUARANTINED"
+        ]
+      },
+      "LifeStage": {
+        "type": "string",
+        "enum": [
+          "CALF",
+          "WEANED",
+          "HEIFER",
+          "PREGNANT_HEIFER",
+          "LACTATING",
+          "DRY",
+          "FATTENING",
+          "SIRE"
+        ]
+      },
+      "SectorType": {
+        "type": "string",
+        "enum": [
+          "DAIRY",
+          "FATTENING",
+          "BREEDING",
+          "CALVES",
+          "ISOLATION"
+        ]
+      },
+      "BarnResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "farmId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "sectorType": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SectorType"
+              }
+            ]
+          },
+          "capacity": {
+            "type": "number"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "farmId",
+          "name",
+          "sectorType",
+          "capacity",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "AnimalRecordResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "farmId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "barnId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          },
+          "tagNumber": {
+            "type": "string"
+          },
+          "rfidTag": {
+            "type": "string",
+            "nullable": true
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "species": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Species"
+              }
+            ]
+          },
+          "breed": {
+            "type": "string",
+            "nullable": true
+          },
+          "gender": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Gender"
+              }
+            ]
+          },
+          "purpose": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Purpose"
+              }
+            ]
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AnimalStatus"
+              }
+            ]
+          },
+          "currentLifeStage": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LifeStage"
+              }
+            ]
+          },
+          "birthDate": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "entryDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "entryWeightKg": {
+            "type": "string",
+            "nullable": true,
+            "pattern": "^-?\\d+(?:\\.\\d{1,3})?$",
+            "example": "550.000"
+          },
+          "purchasePrice": {
+            "type": "string",
+            "nullable": true,
+            "pattern": "^-?\\d+(?:\\.\\d{1,3})?$",
+            "example": "7250.000"
+          },
+          "motherId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          },
+          "fatherSemenCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "withdrawalEndDate": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "farmId",
+          "barnId",
+          "tagNumber",
+          "rfidTag",
+          "name",
+          "species",
+          "breed",
+          "gender",
+          "purpose",
+          "status",
+          "currentLifeStage",
+          "birthDate",
+          "entryDate",
+          "entryWeightKg",
+          "purchasePrice",
+          "motherId",
+          "fatherSemenCode",
+          "withdrawalEndDate",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "AnimalCountResponseDto": {
+        "type": "object",
+        "properties": {
+          "milkLogs": {
+            "type": "number"
+          },
+          "weightLogs": {
+            "type": "number"
+          },
+          "breedingRecords": {
+            "type": "number"
+          },
+          "healthTreatments": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "milkLogs",
+          "weightLogs",
+          "breedingRecords",
+          "healthTreatments"
+        ]
+      },
+      "AnimalResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "farmId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "barnId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          },
+          "tagNumber": {
+            "type": "string"
+          },
+          "rfidTag": {
+            "type": "string",
+            "nullable": true
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "species": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Species"
+              }
+            ]
+          },
+          "breed": {
+            "type": "string",
+            "nullable": true
+          },
+          "gender": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Gender"
+              }
+            ]
+          },
+          "purpose": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Purpose"
+              }
+            ]
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AnimalStatus"
+              }
+            ]
+          },
+          "currentLifeStage": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LifeStage"
+              }
+            ]
+          },
+          "birthDate": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "entryDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "entryWeightKg": {
+            "type": "string",
+            "nullable": true,
+            "pattern": "^-?\\d+(?:\\.\\d{1,3})?$",
+            "example": "550.000"
+          },
+          "purchasePrice": {
+            "type": "string",
+            "nullable": true,
+            "pattern": "^-?\\d+(?:\\.\\d{1,3})?$",
+            "example": "7250.000"
+          },
+          "motherId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          },
+          "fatherSemenCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "withdrawalEndDate": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "barn": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BarnResponseDto"
+              }
+            ]
+          },
+          "mother": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AnimalRecordResponseDto"
+              }
+            ]
+          },
+          "_count": {
+            "$ref": "#/components/schemas/AnimalCountResponseDto"
+          }
+        },
+        "required": [
+          "id",
+          "farmId",
+          "barnId",
+          "tagNumber",
+          "rfidTag",
+          "name",
+          "species",
+          "breed",
+          "gender",
+          "purpose",
+          "status",
+          "currentLifeStage",
+          "birthDate",
+          "entryDate",
+          "entryWeightKg",
+          "purchasePrice",
+          "motherId",
+          "fatherSemenCode",
+          "withdrawalEndDate",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "MilkingShift": {
+        "type": "string",
+        "enum": [
+          "MORNING",
+          "NOON",
+          "EVENING"
+        ]
+      },
+      "MilkLogResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "animalId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "logDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "shift": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MilkingShift"
+              }
+            ]
+          },
+          "yieldLiters": {
+            "type": "string",
+            "pattern": "^-?\\d+(?:\\.\\d{1,3})?$"
+          },
+          "fatPct": {
+            "type": "string",
+            "nullable": true,
+            "pattern": "^-?\\d+(?:\\.\\d{1,3})?$"
+          },
+          "proteinPct": {
+            "type": "string",
+            "nullable": true,
+            "pattern": "^-?\\d+(?:\\.\\d{1,3})?$"
+          },
+          "isDiscarded": {
+            "type": "boolean"
+          },
+          "discardReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "loggedByUserId": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "animalId",
+          "logDate",
+          "shift",
+          "yieldLiters",
+          "fatPct",
+          "proteinPct",
+          "isDiscarded",
+          "discardReason",
+          "loggedByUserId",
+          "createdAt"
+        ]
+      },
+      "WeightLogResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "animalId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "weighDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "weightKg": {
+            "type": "string",
+            "pattern": "^-?\\d+(?:\\.\\d{1,3})?$"
+          },
+          "dailyGainAdg": {
+            "type": "string",
+            "nullable": true,
+            "pattern": "^-?\\d+(?:\\.\\d{1,3})?$"
+          },
+          "daysSinceLast": {
+            "type": "number",
+            "nullable": true
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "animalId",
+          "weighDate",
+          "weightKg",
+          "dailyGainAdg",
+          "daysSinceLast",
+          "notes",
+          "createdAt"
+        ]
+      },
+      "InseminationType": {
+        "type": "string",
+        "enum": [
+          "ARTIFICIAL",
+          "NATURAL"
+        ]
+      },
+      "PregnancyResult": {
+        "type": "string",
+        "enum": [
+          "PENDING",
+          "PREGNANT",
+          "OPEN"
+        ]
+      },
+      "CalvingDifficulty": {
+        "type": "string",
+        "enum": [
+          "EASY",
+          "ASSISTED",
+          "SURGICAL",
+          "ABORTION"
+        ]
+      },
+      "BreedingRecordResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "animalId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "inseminationDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "inseminationType": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/InseminationType"
+              }
+            ]
+          },
+          "semenCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "inseminatorName": {
+            "type": "string",
+            "nullable": true
+          },
+          "pdResult": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PregnancyResult"
+              }
+            ]
+          },
+          "pdCheckDate": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "expectedDryoffDate": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "expectedCalvingDate": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "actualCalvingDate": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "calvingDifficulty": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CalvingDifficulty"
+              }
+            ]
+          },
+          "offspringCount": {
+            "type": "number"
+          },
+          "offspringGender": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Gender"
+              }
+            ]
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "animalId",
+          "inseminationDate",
+          "inseminationType",
+          "semenCode",
+          "inseminatorName",
+          "pdResult",
+          "pdCheckDate",
+          "expectedDryoffDate",
+          "expectedCalvingDate",
+          "actualCalvingDate",
+          "calvingDifficulty",
+          "offspringCount",
+          "offspringGender",
+          "notes",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "HealthTreatmentResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "animalId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "treatmentDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "diagnosis": {
+            "type": "string"
+          },
+          "drugName": {
+            "type": "string"
+          },
+          "dosage": {
+            "type": "string"
+          },
+          "milkWithdrawalDays": {
+            "type": "number"
+          },
+          "meatWithdrawalDays": {
+            "type": "number"
+          },
+          "withdrawalEndDate": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "vetName": {
+            "type": "string",
+            "nullable": true
+          },
+          "treatmentCost": {
+            "type": "string",
+            "pattern": "^-?\\d+(?:\\.\\d{1,3})?$"
+          },
+          "isCompleted": {
+            "type": "boolean"
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "animalId",
+          "treatmentDate",
+          "diagnosis",
+          "drugName",
+          "dosage",
+          "milkWithdrawalDays",
+          "meatWithdrawalDays",
+          "withdrawalEndDate",
+          "vetName",
+          "treatmentCost",
+          "isCompleted",
+          "notes",
+          "createdAt"
+        ]
+      },
+      "AnimalDetailResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "farmId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "barnId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          },
+          "tagNumber": {
+            "type": "string"
+          },
+          "rfidTag": {
+            "type": "string",
+            "nullable": true
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "species": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Species"
+              }
+            ]
+          },
+          "breed": {
+            "type": "string",
+            "nullable": true
+          },
+          "gender": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Gender"
+              }
+            ]
+          },
+          "purpose": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Purpose"
+              }
+            ]
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AnimalStatus"
+              }
+            ]
+          },
+          "currentLifeStage": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LifeStage"
+              }
+            ]
+          },
+          "birthDate": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "entryDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "entryWeightKg": {
+            "type": "string",
+            "nullable": true,
+            "pattern": "^-?\\d+(?:\\.\\d{1,3})?$",
+            "example": "550.000"
+          },
+          "purchasePrice": {
+            "type": "string",
+            "nullable": true,
+            "pattern": "^-?\\d+(?:\\.\\d{1,3})?$",
+            "example": "7250.000"
+          },
+          "motherId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          },
+          "fatherSemenCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "withdrawalEndDate": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "barn": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BarnResponseDto"
+              }
+            ]
+          },
+          "mother": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AnimalRecordResponseDto"
+              }
+            ]
+          },
+          "_count": {
+            "$ref": "#/components/schemas/AnimalCountResponseDto"
+          },
+          "children": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AnimalRecordResponseDto"
+            }
+          },
+          "milkLogs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MilkLogResponseDto"
+            }
+          },
+          "weightLogs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WeightLogResponseDto"
+            }
+          },
+          "breedingRecords": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BreedingRecordResponseDto"
+            }
+          },
+          "healthTreatments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HealthTreatmentResponseDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "farmId",
+          "barnId",
+          "tagNumber",
+          "rfidTag",
+          "name",
+          "species",
+          "breed",
+          "gender",
+          "purpose",
+          "status",
+          "currentLifeStage",
+          "birthDate",
+          "entryDate",
+          "entryWeightKg",
+          "purchasePrice",
+          "motherId",
+          "fatherSemenCode",
+          "withdrawalEndDate",
+          "createdAt",
+          "updatedAt",
+          "children",
+          "milkLogs",
+          "weightLogs",
+          "breedingRecords",
+          "healthTreatments"
+        ]
+      },
+      "UpdateAnimalLifeStageDto": {
+        "type": "object",
+        "properties": {
+          "stage": {
+            "type": "string",
+            "enum": [
+              "CALF",
+              "WEANED",
+              "HEIFER",
+              "PREGNANT_HEIFER",
+              "LACTATING",
+              "DRY",
+              "FATTENING",
+              "SIRE"
+            ]
+          }
+        },
+        "required": [
+          "stage"
+        ]
+      },
+      "UpdateAnimalBarnDto": {
+        "type": "object",
+        "properties": {
+          "barnId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "barnId"
+        ]
+      },
+      "BarnAnimalCountResponseDto": {
+        "type": "object",
+        "properties": {
+          "animals": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "animals"
+        ]
+      },
+      "BarnSummaryResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "sectorType": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SectorType"
+              }
+            ]
+          },
+          "capacity": {
+            "type": "number"
+          },
+          "_count": {
+            "$ref": "#/components/schemas/BarnAnimalCountResponseDto"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "sectorType",
+          "capacity",
+          "_count"
+        ]
+      },
+      "LogMilkDto": {
+        "type": "object",
+        "properties": {
+          "animalId": {
+            "type": "string"
+          },
+          "logDate": {
+            "type": "string"
+          },
+          "shift": {
+            "type": "string",
+            "default": "MORNING",
+            "enum": [
+              "MORNING",
+              "NOON",
+              "EVENING"
+            ]
+          },
+          "yieldLiters": {
+            "type": "number",
+            "minimum": 0.001,
+            "maximum": 1000
+          },
+          "fatPct": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "proteinPct": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "isDiscarded": {
+            "type": "boolean"
+          },
+          "discardReason": {
+            "type": "string",
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "animalId",
+          "logDate",
+          "yieldLiters"
+        ]
+      },
+      "MilkLogWithAnimalResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "animalId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "logDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "shift": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MilkingShift"
+              }
+            ]
+          },
+          "yieldLiters": {
+            "type": "string",
+            "pattern": "^-?\\d+(?:\\.\\d{1,3})?$"
+          },
+          "fatPct": {
+            "type": "string",
+            "nullable": true,
+            "pattern": "^-?\\d+(?:\\.\\d{1,3})?$"
+          },
+          "proteinPct": {
+            "type": "string",
+            "nullable": true,
+            "pattern": "^-?\\d+(?:\\.\\d{1,3})?$"
+          },
+          "isDiscarded": {
+            "type": "boolean"
+          },
+          "discardReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "loggedByUserId": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "animal": {
+            "$ref": "#/components/schemas/AnimalRecordResponseDto"
+          }
+        },
+        "required": [
+          "id",
+          "animalId",
+          "logDate",
+          "shift",
+          "yieldLiters",
+          "fatPct",
+          "proteinPct",
+          "isDiscarded",
+          "discardReason",
+          "loggedByUserId",
+          "createdAt",
+          "animal"
+        ]
+      },
+      "RecordMilkResponseDto": {
+        "type": "object",
+        "properties": {
+          "milkLog": {
+            "$ref": "#/components/schemas/MilkLogWithAnimalResponseDto"
+          },
+          "safetyWarning": {
+            "type": "string",
+            "nullable": true
+          },
+          "healthAlert": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "milkLog",
+          "safetyWarning",
+          "healthAlert"
+        ]
+      },
+      "DailyMilkingSummaryResponseDto": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "totalLiters": {
+            "type": "number"
+          },
+          "usableLiters": {
+            "type": "number"
+          },
+          "discardedLiters": {
+            "type": "number"
+          },
+          "cowsMilkedCount": {
+            "type": "number"
+          },
+          "averagePerCow": {
+            "type": "string",
+            "example": "18.25"
+          },
+          "logs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MilkLogWithAnimalResponseDto"
+            }
+          }
+        },
+        "required": [
+          "date",
+          "totalLiters",
+          "usableLiters",
+          "discardedLiters",
+          "cowsMilkedCount",
+          "averagePerCow",
+          "logs"
+        ]
+      },
+      "InseminateDto": {
+        "type": "object",
+        "properties": {
+          "animalId": {
+            "type": "string"
+          },
+          "inseminationDate": {
+            "type": "string"
+          },
+          "inseminationType": {
+            "type": "string",
+            "default": "ARTIFICIAL",
+            "enum": [
+              "ARTIFICIAL",
+              "NATURAL"
+            ]
+          },
+          "semenCode": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "inseminatorName": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "animalId",
+          "inseminationDate"
+        ]
+      },
+      "BreedingRecordWithAnimalResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "animalId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "inseminationDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "inseminationType": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/InseminationType"
+              }
+            ]
+          },
+          "semenCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "inseminatorName": {
+            "type": "string",
+            "nullable": true
+          },
+          "pdResult": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PregnancyResult"
+              }
+            ]
+          },
+          "pdCheckDate": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "expectedDryoffDate": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "expectedCalvingDate": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "actualCalvingDate": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "calvingDifficulty": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CalvingDifficulty"
+              }
+            ]
+          },
+          "offspringCount": {
+            "type": "number"
+          },
+          "offspringGender": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Gender"
+              }
+            ]
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "animal": {
+            "$ref": "#/components/schemas/AnimalRecordResponseDto"
+          }
+        },
+        "required": [
+          "id",
+          "animalId",
+          "inseminationDate",
+          "inseminationType",
+          "semenCode",
+          "inseminatorName",
+          "pdResult",
+          "pdCheckDate",
+          "expectedDryoffDate",
+          "expectedCalvingDate",
+          "actualCalvingDate",
+          "calvingDifficulty",
+          "offspringCount",
+          "offspringGender",
+          "notes",
+          "createdAt",
+          "updatedAt",
+          "animal"
+        ]
+      },
+      "RecordPregnancyResultDto": {
+        "type": "object",
+        "properties": {
+          "result": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "PREGNANT",
+              "OPEN"
+            ]
+          }
+        },
+        "required": [
+          "result"
+        ]
+      },
+      "RecordCalvingDto": {
+        "type": "object",
+        "properties": {
+          "actualCalvingDate": {
+            "type": "string"
+          },
+          "offspringTagNumber": {
+            "type": "string",
+            "pattern": "^[\\p{L}\\p{N}._/-]{1,50}$"
+          },
+          "offspringGender": {
+            "type": "string",
+            "enum": [
+              "FEMALE",
+              "MALE"
+            ]
+          },
+          "offspringWeightKg": {
+            "type": "number",
+            "minimum": 0.1,
+            "maximum": 500
+          }
+        },
+        "required": [
+          "actualCalvingDate",
+          "offspringTagNumber",
+          "offspringGender"
+        ]
+      },
+      "RecordCalvingResponseDto": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "motherId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "newborn": {
+            "$ref": "#/components/schemas/AnimalRecordResponseDto"
+          }
+        },
+        "required": [
+          "message",
+          "motherId",
+          "newborn"
+        ]
+      },
+      "BreedingTasksResponseDto": {
+        "type": "object",
+        "properties": {
+          "pendingPdChecks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BreedingRecordWithAnimalResponseDto"
+            }
+          },
+          "pendingDryOffs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BreedingRecordWithAnimalResponseDto"
+            }
+          },
+          "upcomingCalvings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BreedingRecordWithAnimalResponseDto"
+            }
+          }
+        },
+        "required": [
+          "pendingPdChecks",
+          "pendingDryOffs",
+          "upcomingCalvings"
+        ]
+      },
+      "CreateTreatmentDto": {
+        "type": "object",
+        "properties": {
+          "animalId": {
+            "type": "string"
+          },
+          "diagnosis": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "drugName": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "dosage": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "treatmentDate": {
+            "type": "string"
+          },
+          "milkWithdrawalDays": {
+            "type": "number",
+            "default": 0,
+            "minimum": 0,
+            "maximum": 3650
+          },
+          "meatWithdrawalDays": {
+            "type": "number",
+            "default": 0,
+            "minimum": 0,
+            "maximum": 3650
+          },
+          "vetName": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "treatmentCost": {
+            "type": "number",
+            "default": 0,
+            "minimum": 0
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "animalId",
+          "diagnosis",
+          "drugName",
+          "dosage",
+          "treatmentDate"
+        ]
+      },
+      "RecordTreatmentResponseDto": {
+        "type": "object",
+        "properties": {
+          "treatment": {
+            "$ref": "#/components/schemas/HealthTreatmentResponseDto"
+          },
+          "warningMessage": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "treatment",
+          "warningMessage"
+        ]
+      },
+      "QuarantinedAnimalResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "farmId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "barnId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          },
+          "tagNumber": {
+            "type": "string"
+          },
+          "rfidTag": {
+            "type": "string",
+            "nullable": true
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "species": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Species"
+              }
+            ]
+          },
+          "breed": {
+            "type": "string",
+            "nullable": true
+          },
+          "gender": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Gender"
+              }
+            ]
+          },
+          "purpose": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Purpose"
+              }
+            ]
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AnimalStatus"
+              }
+            ]
+          },
+          "currentLifeStage": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LifeStage"
+              }
+            ]
+          },
+          "birthDate": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "entryDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "entryWeightKg": {
+            "type": "string",
+            "nullable": true,
+            "pattern": "^-?\\d+(?:\\.\\d{1,3})?$",
+            "example": "550.000"
+          },
+          "purchasePrice": {
+            "type": "string",
+            "nullable": true,
+            "pattern": "^-?\\d+(?:\\.\\d{1,3})?$",
+            "example": "7250.000"
+          },
+          "motherId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          },
+          "fatherSemenCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "withdrawalEndDate": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "barn": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BarnResponseDto"
+              }
+            ]
+          },
+          "mother": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AnimalRecordResponseDto"
+              }
+            ]
+          },
+          "_count": {
+            "$ref": "#/components/schemas/AnimalCountResponseDto"
+          },
+          "healthTreatments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HealthTreatmentResponseDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "farmId",
+          "barnId",
+          "tagNumber",
+          "rfidTag",
+          "name",
+          "species",
+          "breed",
+          "gender",
+          "purpose",
+          "status",
+          "currentLifeStage",
+          "birthDate",
+          "entryDate",
+          "entryWeightKg",
+          "purchasePrice",
+          "motherId",
+          "fatherSemenCode",
+          "withdrawalEndDate",
+          "createdAt",
+          "updatedAt",
+          "healthTreatments"
+        ]
+      },
+      "RecordWeightDto": {
+        "type": "object",
+        "properties": {
+          "animalId": {
+            "type": "string"
+          },
+          "weighDate": {
+            "type": "string"
+          },
+          "weightKg": {
+            "type": "number",
+            "minimum": 0.1,
+            "maximum": 5000
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "animalId",
+          "weighDate",
+          "weightKg"
+        ]
+      },
+      "RecordedWeightResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "animalId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "weighDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "weightKg": {
+            "type": "string",
+            "pattern": "^-?\\d+(?:\\.\\d{1,3})?$"
+          },
+          "dailyGainAdg": {
+            "type": "string",
+            "nullable": true,
+            "pattern": "^-?\\d+(?:\\.\\d{1,3})?$"
+          },
+          "daysSinceLast": {
+            "type": "number",
+            "nullable": true
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "animal": {
+            "$ref": "#/components/schemas/AnimalRecordResponseDto"
+          }
+        },
+        "required": [
+          "id",
+          "animalId",
+          "weighDate",
+          "weightKg",
+          "dailyGainAdg",
+          "daysSinceLast",
+          "notes",
+          "createdAt",
+          "animal"
+        ]
+      },
+      "FatteningPerformanceResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tagNumber": {
+            "type": "string"
+          },
+          "breed": {
+            "type": "string",
+            "nullable": true
+          },
+          "barn": {
+            "type": "string",
+            "nullable": true
+          },
+          "entryWeightKg": {
+            "type": "number",
+            "nullable": true
+          },
+          "currentWeightKg": {
+            "type": "number",
+            "nullable": true
+          },
+          "lastWeighDate": {
+            "type": "string",
+            "nullable": true,
+            "format": "date"
+          },
+          "adgKgPerDay": {
+            "type": "number",
+            "nullable": true
+          },
+          "totalGainKg": {
+            "type": "number",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "tagNumber",
+          "breed",
+          "barn",
+          "entryWeightKg",
+          "currentWeightKg",
+          "lastWeighDate",
+          "adgKgPerDay",
+          "totalGainKg"
+        ]
+      },
+      "FeedIngredientResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "farmId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "currentStock": {
+            "type": "string",
+            "pattern": "^-?\\d+(?:\\.\\d{1,3})?$"
+          },
+          "minStockAlert": {
+            "type": "string",
+            "pattern": "^-?\\d+(?:\\.\\d{1,3})?$"
+          },
+          "costPerUnit": {
+            "type": "string",
+            "pattern": "^-?\\d+(?:\\.\\d{1,3})?$"
+          },
+          "dryMatterPct": {
+            "type": "string",
+            "nullable": true,
+            "pattern": "^-?\\d+(?:\\.\\d{1,3})?$"
+          },
+          "proteinPct": {
+            "type": "string",
+            "nullable": true,
+            "pattern": "^-?\\d+(?:\\.\\d{1,3})?$"
+          },
+          "energyMcal": {
+            "type": "string",
+            "nullable": true,
+            "pattern": "^-?\\d+(?:\\.\\d{1,3})?$"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "farmId",
+          "name",
+          "unit",
+          "currentStock",
+          "minStockAlert",
+          "costPerUnit",
+          "dryMatterPct",
+          "proteinPct",
+          "energyMcal",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "CullingCandidateResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tagNumber": {
+            "type": "string"
+          },
+          "rfidCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "breed": {
+            "type": "string",
+            "nullable": true
+          },
+          "currentLifeStage": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LifeStage"
+              }
+            ]
+          },
+          "purpose": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Purpose"
+              }
+            ]
+          },
+          "reasons": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "severity": {
+            "enum": [
+              "HIGH",
+              "MEDIUM",
+              "LOW"
+            ],
+            "type": "string"
+          },
+          "estimatedSalvageValue": {
+            "type": "number"
+          },
+          "recommendation": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "tagNumber",
+          "rfidCode",
+          "breed",
+          "currentLifeStage",
+          "purpose",
+          "reasons",
+          "severity",
+          "estimatedSalvageValue",
+          "recommendation"
+        ]
+      },
+      "DashboardMilkKpisResponseDto": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "number"
+          },
+          "usable": {
+            "type": "number"
+          },
+          "wasted": {
+            "type": "number"
+          },
+          "cowsMilked": {
+            "type": "number"
+          },
+          "avgPerCow": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "example": "18.4"
+          }
+        },
+        "required": [
+          "total",
+          "usable",
+          "wasted",
+          "cowsMilked",
+          "avgPerCow"
+        ]
+      },
+      "DashboardKpisResponseDto": {
+        "type": "object",
+        "properties": {
+          "totalAnimals": {
+            "type": "number"
+          },
+          "lactatingCows": {
+            "type": "number"
+          },
+          "fatteningAnimals": {
+            "type": "number"
+          },
+          "quarantineCount": {
+            "type": "number"
+          },
+          "milk": {
+            "$ref": "#/components/schemas/DashboardMilkKpisResponseDto"
+          }
+        },
+        "required": [
+          "totalAnimals",
+          "lactatingCows",
+          "fatteningAnimals",
+          "quarantineCount",
+          "milk"
+        ]
+      },
+      "DashboardAlertsResponseDto": {
+        "type": "object",
+        "properties": {
+          "quarantineActive": {
+            "type": "number"
+          },
+          "pendingPdChecks": {
+            "type": "number"
+          },
+          "pendingDryOffs": {
+            "type": "number"
+          },
+          "upcomingCalvings": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "quarantineActive",
+          "pendingPdChecks",
+          "pendingDryOffs",
+          "upcomingCalvings"
+        ]
+      },
+      "ExecutiveDashboardResponseDto": {
+        "type": "object",
+        "properties": {
+          "kpis": {
+            "$ref": "#/components/schemas/DashboardKpisResponseDto"
+          },
+          "alerts": {
+            "$ref": "#/components/schemas/DashboardAlertsResponseDto"
+          }
+        },
+        "required": [
+          "kpis",
+          "alerts"
+        ]
+      },
+      "MilkEconomicsResponseDto": {
+        "type": "object",
+        "properties": {
+          "totalMilkLiters": {
+            "type": "number"
+          },
+          "sellingPricePerLiter": {
+            "type": "number"
+          },
+          "grossRevenue": {
+            "type": "number"
+          },
+          "feedCost": {
+            "type": "number"
+          },
+          "vetCost": {
+            "type": "number"
+          },
+          "laborAndOverhead": {
+            "type": "number"
+          },
+          "totalCost": {
+            "type": "number"
+          },
+          "actualCostPerLiter": {
+            "type": "number"
+          },
+          "profitPerLiter": {
+            "type": "number"
+          },
+          "marginPct": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "totalMilkLiters",
+          "sellingPricePerLiter",
+          "grossRevenue",
+          "feedCost",
+          "vetCost",
+          "laborAndOverhead",
+          "totalCost",
+          "actualCostPerLiter",
+          "profitPerLiter",
+          "marginPct"
+        ]
+      },
+      "BeefEconomicsResponseDto": {
+        "type": "object",
+        "properties": {
+          "totalGainKg": {
+            "type": "number"
+          },
+          "marketPricePerKg": {
+            "type": "number"
+          },
+          "grossEstimatedRevenue": {
+            "type": "number"
+          },
+          "feedCost": {
+            "type": "number"
+          },
+          "totalCost": {
+            "type": "number"
+          },
+          "costPerKgGain": {
+            "type": "number"
+          },
+          "profitMarginPct": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "totalGainKg",
+          "marketPricePerKg",
+          "grossEstimatedRevenue",
+          "feedCost",
+          "totalCost",
+          "costPerKgGain",
+          "profitMarginPct"
+        ]
+      },
+      "FarmProfitAndLossResponseDto": {
+        "type": "object",
+        "properties": {
+          "totalRevenue": {
+            "type": "number"
+          },
+          "totalExpenses": {
+            "type": "number"
+          },
+          "netProfit": {
+            "type": "number"
+          },
+          "profitMarginPct": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "totalRevenue",
+          "totalExpenses",
+          "netProfit",
+          "profitMarginPct"
+        ]
+      },
+      "FinancialDataQualityResponseDto": {
+        "type": "object",
+        "properties": {
+          "usesRecordedDataOnly": {
+            "type": "boolean"
+          },
+          "missingPriceConfiguration": {
+            "type": "boolean"
+          },
+          "laborAndOverheadIncluded": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "usesRecordedDataOnly",
+          "missingPriceConfiguration",
+          "laborAndOverheadIncluded"
+        ]
+      },
+      "FinancialOverviewResponseDto": {
+        "type": "object",
+        "properties": {
+          "period": {
+            "type": "string"
+          },
+          "milkEconomics": {
+            "$ref": "#/components/schemas/MilkEconomicsResponseDto"
+          },
+          "beefEconomics": {
+            "$ref": "#/components/schemas/BeefEconomicsResponseDto"
+          },
+          "farmPnL": {
+            "$ref": "#/components/schemas/FarmProfitAndLossResponseDto"
+          },
+          "dataQuality": {
+            "$ref": "#/components/schemas/FinancialDataQualityResponseDto"
+          }
+        },
+        "required": [
+          "period",
+          "milkEconomics",
+          "beefEconomics",
+          "farmPnL",
+          "dataQuality"
+        ]
+      },
+      "RationIngredientInputDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "costPerKg": {
+            "type": "number",
+            "minimum": 0
+          },
+          "proteinPct": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "energyMcal": {
+            "type": "number",
+            "minimum": 0
+          },
+          "minInclusionPct": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "maxInclusionPct": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "costPerKg",
+          "proteinPct",
+          "energyMcal"
+        ]
+      },
+      "FormulationTargetDto": {
+        "type": "object",
+        "properties": {
+          "targetProteinPct": {
+            "type": "number",
+            "minimum": 0.01,
+            "maximum": 100
+          },
+          "batchTotalKg": {
+            "type": "number",
+            "minimum": 0.001
+          }
+        },
+        "required": [
+          "targetProteinPct",
+          "batchTotalKg"
+        ]
+      },
+      "FormulateLeastCostDto": {
+        "type": "object",
+        "properties": {
+          "ingredients": {
+            "minItems": 2,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RationIngredientInputDto"
+            }
+          },
+          "target": {
+            "$ref": "#/components/schemas/FormulationTargetDto"
+          }
+        },
+        "required": [
+          "ingredients",
+          "target"
+        ]
+      },
+      "LeastCostRationItemResponseDto": {
+        "type": "object",
+        "properties": {
+          "ingredientId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "percentage": {
+            "type": "number"
+          },
+          "weightKg": {
+            "type": "number"
+          },
+          "cost": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "ingredientId",
+          "name",
+          "percentage",
+          "weightKg",
+          "cost"
+        ]
+      },
+      "LeastCostRationResponseDto": {
+        "type": "object",
+        "properties": {
+          "targetProteinPct": {
+            "type": "number"
+          },
+          "actualProteinPct": {
+            "type": "number"
+          },
+          "batchTotalKg": {
+            "type": "number"
+          },
+          "totalCost": {
+            "type": "number"
+          },
+          "costPerKg": {
+            "type": "number"
+          },
+          "costPerTon": {
+            "type": "number"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LeastCostRationItemResponseDto"
+            }
+          }
+        },
+        "required": [
+          "targetProteinPct",
+          "actualProteinPct",
+          "batchTotalKg",
+          "totalCost",
+          "costPerKg",
+          "costPerTon",
+          "items"
+        ]
+      },
+      "DispenseFeedDto": {
+        "type": "object",
+        "properties": {
+          "barnId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "formulaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "quantityKg": {
+            "type": "number",
+            "minimum": 0.001
+          }
+        },
+        "required": [
+          "barnId",
+          "formulaId",
+          "quantityKg"
+        ]
+      },
+      "FeedDistributionRecordResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "barnId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "formulaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "dispenseDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "quantityKg": {
+            "type": "string",
+            "pattern": "^-?\\d+(?:\\.\\d{1,3})?$"
+          },
+          "totalCost": {
+            "type": "string",
+            "pattern": "^-?\\d+(?:\\.\\d{1,3})?$"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "barnId",
+          "formulaId",
+          "dispenseDate",
+          "quantityKg",
+          "totalCost",
+          "createdAt"
+        ]
+      },
+      "DispenseFeedResponseDto": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "distribution": {
+            "$ref": "#/components/schemas/FeedDistributionRecordResponseDto"
+          },
+          "totalCost": {
+            "type": "number"
+          },
+          "costPerKg": {
+            "type": "string",
+            "example": "0.425"
+          }
+        },
+        "required": [
+          "message",
+          "distribution",
+          "totalCost",
+          "costPerKg"
+        ]
+      },
+      "CreateFeedIngredientDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "unit": {
+            "type": "string",
+            "maxLength": 20
+          },
+          "currentStock": {
+            "type": "number",
+            "minimum": 0
+          },
+          "minStockAlert": {
+            "type": "number",
+            "minimum": 0
+          },
+          "costPerUnit": {
+            "type": "number",
+            "minimum": 0
+          },
+          "dryMatterPct": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "proteinPct": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "energyMcal": {
+            "type": "number",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "name",
+          "currentStock",
+          "costPerUnit"
+        ]
+      },
+      "UpdateFeedStockDto": {
+        "type": "object",
+        "properties": {
+          "addedKg": {
+            "type": "number",
+            "minimum": 0.001
+          },
+          "costPerUnit": {
+            "type": "number",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "addedKg"
+        ]
+      },
+      "FeedFormulaItemResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "formulaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "ingredientId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "percentage": {
+            "type": "string",
+            "pattern": "^-?\\d+(?:\\.\\d{1,3})?$"
+          },
+          "ingredient": {
+            "$ref": "#/components/schemas/FeedIngredientResponseDto"
+          }
+        },
+        "required": [
+          "id",
+          "formulaId",
+          "ingredientId",
+          "percentage",
+          "ingredient"
+        ]
+      },
+      "FeedFormulaResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "farmId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "targetSector": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SectorType"
+              }
+            ]
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FeedFormulaItemResponseDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "farmId",
+          "name",
+          "targetSector",
+          "description",
+          "createdAt",
+          "updatedAt",
+          "items"
+        ]
+      },
+      "FeedFormulaItemDto": {
+        "type": "object",
+        "properties": {
+          "ingredientId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "percentage": {
+            "type": "number",
+            "minimum": 0.01,
+            "maximum": 100
+          }
+        },
+        "required": [
+          "ingredientId",
+          "percentage"
+        ]
+      },
+      "CreateFeedFormulaDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "targetSector": {
+            "type": "string",
+            "enum": [
+              "DAIRY",
+              "BREEDING",
+              "FATTENING",
+              "CALVES",
+              "ISOLATION"
+            ]
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "items": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FeedFormulaItemDto"
+            }
+          }
+        },
+        "required": [
+          "name",
+          "items"
+        ]
+      },
+      "FeedFormulaRecordResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "farmId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "targetSector": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SectorType"
+              }
+            ]
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "farmId",
+          "name",
+          "targetSector",
+          "description",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "FeedDistributionResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "barnId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "formulaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "dispenseDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "quantityKg": {
+            "type": "string",
+            "pattern": "^-?\\d+(?:\\.\\d{1,3})?$"
+          },
+          "totalCost": {
+            "type": "string",
+            "pattern": "^-?\\d+(?:\\.\\d{1,3})?$"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "barn": {
+            "$ref": "#/components/schemas/BarnResponseDto"
+          },
+          "formula": {
+            "$ref": "#/components/schemas/FeedFormulaRecordResponseDto"
+          }
+        },
+        "required": [
+          "id",
+          "barnId",
+          "formulaId",
+          "dispenseDate",
+          "quantityKg",
+          "totalCost",
+          "createdAt",
+          "barn",
+          "formula"
+        ]
+      },
+      "LivenessResponseDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "enum": [
+              "ok",
+              "ready"
+            ],
+            "type": "string",
+            "example": "ok"
+          },
+          "version": {
+            "type": "string",
+            "example": "1.0.0"
+          },
+          "uptimeSeconds": {
+            "type": "number",
+            "example": 123
+          },
+          "timestamp": {
+            "type": "string",
+            "example": "2026-08-28T12:00:00.000Z"
+          }
+        },
+        "required": [
+          "status",
+          "version",
+          "uptimeSeconds",
+          "timestamp"
+        ]
+      },
+      "ReadinessResponseDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "enum": [
+              "ok",
+              "ready"
+            ],
+            "type": "string",
+            "example": "ready"
+          },
+          "version": {
+            "type": "string",
+            "example": "1.0.0"
+          },
+          "uptimeSeconds": {
+            "type": "number",
+            "example": 123
+          },
+          "timestamp": {
+            "type": "string",
+            "example": "2026-08-28T12:00:00.000Z"
+          },
+          "database": {
+            "type": "string",
+            "example": "connected"
+          },
+          "requiredMigration": {
+            "type": "string",
+            "example": "0005_operational_idempotency"
+          }
+        },
+        "required": [
+          "status",
+          "version",
+          "uptimeSeconds",
+          "timestamp",
+          "database",
+          "requiredMigration"
+        ]
+      }
+    }
+  }
+}

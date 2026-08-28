@@ -1,0 +1,140 @@
+name: Saraya Livestock Enterprise CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  # ----------------------------------------------------
+  # Job 1: Lint, Test & Validate Backend & Frontend
+  # ----------------------------------------------------
+  quality-and-tests:
+    name: Code Quality, Prisma Validation & Tests
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgrespassword
+          POSTGRES_DB: saraya_livestock_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: 'npm'
+          cache-dependency-path: |
+            apps/api/package-lock.json
+            apps/web/package-lock.json
+            apps/desktop/package-lock.json
+
+      - name: Install API Dependencies & Validate Prisma Schema
+        working-directory: ./apps/api
+        env:
+          DATABASE_URL: "postgresql://postgres:postgrespassword@localhost:5432/saraya_livestock_test?schema=public"
+        run: |
+          npm ci
+          npx prisma validate
+          npx prisma generate
+          npx prisma migrate deploy
+
+      - name: Audit API Production Dependencies
+        working-directory: ./apps/api
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Run API Unit Tests
+        working-directory: ./apps/api
+        env:
+          JWT_SECRET: "ci-only-jwt-secret-with-at-least-32-characters"
+          DATABASE_URL: "postgresql://postgres:postgrespassword@localhost:5432/saraya_livestock_test?schema=public"
+          RUN_DB_INTEGRATION_TESTS: "true"
+        run: npm test -- --runInBand
+
+      - name: Install Web Dependencies
+        working-directory: ./apps/web
+        run: |
+          npm ci
+          npm audit --omit=dev --audit-level=high
+          npm run typecheck
+
+      - name: Verify OpenAPI Contract and Generated Web Client
+        env:
+          JWT_SECRET: "ci-only-jwt-secret-with-at-least-32-characters"
+          DATABASE_URL: "postgresql://postgres:postgrespassword@localhost:5432/saraya_livestock_test?schema=public"
+        run: npm run contracts:check
+
+      - name: Install Desktop Dependencies
+        working-directory: ./apps/desktop
+        run: |
+          npm ci
+          npm audit --omit=dev --audit-level=high
+
+  # ----------------------------------------------------
+  # Job 2: Build Production Artifacts
+  # ----------------------------------------------------
+  build-production:
+    name: Build NestJS API & Vite Web Bundles
+    needs: quality-and-tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: 'npm'
+          cache-dependency-path: |
+            apps/api/package-lock.json
+            apps/web/package-lock.json
+            apps/desktop/package-lock.json
+
+      - name: Build API (NestJS)
+        working-directory: ./apps/api
+        run: |
+          npm ci
+          npx prisma generate
+          npm run build
+
+      - name: Build Web Client (Vite + React Query)
+        working-directory: ./apps/web
+        run: |
+          npm ci
+          npm run build
+
+      - name: Build Desktop Main Process (TypeScript)
+        working-directory: ./apps/desktop
+        run: |
+          npm ci
+          npm run build
+
+      - name: Upload Web Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-dist
+          path: apps/web/dist/
+          retention-days: 7
+
+      - name: Upload API Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-dist
+          path: apps/api/dist/
+          retention-days: 7

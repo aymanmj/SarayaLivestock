@@ -1,0 +1,14 @@
+**/node_modules
+**/dist
+**/dist-electron
+**/.jest-cache
+**/coverage
+**/.env*
+!.env.example
+backups
+license-keys
+.git
+.github
+*.log
+*.dump
+*.jpg

@@ -1,0 +1,8 @@
+{
+	admin off
+	email {$ACME_EMAIL}
+}
+
+{$SARAYA_DOMAIN} {
+	import common.caddy
+}

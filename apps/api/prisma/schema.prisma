@@ -1,0 +1,708 @@
+// Prisma Schema for SarayaLivestock ERP
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ----------------------------------------------------
+// 1. المؤسسة والمزارع والفروع (Multi-Tenant Hierarchy)
+// ----------------------------------------------------
+
+enum PlanType {
+  STANDARD
+  ENTERPRISE
+  ON_PREMISE
+}
+
+model Organization {
+  id        String   @id @default(uuid())
+  name      String
+  taxNumber String?
+  phone     String?
+  planType  PlanType @default(STANDARD)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  farms Farm[]
+  users User[]
+
+  @@map("organizations")
+}
+
+model Farm {
+  id          String   @id @default(uuid())
+  orgId       String
+  name        String
+  location    String?
+  managerName String?
+  phone       String?
+  timezone    String   @default("UTC")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  organization     Organization      @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  barns            Barn[]
+  animals          Animal[]
+  bulkTanks        BulkTankLog[]
+  feedStock        FeedIngredient[]
+  feedFormulas     FeedFormula[]
+  costCenters      CostCenter[]
+  users            User[]
+  fiscalYears      FiscalYear[]
+  accounts         Account[]
+  journalEntries   JournalEntry[]
+  journalSequences JournalSequence[]
+
+  @@map("farms")
+}
+
+enum SectorType {
+  DAIRY
+  FATTENING
+  BREEDING
+  CALVES
+  ISOLATION
+}
+
+model Barn {
+  id         String     @id @default(uuid())
+  farmId     String
+  name       String
+  sectorType SectorType @default(DAIRY)
+  capacity   Int        @default(50)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  farm              Farm               @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  animals           Animal[]
+  feedDistributions FeedDistribution[]
+
+  @@unique([farmId, name])
+  @@map("barns")
+}
+
+// ----------------------------------------------------
+// 2. المستخدمون والصلاحيات (Users & Roles)
+// ----------------------------------------------------
+
+enum UserRole {
+  SUPER_ADMIN
+  FARM_MANAGER
+  VETERINARIAN
+  MILKER
+  ACCOUNTANT
+  WORKER
+}
+
+model User {
+  id        String   @id @default(uuid())
+  orgId     String
+  farmId    String?
+  username  String   @unique
+  email     String?
+  password  String
+  fullName  String
+  role      UserRole @default(WORKER)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  farm         Farm?        @relation(fields: [farmId], references: [id], onDelete: SetNull)
+  sessions     UserSession[]
+
+  @@map("users")
+}
+
+enum SessionRevocationReason {
+  ROTATED
+  LOGOUT
+  LOGOUT_ALL
+  PASSWORD_RESET
+  USER_DISABLED
+  ROLE_CHANGED
+  REUSE_DETECTED
+  EXPIRED
+}
+
+/// جلسة قابلة للإبطال. لا يُخزَّن رمز التحديث الخام؛ tokenHash هو SHA-256 فقط.
+model UserSession {
+  id                  String                   @id @default(uuid())
+  userId              String
+  familyId            String                   @default(uuid())
+  tokenHash           String                   @unique
+  expiresAt           DateTime
+  lastUsedAt          DateTime                 @default(now())
+  revokedAt           DateTime?
+  revocationReason    SessionRevocationReason?
+  replacedBySessionId String?                  @unique
+  ipAddress           String?
+  userAgent           String?
+  createdAt           DateTime                 @default(now())
+
+  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  replacedBy UserSession? @relation("SessionRotation", fields: [replacedBySessionId], references: [id], onDelete: SetNull)
+  replaces   UserSession? @relation("SessionRotation")
+
+  @@index([userId, revokedAt])
+  @@index([familyId])
+  @@index([expiresAt])
+  @@map("user_sessions")
+}
+
+/// سجل أدلة أمني/تشغيلي إلحاقي. المعرّفات غير مرتبطة بمفاتيح خارجية عمداً
+/// حتى تبقى الأدلة التاريخية محفوظة عند حذف الكيانات التشغيلية.
+model AuditEvent {
+  id          String   @id @default(uuid())
+  orgId       String
+  farmId      String?
+  actorUserId String
+  action      String
+  entityType  String
+  entityId    String?
+  httpMethod  String
+  path        String
+  statusCode  Int
+  ipAddress   String?
+  userAgent   String?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  @@index([orgId, createdAt])
+  @@index([farmId, createdAt])
+  @@index([entityType, entityId])
+  @@map("audit_events")
+}
+
+enum IdempotencyStatus {
+  PROCESSING
+  COMPLETED
+}
+
+/// سجل منع التكرار للطلبات التشغيلية. يُنشأ ويُستكمل داخل معاملة العملية نفسها.
+model IdempotencyRecord {
+  id             String            @id @default(uuid())
+  orgId          String
+  farmId         String?
+  actorUserId    String
+  key            String
+  requestHash    String
+  method         String
+  path           String
+  status         IdempotencyStatus @default(PROCESSING)
+  executionToken String
+  responseBody   Json?
+  expiresAt      DateTime
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  @@unique([orgId, key])
+  @@index([expiresAt])
+  @@index([orgId, actorUserId, createdAt])
+  @@map("idempotency_records")
+}
+
+// ----------------------------------------------------
+// 3. إدارة القطيع والماشية (Herd & Animals)
+// ----------------------------------------------------
+
+enum Species {
+  CATTLE
+  SHEEP
+  GOAT
+}
+
+enum Gender {
+  FEMALE
+  MALE
+}
+
+enum Purpose {
+  DAIRY
+  BEEF
+  DUAL
+  BREEDING
+}
+
+enum AnimalStatus {
+  ACTIVE
+  SOLD
+  CULLED
+  DECEASED
+  QUARANTINED
+}
+
+enum LifeStage {
+  CALF
+  WEANED
+  HEIFER
+  PREGNANT_HEIFER
+  LACTATING
+  DRY
+  FATTENING
+  SIRE
+}
+
+model Animal {
+  id               String       @id @default(uuid())
+  farmId           String
+  barnId           String?
+  tagNumber        String // الرقم التعريفي / رقم القرط
+  rfidTag          String? // شريحة الترقيم الإلكتروني
+  name             String?
+  species          Species      @default(CATTLE)
+  breed            String? // السلالة: هولشتاين، سيمينتال، عساف، رحماني، دمشقي
+  gender           Gender       @default(FEMALE)
+  purpose          Purpose      @default(DAIRY)
+  status           AnimalStatus @default(ACTIVE)
+  currentLifeStage LifeStage    @default(CALF)
+  birthDate        DateTime?
+  entryDate        DateTime     @default(now())
+  entryWeightKg    Decimal?     @db.Decimal(10, 3)
+  purchasePrice    Decimal?     @db.Decimal(15, 3)
+
+  // شجرة النسب (Pedigree)
+  motherId        String?
+  mother          Animal?  @relation("MotherChildren", fields: [motherId], references: [id])
+  children        Animal[] @relation("MotherChildren")
+  fatherSemenCode String? // كود القشة أو رقم الثور/الكبش
+
+  // صمام الأمان الصحي (Health Withdrawal Lock)
+  withdrawalEndDate DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  farm             Farm              @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  barn             Barn?             @relation(fields: [barnId], references: [id], onDelete: SetNull)
+  milkLogs         MilkLog[]
+  weightLogs       WeightLog[]
+  breedingRecords  BreedingRecord[]
+  healthTreatments HealthTreatment[]
+
+  @@unique([farmId, tagNumber])
+  @@index([farmId, status])
+  @@index([farmId, rfidTag])
+  @@map("animals")
+}
+
+// ----------------------------------------------------
+// 4. إنتاج الحليب والخزان (Milking & Bulk Tank)
+// ----------------------------------------------------
+
+enum MilkingShift {
+  MORNING
+  NOON
+  EVENING
+}
+
+model MilkLog {
+  id             String       @id @default(uuid())
+  animalId       String
+  logDate        DateTime     @db.Date
+  shift          MilkingShift @default(MORNING)
+  yieldLiters    Decimal      @db.Decimal(10, 3)
+  fatPct         Decimal?     @db.Decimal(5, 2)
+  proteinPct     Decimal?     @db.Decimal(5, 2)
+  isDiscarded    Boolean      @default(false) // حليب مهدر / غير مخصص للبيع
+  discardReason  String? // السبب: فترة تحريم، التهاب ضرع، علاج
+  loggedByUserId String?
+  createdAt      DateTime     @default(now())
+
+  animal Animal @relation(fields: [animalId], references: [id], onDelete: Cascade)
+
+  @@unique([animalId, logDate, shift])
+  @@index([animalId, logDate])
+  @@map("milk_logs")
+}
+
+model BulkTankLog {
+  id                String   @id @default(uuid())
+  farmId            String
+  logDate           DateTime @db.Date
+  totalYieldLiters  Decimal  @db.Decimal(12, 3)
+  soldLiters        Decimal  @db.Decimal(12, 3)
+  calfFeedingLiters Decimal  @default(0) @db.Decimal(10, 3)
+  wastedLiters      Decimal  @default(0) @db.Decimal(10, 3)
+  tankTemperature   Decimal? @db.Decimal(5, 2) // درجة حرارة التبريد
+  fatPctAvg         Decimal? @db.Decimal(5, 2)
+  proteinPctAvg     Decimal? @db.Decimal(5, 2)
+  unitPrice         Decimal? @db.Decimal(10, 3)
+  buyerName         String?
+  invoiceNumber     String?
+  createdAt         DateTime @default(now())
+
+  farm Farm @relation(fields: [farmId], references: [id], onDelete: Cascade)
+
+  @@map("bulk_tank_logs")
+}
+
+// ----------------------------------------------------
+// 5. التسمين والأوزان (Fattening & Weights)
+// ----------------------------------------------------
+
+model WeightLog {
+  id            String   @id @default(uuid())
+  animalId      String
+  weighDate     DateTime @db.Date
+  weightKg      Decimal  @db.Decimal(10, 3)
+  dailyGainAdg  Decimal? @db.Decimal(10, 3) // معدل الزيادة اليومية المحسوبة
+  daysSinceLast Int?
+  notes         String?
+  createdAt     DateTime @default(now())
+
+  animal Animal @relation(fields: [animalId], references: [id], onDelete: Cascade)
+
+  @@unique([animalId, weighDate])
+  @@index([animalId, weighDate])
+  @@map("weight_logs")
+}
+
+// ----------------------------------------------------
+// 6. التناسل والتلقيح (Reproduction & Breeding)
+// ----------------------------------------------------
+
+enum InseminationType {
+  ARTIFICIAL
+  NATURAL
+}
+
+enum PregnancyResult {
+  PENDING
+  PREGNANT
+  OPEN // غير عشار
+}
+
+enum CalvingDifficulty {
+  EASY
+  ASSISTED
+  SURGICAL
+  ABORTION
+}
+
+model BreedingRecord {
+  id                  String             @id @default(uuid())
+  animalId            String
+  inseminationDate    DateTime           @db.Date
+  inseminationType    InseminationType   @default(ARTIFICIAL)
+  semenCode           String?
+  inseminatorName     String?
+  pdCheckDate         DateTime?          @db.Date
+  pdResult            PregnancyResult    @default(PENDING)
+  expectedCalvingDate DateTime?          @db.Date
+  expectedDryoffDate  DateTime?          @db.Date
+  actualCalvingDate   DateTime?          @db.Date
+  calvingDifficulty   CalvingDifficulty?
+  offspringCount      Int                @default(1)
+  offspringGender     Gender?
+  notes               String?
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+
+  animal Animal @relation(fields: [animalId], references: [id], onDelete: Cascade)
+
+  @@index([animalId, inseminationDate])
+  @@map("breeding_records")
+}
+
+// ----------------------------------------------------
+// 7. الصحة والأدوية وصمام الأمان (Veterinary & Health)
+// ----------------------------------------------------
+
+model HealthTreatment {
+  id                 String    @id @default(uuid())
+  animalId           String
+  diagnosis          String
+  drugName           String
+  dosage             String
+  treatmentDate      DateTime  @db.Date
+  milkWithdrawalDays Int       @default(0)
+  meatWithdrawalDays Int       @default(0)
+  withdrawalEndDate  DateTime?
+  vetName            String?
+  treatmentCost      Decimal   @default(0) @db.Decimal(12, 3)
+  isCompleted        Boolean   @default(false)
+  notes              String?
+  createdAt          DateTime  @default(now())
+
+  animal Animal @relation(fields: [animalId], references: [id], onDelete: Cascade)
+
+  @@index([animalId, treatmentDate])
+  @@map("health_treatments")
+}
+
+// ----------------------------------------------------
+// 8. التغذية والأعلاف والمخازن (Nutrition & Feeds)
+// ----------------------------------------------------
+
+model FeedIngredient {
+  id            String   @id @default(uuid())
+  farmId        String
+  name          String // ذرة صفراء، كسب صويا، نخالة، سيلاج
+  unit          String   @default("KG") // KG / TON
+  currentStock  Decimal  @default(0) @db.Decimal(15, 3)
+  minStockAlert Decimal  @default(0) @db.Decimal(15, 3)
+  costPerUnit   Decimal  @default(0) @db.Decimal(15, 3)
+  dryMatterPct  Decimal? @db.Decimal(5, 2)
+  proteinPct    Decimal? @db.Decimal(5, 2)
+  energyMcal    Decimal? @db.Decimal(6, 2)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  farm         Farm              @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  formulaItems FeedFormulaItem[]
+
+  @@unique([farmId, name])
+  @@map("feed_ingredients")
+}
+
+model FeedFormula {
+  id           String     @id @default(uuid())
+  farmId       String
+  name         String // خلطة حلب عالي، خلطة تسمين مرحلة أولى
+  targetSector SectorType @default(DAIRY)
+  description  String?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  farm          Farm               @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  items         FeedFormulaItem[]
+  distributions FeedDistribution[]
+
+  @@unique([farmId, name])
+  @@map("feed_formulas")
+}
+
+model FeedFormulaItem {
+  id           String  @id @default(uuid())
+  formulaId    String
+  ingredientId String
+  percentage   Decimal @db.Decimal(6, 2) // نسبة المادة في الخلطة %
+
+  formula    FeedFormula    @relation(fields: [formulaId], references: [id], onDelete: Cascade)
+  ingredient FeedIngredient @relation(fields: [ingredientId], references: [id], onDelete: Restrict)
+
+  @@unique([formulaId, ingredientId])
+  @@map("feed_formula_items")
+}
+
+model FeedDistribution {
+  id           String   @id @default(uuid())
+  barnId       String
+  formulaId    String
+  dispenseDate DateTime @db.Date
+  quantityKg   Decimal  @db.Decimal(12, 3)
+  totalCost    Decimal  @db.Decimal(15, 3)
+  createdAt    DateTime @default(now())
+
+  barn    Barn        @relation(fields: [barnId], references: [id], onDelete: Cascade)
+  formula FeedFormula @relation(fields: [formulaId], references: [id], onDelete: Restrict)
+
+  @@index([barnId, dispenseDate])
+  @@map("feed_distributions")
+}
+
+// ----------------------------------------------------
+// 9. المحاسبة ومراكز التكلفة (Cost Centers & Financials)
+// ----------------------------------------------------
+
+enum CostCenterType {
+  DAIRY_PRODUCTION
+  FATTENING_PRODUCTION
+  BREEDING_REPLACEMENT
+  GENERAL_OVERHEAD
+}
+
+model CostCenter {
+  id        String         @id @default(uuid())
+  farmId    String
+  name      String
+  type      CostCenterType @default(DAIRY_PRODUCTION)
+  createdAt DateTime       @default(now())
+
+  farm         Farm                   @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  transactions FinancialTransaction[]
+  journalLines JournalEntryLine[]
+
+  @@map("cost_centers")
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+}
+
+model FinancialTransaction {
+  id           String          @id @default(uuid())
+  costCenterId String
+  transDate    DateTime        @db.Date
+  type         TransactionType
+  category     String // أعلاف، أدوية، رواتب، كهرباء، وقود، مبيعات حليب، مبيعات مواشي
+  amount       Decimal         @db.Decimal(15, 3)
+  description  String?
+  referenceId  String? // ربط برقم فاتورة أو معرف حلبة أو وزن
+  createdAt    DateTime        @default(now())
+
+  costCenter CostCenter @relation(fields: [costCenterId], references: [id], onDelete: Cascade)
+
+  @@map("financial_transactions")
+}
+
+// ----------------------------------------------------
+// 10. الدفتر العام والسنوات والقيود المالية (General Ledger & IAS 41)
+// ----------------------------------------------------
+
+enum FiscalStatus {
+  OPEN
+  CLOSED
+}
+
+model FiscalYear {
+  id        String       @id @default(uuid())
+  farmId    String
+  yearName  String // مثال: "2026"
+  startDate DateTime     @db.Date
+  endDate   DateTime     @db.Date
+  status    FiscalStatus @default(OPEN)
+  isCurrent Boolean      @default(true)
+  closedAt  DateTime?
+  closedBy  String?
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  farm             Farm              @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  periods          FiscalPeriod[]
+  journalEntries   JournalEntry[]
+  journalSequences JournalSequence[]
+
+  @@unique([farmId, yearName])
+  @@map("fiscal_years")
+}
+
+model FiscalPeriod {
+  id           String       @id @default(uuid())
+  fiscalYearId String
+  periodNumber Int // 1 إلى 12
+  periodName   String // مثال: "يناير 2026"
+  startDate    DateTime     @db.Date
+  endDate      DateTime     @db.Date
+  status       FiscalStatus @default(OPEN)
+  closedAt     DateTime?
+  createdAt    DateTime     @default(now())
+
+  fiscalYear     FiscalYear     @relation(fields: [fiscalYearId], references: [id], onDelete: Cascade)
+  journalEntries JournalEntry[]
+
+  @@unique([fiscalYearId, periodNumber])
+  @@map("fiscal_periods")
+}
+
+enum AccountCategory {
+  ASSET // أصول (متداولة، ثابتة، بيولوجية IAS 41)
+  LIABILITY // خصوم والتزامات
+  EQUITY // حقوق ملكية ورأس مال
+  REVENUE // إيرادات النشاط والمكاسب البيولوجية
+  EXPENSE // مصروفات التشغيل والأعلاف والتغذية
+}
+
+model Account {
+  id             String          @id @default(uuid())
+  farmId         String
+  code           String // مثال: "1101", "1201", "4101", "5101"
+  name           String // مثال: "الأصول البيولوجية - قطيع الألبان"
+  nameEn         String?
+  category       AccountCategory
+  parentId       String?
+  currentBalance Decimal         @default(0) @db.Decimal(18, 3)
+  isActive       Boolean         @default(true)
+  isSystemLocked Boolean         @default(false) // لمنع حذف الحسابات النظامية الأساسية
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  farm         Farm               @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  parent       Account?           @relation("AccountHierarchy", fields: [parentId], references: [id], onDelete: Restrict)
+  children     Account[]          @relation("AccountHierarchy")
+  journalLines JournalEntryLine[]
+
+  @@unique([farmId, code])
+  @@map("accounts")
+}
+
+enum JournalEntryType {
+  MANUAL // قيد تسوية يدوي
+  FEED_DISPENSE // قيد آلي: صرف علائق وتغذية للعنابر
+  MILK_SALE // قيد آلي: مبيعات وتوريد حليب
+  CATTLE_SALE // قيد آلي: بيع مواشي وتسمين
+  CALVING_CAPITALIZE // قيد آلي: رسملة ولادة عجل جديد (IAS 41)
+  MORTALITY_LOSS // قيد آلي: خسائر نفوق واستبعاد ماشية
+  OPENING_BALANCE // قيد رصيد افتتاحي
+  YEAR_END_CLOSING // قيد إقفال السنة المالية
+}
+
+enum JournalEntryStatus {
+  DRAFT
+  POSTED
+  VOIDED
+}
+
+model JournalEntry {
+  id             String             @id @default(uuid())
+  farmId         String
+  fiscalYearId   String
+  fiscalPeriodId String?
+  entryNumber    String // مثال: "JV-2026-0001"
+  entryDate      DateTime           @db.Date
+  type           JournalEntryType   @default(MANUAL)
+  status         JournalEntryStatus @default(POSTED)
+  description    String
+  referenceId    String? // ربط برقم الحلبة أو تشغيلة العلف أو رقم البقرة
+  totalDebit     Decimal            @db.Decimal(18, 3)
+  totalCredit    Decimal            @db.Decimal(18, 3)
+  postedAt       DateTime?          @default(now())
+  postedBy       String? // المستخدم الذي اعتمد القيد
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  farm         Farm               @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  fiscalYear   FiscalYear         @relation(fields: [fiscalYearId], references: [id], onDelete: Cascade)
+  fiscalPeriod FiscalPeriod?      @relation(fields: [fiscalPeriodId], references: [id], onDelete: SetNull)
+  lines        JournalEntryLine[]
+
+  @@unique([farmId, entryNumber])
+  @@map("journal_entries")
+}
+
+model JournalEntryLine {
+  id             String  @id @default(uuid())
+  journalEntryId String
+  accountId      String
+  costCenterId   String?
+  debit          Decimal @default(0) @db.Decimal(18, 3)
+  credit         Decimal @default(0) @db.Decimal(18, 3)
+  memo           String?
+
+  journalEntry JournalEntry @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
+  account      Account      @relation(fields: [accountId], references: [id], onDelete: Restrict)
+  costCenter   CostCenter?  @relation(fields: [costCenterId], references: [id], onDelete: SetNull)
+
+  @@map("journal_entry_lines")
+}
+
+model JournalSequence {
+  id           String   @id @default(uuid())
+  farmId       String
+  fiscalYearId String
+  nextNumber   Int      @default(1)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  farm       Farm       @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  fiscalYear FiscalYear @relation(fields: [fiscalYearId], references: [id], onDelete: Cascade)
+
+  @@unique([farmId, fiscalYearId])
+  @@map("journal_sequences")
+}

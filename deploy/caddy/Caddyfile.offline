@@ -1,0 +1,8 @@
+{
+	admin off
+}
+
+https://{$SARAYA_OFFLINE_HOST:saraya.local} {
+	tls internal
+	import common.caddy
+}

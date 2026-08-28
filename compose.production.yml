@@ -1,0 +1,151 @@
+name: saraya-livestock-production
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:?DB_USER must be configured}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be configured}
+      POSTGRES_DB: ${DB_NAME:?DB_NAME must be configured}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    security_opt:
+      - no-new-privileges:true
+    shm_size: 256mb
+    stop_grace_period: 60s
+
+  api:
+    build:
+      context: .
+      dockerfile: deploy/api/Dockerfile
+      target: runtime
+    image: saraya-livestock-api:${APP_VERSION:-1.0.0}
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      APP_VERSION: ${APP_VERSION:-1.0.0}
+      HOST: 0.0.0.0
+      PORT: 4000
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL must be configured}
+      DB_POOL_MAX: ${DB_POOL_MAX:-10}
+      DB_CONNECTION_TIMEOUT_MS: ${DB_CONNECTION_TIMEOUT_MS:-10000}
+      DB_IDLE_TIMEOUT_MS: ${DB_IDLE_TIMEOUT_MS:-30000}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be configured}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:?ENCRYPTION_KEY must be configured}
+      REFRESH_TOKEN_TTL_DAYS: ${REFRESH_TOKEN_TTL_DAYS:-30}
+      IDEMPOTENCY_RETENTION_DAYS: ${IDEMPOTENCY_RETENTION_DAYS:-7}
+      CORS_ORIGINS: ${CORS_ORIGINS:?CORS_ORIGINS must be configured}
+      TRUST_PROXY_HOPS: 1
+      ENABLE_SWAGGER: "false"
+      ALLOW_DEMO_SEED: "false"
+      MILK_PRICE_PER_LITER: ${MILK_PRICE_PER_LITER:-0}
+      BEEF_MARKET_PRICE_PER_KG: ${BEEF_MARKET_PRICE_PER_KG:-0}
+      SARAYA_LICENSE_KEY: ${SARAYA_LICENSE_KEY:-}
+      SARAYA_DATA_DIR: /home/node
+      VAULT_ADDR: ${VAULT_ADDR:-}
+      VAULT_TOKEN: ${VAULT_TOKEN:-}
+    volumes:
+      - api_identity:/home/node
+    networks:
+      - backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4000/api/v1/system/health/ready').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,noexec,nosuid,nodev
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    stop_grace_period: 30s
+
+  caddy:
+    build:
+      context: .
+      dockerfile: deploy/caddy/Dockerfile
+      args:
+        VITE_API_BASE_URL: /api/v1
+    image: saraya-livestock-web:${APP_VERSION:-1.0.0}
+    restart: unless-stopped
+    environment:
+      SARAYA_DOMAIN: ${SARAYA_DOMAIN:-}
+      SARAYA_OFFLINE_HOST: ${SARAYA_OFFLINE_HOST:-saraya.local}
+      ACME_EMAIL: ${ACME_EMAIL:-}
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+    volumes:
+      - ${CADDYFILE:-./deploy/caddy/Caddyfile.offline}:/etc/caddy/Caddyfile:ro
+      - ./deploy/caddy/common.caddy:/etc/caddy/common.caddy:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - edge
+      - backend
+    depends_on:
+      api:
+        condition: service_healthy
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,noexec,nosuid,nodev
+      - /var/run:size=8m,nosuid,nodev
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    stop_grace_period: 30s
+
+  db-ops:
+    profiles: ["operations"]
+    build:
+      context: .
+      dockerfile: deploy/api/Dockerfile
+      target: operations
+    image: saraya-livestock-db-ops:${APP_VERSION:-1.0.0}
+    environment:
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL must be configured}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be configured}
+      SARAYA_DB_ENV: production
+      SARAYA_DB_CONFIRM: ${DB_NAME:?DB_NAME must be configured}
+      SARAYA_DB_WRITES_STOPPED: ${SARAYA_DB_WRITES_STOPPED:-false}
+      SARAYA_DB_ALLOW_PRODUCTION: ${SARAYA_DB_ALLOW_PRODUCTION:-false}
+      SARAYA_DB_CHANGE_TICKET: ${SARAYA_DB_CHANGE_TICKET:-}
+      DATABASE_BACKUP_DIR: /backups
+    volumes:
+      - ./backups:/backups
+    networks:
+      - backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  postgres_data:
+  api_identity:
+  caddy_data:
+  caddy_config:
+
+networks:
+  edge:
+  backend:
+    internal: true
