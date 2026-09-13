@@ -47,7 +47,7 @@
     "serialport": "^13.0.0"
   },
   "devDependencies": {
-    "electron": "^32.0.1",
+    "electron": "^44.3.0",
     "electron-builder": "^24.13.3",
     "typescript": "^5.5.4"
   }
