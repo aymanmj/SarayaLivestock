@@ -76,7 +76,7 @@ export const MilkingQuickEntry: React.FC = () => {
         getMilkingDailySummary(undefined, new Date().toISOString().slice(0, 10)),
       ]);
       if (Array.isArray(animals)) {
-        const mapped: CowInfo[] = animals.filter(a => a.purpose === 'DAIRY').map(a => {
+        const mapped: CowInfo[] = animals.filter(a => (a.purpose === 'DAIRY' || a.purpose === 'DUAL')).map(a => {
           const isQuar = a.withdrawalEndDate ? new Date(a.withdrawalEndDate) > new Date() : false;
           return {
             id: a.id,
@@ -193,7 +193,46 @@ export const MilkingQuickEntry: React.FC = () => {
         setFeedback('تعذرت طباعة الإيصال');
       }
     } else {
-      setFeedback('الطابعة الحرارية غير متصلة');
+      // Fallback to standard OS printer via browser print
+      const printWindow = window.open('', '_blank', 'width=400,height=600');
+      if (printWindow) {
+        printWindow.document.write(`
+          <html dir="rtl">
+            <head>
+              <title>إيصال استلام حليب</title>
+              <style>
+                body { font-family: 'Courier New', Courier, monospace; padding: 20px; text-align: center; }
+                .bold { font-weight: bold; font-size: 1.2rem; margin-bottom: 5px; }
+                .divider { border-bottom: 1px dashed #000; margin: 15px 0; }
+                .row { display: flex; justify-content: space-between; margin-bottom: 5px; }
+              </style>
+            </head>
+            <body>
+              <div class="bold">محطة سريا للحلب</div>
+              <div>إيصال استلام حليب</div>
+              <div class="divider"></div>
+              <div class="row"><span>التاريخ:</span> <span>${receiptData.date}</span></div>
+              <div class="row"><span>الوردية:</span> <span>${receiptData.shift}</span></div>
+              <div class="row"><span>رقم البقرة:</span> <span class="bold">#${receiptData.cowTag}</span></div>
+              <div class="divider"></div>
+              <div class="row"><span>الكمية:</span> <span class="bold">${receiptData.yieldLiters} لتر</span></div>
+              <div class="row"><span>حالة الحليب:</span> <span>${receiptData.isDiscarded ? 'مستبعد' : 'صالح'}</span></div>
+              <div class="row"><span>القيمة:</span> <span class="bold">${formatMoney(receiptData.financialValue)}</span></div>
+              <div class="divider"></div>
+              <div>تم الاستلام بنجاح.</div>
+            </body>
+          </html>
+        `);
+        printWindow.document.close();
+        printWindow.focus();
+        setTimeout(() => {
+          printWindow.print();
+          printWindow.close();
+        }, 500);
+        setFeedback(`تم تجهيز طباعة الإيصال للبقرة #${selectedCow.tagNumber}.`);
+      } else {
+        setFeedback('يرجى السماح بالنوافذ المنبثقة (Popups) للطباعة');
+      }
     }
   };
 
@@ -611,6 +650,9 @@ export const MilkingQuickEntry: React.FC = () => {
     </div>
   );
 };
+
+
+
 
 
 
