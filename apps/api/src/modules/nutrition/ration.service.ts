@@ -294,7 +294,7 @@ export class RationService {
   }, farmId: string, actor?: AuditActor, idempotency?: IdempotencyContext) {
     if (!data.items?.length) throw new BadRequestException('يجب إضافة مكون واحد على الأقل للخلطة');
     const ingredientIds = [...new Set(data.items.map(item => item.ingredientId))];
-    const totalPercentage = data.items.reduce((sum, item) => sum + Number(item.percentage), 0);
+    const totalPercentage = data.items.reduce((sum, item) => Money.add(sum, item.percentage as any), 0);
     if (Math.abs(totalPercentage - 100) > 0.001) {
       throw new BadRequestException('يجب أن يكون مجموع نسب مكونات الخلطة 100%');
     }
@@ -349,3 +349,4 @@ export class RationService {
     });
   }
 }
+

@@ -1,3 +1,4 @@
+import { Money } from '../../common/utils/money.util';
 import { Injectable, BadRequestException, NotFoundException, OnModuleInit, Logger } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { AccountCategory, FiscalStatus, JournalEntryType, JournalEntryStatus, Prisma } from '@prisma/client';
@@ -573,9 +574,9 @@ export class AccountingService implements OnModuleInit {
     const liabilities = trialBalance.accounts.filter((a) => a.category === AccountCategory.LIABILITY);
     const equity = trialBalance.accounts.filter((a) => a.category === AccountCategory.EQUITY);
 
-    const totalAssets = assets.reduce((acc, a) => acc + (a.netDebit - a.netCredit), 0);
-    const totalLiabilities = liabilities.reduce((acc, l) => acc + (l.netCredit - l.netDebit), 0);
-    const totalEquity = equity.reduce((acc, e) => acc + (e.netCredit - e.netDebit), 0) + incomeStatement.netProfit;
+    const totalAssets = assets.reduce((acc, a) => Money.add(acc, Money.sub(a.netDebit, a.netCredit)), 0);
+    const totalLiabilities = liabilities.reduce((acc, l) => Money.add(acc, Money.sub(l.netCredit, l.netDebit)), 0);
+    const totalEquity = Money.add(equity.reduce((acc, e) => Money.add(acc, Money.sub(e.netCredit, e.netDebit)), 0), incomeStatement.netProfit);
 
     return {
       fiscalYear: trialBalance.fiscalYear,
@@ -583,7 +584,7 @@ export class AccountingService implements OnModuleInit {
       totalAssets,
       totalLiabilities,
       totalEquity,
-      isBalanced: Math.abs(totalAssets - (totalLiabilities + totalEquity)) < 1,
+      isBalanced: Money.isZero(Money.sub(totalAssets, Money.add(totalLiabilities, totalEquity))),
       assets,
       liabilities,
       equity,
@@ -1077,3 +1078,4 @@ export class AccountingService implements OnModuleInit {
     }, farmId);
   }
 }
+

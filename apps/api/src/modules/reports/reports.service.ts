@@ -1,3 +1,4 @@
+import { Money } from '../../common/utils/money.util';
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { CullingCandidateResponseDto } from './dto/reports-response.dto';
@@ -120,8 +121,8 @@ export class ReportsService {
     });
 
     const totalMilkLiters = milkLogs.reduce((acc, log) => acc + Number(log.yieldLiters), 0);
-    const milkPricePerLiter = Number(process.env.MILK_PRICE_PER_LITER || 0);
-    const grossMilkRevenue = totalMilkLiters * milkPricePerLiter;
+    const milkPricePerLiter = Money.fromPrisma(process.env.MILK_PRICE_PER_LITER as any) || 0;
+    const grossMilkRevenue = Money.mul(totalMilkLiters, milkPricePerLiter);
 
     // 2. تكلفة الأعلاف المنصرفة (TMR)
     const feedDistributions = await this.prisma.feedDistribution.findMany({
@@ -137,9 +138,9 @@ export class ReportsService {
 
     feedDistributions.forEach(d => {
       if (d.barn?.sectorType === 'DAIRY') {
-        dairyFeedCost += Number(d.totalCost);
+        dairyFeedCost = Money.add(dairyFeedCost, d.totalCost as any);
       } else {
-        beefFeedCost += Number(d.totalCost);
+        beefFeedCost = Money.add(beefFeedCost, d.totalCost as any);
       }
     });
 
@@ -151,16 +152,18 @@ export class ReportsService {
       },
     });
 
-    const totalVetCost = treatments.reduce((acc, t) => acc + (Number(t.treatmentCost) || 0), 0);
+    const totalVetCost = treatments.reduce((acc, t) => Money.add(acc, t.treatmentCost as any), 0);
 
     // 4. المصروفات التشغيلية والعمالة التقديرية
     const estimatedLaborOverhead = 0;
 
     // 5. حساب التكلفة الفعلية للتر الحليب
-    const totalDairyCost = dairyFeedCost + (totalVetCost * 0.7) + (estimatedLaborOverhead * 0.65);
-    const actualCostPerLiter = totalMilkLiters > 0 ? Number((totalDairyCost / totalMilkLiters).toFixed(3)) : 0;
-    const profitPerLiter = Number((milkPricePerLiter - actualCostPerLiter).toFixed(3));
-    const dairyMarginPct = milkPricePerLiter > 0 ? Number(((profitPerLiter / milkPricePerLiter) * 100).toFixed(1)) : 0;
+    const totalDairyCost = Money.add(Money.add(dairyFeedCost, Money.mul(totalVetCost, 0.7)), Money.mul(estimatedLaborOverhead, 0.65));
+    const actualCostPerLiter = totalMilkLiters > 0 ? Money.round(Money.div(totalDairyCost, totalMilkLiters), 3) : 0;
+    const profitPerLiter = Money.round(Money.sub(milkPricePerLiter, actualCostPerLiter), 3);
+    const dairyMarginPct = milkPricePerLiter > 0 ? Money.round(Money.percent(profitPerLiter, 100), 1) : 0; // percent is wrong, (profit / price * 100) -> Money.round(Money.mul(Money.div(profitPerLiter, milkPricePerLiter), 100), 1)
+
+    const actualDairyMarginPct = milkPricePerLiter > 0 ? Money.round(Money.mul(Money.div(profitPerLiter, milkPricePerLiter), 100), 1) : 0;
 
     // 6. حساب تكلفة كيلو اللحم المضاف
     const beefWeightLogs = await this.prisma.weightLog.findMany({
@@ -170,11 +173,11 @@ export class ReportsService {
       (sum, log) => sum + (Number(log.dailyGainAdg || 0) * Number(log.daysSinceLast || 0)),
       0,
     );
-    const totalBeefCost = beefFeedCost + (totalVetCost * 0.3) + (estimatedLaborOverhead * 0.35);
-    const costPerKgGain = estimatedMonthlyBeefGainKg > 0 ? Number((totalBeefCost / estimatedMonthlyBeefGainKg).toFixed(2)) : 0;
-    const beefMarketPricePerKg = Number(process.env.BEEF_MARKET_PRICE_PER_KG || 0);
+    const totalBeefCost = Money.add(Money.add(beefFeedCost, Money.mul(totalVetCost, 0.3)), Money.mul(estimatedLaborOverhead, 0.35));
+    const costPerKgGain = estimatedMonthlyBeefGainKg > 0 ? Money.round(Money.div(totalBeefCost, estimatedMonthlyBeefGainKg), 2) : 0;
+    const beefMarketPricePerKg = Money.fromPrisma(process.env.BEEF_MARKET_PRICE_PER_KG as any) || 0;
     const beefProfitMarginPct = beefMarketPricePerKg > 0
-      ? Number((((beefMarketPricePerKg - costPerKgGain) / beefMarketPricePerKg) * 100).toFixed(1))
+      ? Money.round(Money.mul(Money.div(Money.sub(beefMarketPricePerKg, costPerKgGain), beefMarketPricePerKg), 100), 1)
       : 0;
 
     // 7. ملخص الأرباح والخسائر الإجمالي للمزرعة (Actual P&L from Journal Entries)
@@ -194,30 +197,35 @@ export class ReportsService {
       _sum: { debit: true, credit: true }
     });
 
-    const actualRevenue = (Number(revenueLines._sum.credit) || 0) - (Number(revenueLines._sum.debit) || 0);
-    const actualExpenses = (Number(expenseLines._sum.debit) || 0) - (Number(expenseLines._sum.credit) || 0);
-    const actualNetProfit = actualRevenue - actualExpenses;
+    const revCredit = Money.fromPrisma(revenueLines._sum.credit);
+    const revDebit = Money.fromPrisma(revenueLines._sum.debit);
+    const expDebit = Money.fromPrisma(expenseLines._sum.debit);
+    const expCredit = Money.fromPrisma(expenseLines._sum.credit);
+
+    const actualRevenue = Money.sub(revCredit, revDebit);
+    const actualExpenses = Money.sub(expDebit, expCredit);
+    const actualNetProfit = Money.sub(actualRevenue, actualExpenses);
 
     return {
       period: 'آخر 30 يوماً',
       milkEconomics: {
         totalMilkLiters: Math.round(totalMilkLiters),
         sellingPricePerLiter: milkPricePerLiter,
-        grossRevenue: Number(grossMilkRevenue.toFixed(2)),
+        grossRevenue: Money.round(grossMilkRevenue, 3),
         feedCost: dairyFeedCost,
-        vetCost: Number((totalVetCost * 0.7).toFixed(2)),
-        laborAndOverhead: Number((estimatedLaborOverhead * 0.65).toFixed(2)),
-        totalCost: Number(totalDairyCost.toFixed(2)),
+        vetCost: Money.round(Money.mul(totalVetCost, 0.7), 2),
+        laborAndOverhead: Money.round(Money.mul(estimatedLaborOverhead, 0.65), 2),
+        totalCost: Money.round(totalDairyCost, 3),
         actualCostPerLiter,
         profitPerLiter,
-        marginPct: dairyMarginPct,
+        marginPct: actualDairyMarginPct,
       },
       beefEconomics: {
         totalGainKg: estimatedMonthlyBeefGainKg,
         marketPricePerKg: beefMarketPricePerKg,
-        grossEstimatedRevenue: Number((estimatedMonthlyBeefGainKg * beefMarketPricePerKg).toFixed(2)),
+        grossEstimatedRevenue: Money.round(Money.mul(estimatedMonthlyBeefGainKg, beefMarketPricePerKg), 2),
         feedCost: beefFeedCost,
-        totalCost: Number(totalBeefCost.toFixed(2)),
+        totalCost: Money.round(totalBeefCost, 3),
         costPerKgGain,
         profitMarginPct: beefProfitMarginPct,
       },
@@ -225,7 +233,7 @@ export class ReportsService {
         totalRevenue: actualRevenue,
         totalExpenses: actualExpenses,
         netProfit: actualNetProfit,
-        profitMarginPct: actualRevenue > 0 ? Number(((actualNetProfit / actualRevenue) * 100).toFixed(1)) : 0,
+        profitMarginPct: actualRevenue > 0 ? Money.round(Money.mul(Money.div(actualNetProfit, actualRevenue), 100), 1) : 0,
       },
       dataQuality: {
         usesRecordedDataOnly: true,
@@ -368,3 +376,5 @@ export class ReportsService {
     }
   }
 }
+
+

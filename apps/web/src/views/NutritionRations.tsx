@@ -28,7 +28,7 @@ import {
 import { AddFeedIngredientModal } from '../components/AddFeedIngredientModal';
 import { ReceiveFeedBatchModal } from '../components/ReceiveFeedBatchModal';
 import { DispenseFeedModal } from '../components/DispenseFeedModal';
-import { formatMoney, formatNumber, formatDate, formatPercent, OFFICIAL_CURRENCY } from '../utils/money.util';
+import { Money, formatMoney, formatNumber, formatDate, formatPercent, OFFICIAL_CURRENCY } from '../utils/money.util';
 
 type FeedSector = 'DAIRY' | 'BREEDING' | 'FATTENING' | 'CALVES' | 'ISOLATION';
 
@@ -161,14 +161,14 @@ export const NutritionRations: React.FC = () => {
   };
 
   // Warehouse Calculations
-  const totalStockKg = stock.reduce((sum, item) => sum + Number(item.currentStock), 0);
-  const totalStockTons = (totalStockKg / 1000).toFixed(1);
-  const totalInventoryValue = stock.reduce((sum, item) => sum + (Number(item.currentStock) * Number(item.costPerUnit)), 0).toFixed(0);
+  const totalStockKg = Money.sum(...stock.map(item => item.currentStock));
+  const totalStockTons = Money.round(Money.div(totalStockKg, 1000), 1);
+  const totalInventoryValue = Money.round(Money.sum(...stock.map(item => Money.mul(item.currentStock, item.costPerUnit))), 0);
   const lowStockCount = stock.filter(item => Number(item.currentStock) <= Number(item.minStockAlert)).length;
-  const distributedQuantityKg = distributions.reduce((sum, item) => sum + Number(item.quantityKg), 0);
-  const distributedCost = distributions.reduce((sum, item) => sum + Number(item.totalCost), 0);
+  const distributedQuantityKg = Money.sum(...distributions.map(item => item.quantityKg));
+  const distributedCost = Money.sum(...distributions.map(item => item.totalCost));
   const averageDistributedCostPerTon = distributedQuantityKg > 0
-    ? (distributedCost / distributedQuantityKg) * 1000
+    ? Money.mul(Money.div(distributedCost, distributedQuantityKg), 1000)
     : null;
 
   return (
@@ -695,3 +695,5 @@ export const NutritionRations: React.FC = () => {
     </div>
   );
 };
+
+

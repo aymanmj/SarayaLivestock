@@ -136,17 +136,17 @@ export class Money {
   }
 
   /** تقريب لعدد مخصص من الخانات */
-  static round(amount: MoneyValue, decimals: number = 2): number {
+  static round(amount: MoneyValue, decimals: number = 3): number {
     return moneyDecimal(amount).toDecimalPlaces(decimals, Decimal.ROUND_HALF_UP).toNumber();
   }
 
   /** تقريب لأعلى */
-  static ceil(amount: MoneyValue, decimals: number = 2): number {
+  static ceil(amount: MoneyValue, decimals: number = 3): number {
     return moneyDecimal(amount).toDecimalPlaces(decimals, Decimal.ROUND_UP).toNumber();
   }
 
   /** تقريب لأسفل */
-  static floor(amount: MoneyValue, decimals: number = 2): number {
+  static floor(amount: MoneyValue, decimals: number = 3): number {
     return moneyDecimal(amount).toDecimalPlaces(decimals, Decimal.ROUND_DOWN).toNumber();
   }
 
@@ -248,7 +248,7 @@ export class Money {
 
   static divide(a: MoneyValue, b: MoneyValue): Decimal { return moneyDecimal(a).div(moneyDecimal(b)); }
 
-  static roundDecimal(amount: MoneyValue, decimals: number = 2): Decimal { return moneyDecimal(amount).toDecimalPlaces(decimals, Decimal.ROUND_HALF_UP); }
+  static roundDecimal(amount: MoneyValue, decimals: number = 3): Decimal { return moneyDecimal(amount).toDecimalPlaces(decimals, Decimal.ROUND_HALF_UP); }
 
   static from(value: MoneyValue): MoneyChain {
     return new MoneyChain(value);
@@ -298,7 +298,7 @@ export class MoneyChain {
     return this;
   }
 
-  round(decimals: number = 2): MoneyChain {
+  round(decimals: number = 3): MoneyChain {
     this.value = this.value.toDecimalPlaces(decimals, Decimal.ROUND_HALF_UP);
     return this;
   }
@@ -324,6 +324,7 @@ export class MoneyChain {
     return this.value.toDecimalPlaces(decimals, Decimal.ROUND_HALF_UP).toNumber();
   }
 }
+
 
 
 

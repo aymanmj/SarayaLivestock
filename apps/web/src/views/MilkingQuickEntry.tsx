@@ -23,7 +23,7 @@ import {
 } from 'lucide-react';
 import { MilkingShift } from '../api/types';
 import { logMilkingSession, getAnimals, getMilkingDailySummary } from '../api/client';
-import { formatMoney, formatNumber, formatDate, OFFICIAL_CURRENCY } from '../utils/money.util';
+import { Money, formatMoney, formatNumber, formatDate, OFFICIAL_CURRENCY } from '../utils/money.util';
 
 interface CowInfo {
   id?: string;
@@ -107,7 +107,7 @@ export const MilkingQuickEntry: React.FC = () => {
         time: new Date(log.logDate).toLocaleTimeString('ar-LY', { hour: '2-digit', minute: '2-digit' }),
         isDiscarded: log.isDiscarded,
         discardReason: log.discardReason,
-        value: log.isDiscarded ? 0 : Number(log.yieldLiters) * milkSellingPricePerLiter,
+        value: log.isDiscarded ? 0 : Money.mul(log.yieldLiters as any, milkSellingPricePerLiter),
       })));
       setBulkTankVolume(Number(summary.usableLiters));
     } catch (error: any) {
@@ -181,7 +181,7 @@ export const MilkingQuickEntry: React.FC = () => {
       shift,
       date: formatDate(new Date().toISOString()),
       isDiscarded,
-      financialValue: isDiscarded ? 0 : Number(currentYield) * milkSellingPricePerLiter,
+      financialValue: isDiscarded ? 0 : Money.mul(currentYield, milkSellingPricePerLiter),
     };
 
     if ((window as any).electronAPI?.printReceipt) {
@@ -236,14 +236,14 @@ export const MilkingQuickEntry: React.FC = () => {
         time: new Date(savedLog.createdAt).toLocaleTimeString('ar-LY', { hour: '2-digit', minute: '2-digit' }),
         isDiscarded: savedLog.isDiscarded,
         discardReason: savedLog.discardReason,
-        value: savedLog.isDiscarded ? 0 : savedYield * milkSellingPricePerLiter,
+        value: savedLog.isDiscarded ? 0 : Money.mul(savedYield, milkSellingPricePerLiter),
       };
 
       setRecentLogs(prev => [newLog, ...prev.slice(0, 7)]);
       
       const financialNote = savedLog.isDiscarded
         ? '⚠️ تم توجيه الحليب للتغذية/الإتلاف (0 د.ل)' 
-        : `💰 تم قيد إيراد بقيمة ${formatMoney(savedYield * milkSellingPricePerLiter)} بحساب مبيعات الحليب (4101)`;
+        : `💰 تم قيد إيراد بقيمة ${formatMoney(Money.mul(savedYield, milkSellingPricePerLiter))} بحساب مبيعات الحليب (4101)`;
 
       const serverAlerts = [result.safetyWarning, result.healthAlert].filter(Boolean).join(' ');
 
@@ -265,9 +265,9 @@ export const MilkingQuickEntry: React.FC = () => {
     }
   };
 
-  const totalTodayLiters = recentLogs.reduce((acc, l) => acc + Number(l.yieldLiters), 0);
-  const usableTodayLiters = recentLogs.filter(l => !l.isDiscarded).reduce((acc, l) => acc + Number(l.yieldLiters), 0);
-  const totalFinancialValue = recentLogs.reduce((acc, l) => acc + (Number(l.value) || 0), 0);
+  const totalTodayLiters = Money.sum(...recentLogs.map(l => l.yieldLiters));
+  const usableTodayLiters = Money.sum(...recentLogs.filter(l => !l.isDiscarded).map(l => l.yieldLiters));
+  const totalFinancialValue = Money.sum(...recentLogs.map(l => l.value || 0));
 
   return (
     <div className="space-y-6">
@@ -485,7 +485,7 @@ export const MilkingQuickEntry: React.FC = () => {
             <div>
               <label className="block text-slate-500 dark:text-slate-400 text-[11px] mb-1">القيمة المالية للحلبة:</label>
               <div className="p-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl font-black text-sm text-emerald-700 dark:text-emerald-400 flex items-center justify-between">
-                <span>{isDiscarded ? '0.000 د.ل (معزول)' : formatMoney(Number(currentYield || 0) * milkSellingPricePerLiter)}</span>
+                <span>{isDiscarded ? '0.000 د.ل (معزول)' : formatMoney(Money.mul(currentYield || 0, milkSellingPricePerLiter))}</span>
               </div>
             </div>
           </div>
@@ -548,7 +548,7 @@ export const MilkingQuickEntry: React.FC = () => {
               </div>
               <div className="flex items-center justify-between text-[10px] text-slate-500 font-semibold">
                 <span>نسبة الامتلاء: {((bulkTankVolume / targetTankCapacity) * 100).toFixed(0)}%</span>
-                <span>قيمة المخزون: {formatMoney(bulkTankVolume * milkSellingPricePerLiter)}</span>
+                <span>قيمة المخزون: {formatMoney(Money.mul(bulkTankVolume, milkSellingPricePerLiter))}</span>
               </div>
             </div>
 
@@ -611,3 +611,6 @@ export const MilkingQuickEntry: React.FC = () => {
     </div>
   );
 };
+
+
+
