@@ -1,0 +1,21 @@
+{
+  "app": {
+    "title": "Saraya Livestock",
+    "subtitle": "Livestock & Dairy ERP",
+    "loading": "Verifying secure session...",
+    "mainBranch": "Main Branch",
+    "logout": "Logout"
+  },
+  "nav": {
+    "dashboard": "Executive Dashboard",
+    "milking": "Quick Milking Entry",
+    "animals": "Herd & Livestock Registry",
+    "breeding": "Breeding & Calving",
+    "fattening": "Fattening & ADG",
+    "nutrition": "Feed & Nutrition (TMR)",
+    "accounting": "Accounting & GL",
+    "financial": "Financial Reports",
+    "users": "Users & Security",
+    "about": "About System"
+  }
+}

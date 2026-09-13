@@ -1,0 +1,20 @@
+<service>
+  <id>SarayaPostgreSQL</id>
+  <name>Saraya Livestock - PostgreSQL Database</name>
+  <description>PostgreSQL Database Engine Service for Saraya Livestock</description>
+  <executable>{{INSTALL_DIR}}\postgresql\bin\postgres.exe</executable>
+  <arguments>-D "{{DATA_DIR}}\data\postgresql"</arguments>
+  <workingdirectory>{{INSTALL_DIR}}\postgresql\bin</workingdirectory>
+  <log mode="roll">
+    <logpath>{{DATA_DIR}}\logs\services</logpath>
+  </log>
+  <stopparentprocessfirst>true</stopparentprocessfirst>
+  <onfailure action="restart" delay="10 sec"/>
+  <startmode>Automatic</startmode>
+  <delayedAutoStart/>
+  <serviceaccount>
+    <domain>NT AUTHORITY</domain>
+    <user>NetworkService</user>
+    <password></password>
+  </serviceaccount>
+</service>

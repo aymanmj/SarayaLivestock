@@ -162,27 +162,88 @@ function createWindow() {
 // معالجات جسر الهاردوير والمنافذ التسلسلية (Hardware IPC Handlers)
 // ----------------------------------------------------
 
+import { SerialPort } from 'serialport';
+import { ReadlineParser } from '@serialport/parser-readline';
+import ThermalPrinter from 'node-thermal-printer';
+
 // 1. قراءة الوزن من الميزان الإلكتروني للماشية (RS232 / USB Scale Listener)
 ipcMain.handle('read-serial-scale', async () => {
-  if (isProductionRuntime()) {
-    return { success: false, error: 'الميزان الإلكتروني غير مهيأ على هذه المحطة' };
-  }
-  const simulatedScaleWeight = +(Math.random() * (650 - 450) + 450).toFixed(2);
-  return {
-    success: true,
-    weightKg: simulatedScaleWeight,
-    scaleModel: 'Mettler Toledo / Tru-Test Livestock Scale',
-    timestamp: new Date().toISOString(),
-  };
+  return new Promise((resolve) => {
+    try {
+      // افتراض أن الميزان موصول على COM3 أو /dev/ttyUSB0
+      // في الإنتاج الحقيقي، يمكن قراءة اسم المنفذ من إعدادات محلية
+      const portPath = process.platform === 'win32' ? 'COM3' : '/dev/ttyUSB0';
+      
+      const port = new SerialPort({ path: portPath, baudRate: 9600 }, (err) => {
+        if (err) {
+          console.error('SerialPort Error:', err.message);
+          resolve({ success: false, error: `تعذر الاتصال بالميزان: ${err.message}` });
+          return;
+        }
+      });
+
+      const parser = port.pipe(new ReadlineParser({ delimiter: '\r\n' }));
+      
+      // مهلة زمنية للانتظار (5 ثوانٍ)
+      const timeout = setTimeout(() => {
+        if (port.isOpen) port.close();
+        resolve({ success: false, error: 'انتهى وقت الانتظار ولم يتم استلام وزن من الميزان' });
+      }, 5000);
+
+      parser.on('data', (data) => {
+        clearTimeout(timeout);
+        port.close();
+        
+        // استخراج الوزن من السلسلة (مثال: "  + 452.5 KG ")
+        const weightMatches = data.match(/[\d.]+/);
+        const weightKg = weightMatches ? parseFloat(weightMatches[0]) : 0;
+        
+        resolve({
+          success: true,
+          weightKg,
+          scaleModel: 'Mettler Toledo / Tru-Test',
+          timestamp: new Date().toISOString(),
+        });
+      });
+    } catch (err: any) {
+      resolve({ success: false, error: err.message });
+    }
+  });
 });
 
 // 2. طباعة إذن استلام الحليب أو ملصق الباركود (Direct Silent Printing)
 ipcMain.handle('print-receipt', async (event, receiptData) => {
-  if (isProductionRuntime()) {
-    return { success: false, error: 'الطابعة الحرارية غير مهيأة على هذه المحطة' };
+  try {
+    const printer = new ThermalPrinter.printer({
+      type: ThermalPrinter.types.EPSON,
+      interface: 'tcp://192.168.1.100', // مثال لطابعة متصلة بالشبكة
+      characterSet: 'ARABIC',
+    });
+
+    const isConnected = await printer.isPrinterConnected();
+    if (!isConnected) {
+      return { success: false, error: 'الطابعة الحرارية غير متصلة' };
+    }
+
+    printer.alignCenter();
+    printer.println('--- منظومة سرايا لإدارة الماشية ---');
+    printer.println(receiptData.title || 'إيصال استلام');
+    printer.drawLine();
+    
+    // محتوى الفاتورة أو الباركود
+    printer.println(`التاريخ: ${new Date().toLocaleString('ar-SA')}`);
+    if (receiptData.barcode) {
+      printer.printBarcode(receiptData.barcode);
+    }
+    
+    printer.cut();
+    
+    await printer.execute();
+    return { success: true, message: 'تمت الطباعة بنجاح' };
+  } catch (error: any) {
+    console.error('Printing error:', error);
+    return { success: false, error: `خطأ في الطباعة: ${error.message}` };
   }
-  console.log('محاكاة إرسال أمر الطباعة:', Boolean(receiptData));
-  return { success: true, message: 'تمت محاكاة الطباعة في بيئة التطوير' };
 });
 
 // 3. معلومات المحطة المحلية

@@ -1,0 +1,19 @@
+<service>
+  <id>SarayaCaddy</id>
+  <name>Saraya Livestock - Caddy Web Server</name>
+  <description>خادم الويب والوكيل العكسي Caddy لمنظومة سرايا لإدارة مزارع الماشية والألبان</description>
+  <executable>{{INSTALL_DIR}}\caddy\caddy.exe</executable>
+  <arguments>run --config "{{DATA_DIR}}\config\Caddyfile"</arguments>
+  <workingdirectory>{{INSTALL_DIR}}\caddy</workingdirectory>
+  <env name="SARAYA_OFFLINE_HOST" value="{{HOSTNAME}}" />
+  <env name="SARAYA_WEB_ROOT" value="{{INSTALL_DIR}}\web" />
+  <env name="SARAYA_LOG_DIR" value="{{DATA_DIR}}\logs" />
+  <env name="XDG_DATA_HOME" value="{{DATA_DIR}}\data\caddy" />
+  <env name="XDG_CONFIG_HOME" value="{{DATA_DIR}}\config\caddy" />
+  <log mode="roll">
+    <logpath>{{DATA_DIR}}\logs\services</logpath>
+  </log>
+  <onfailure action="restart" delay="10 sec"/>
+  <startmode>Automatic</startmode>
+  <depend>SarayaAPI</depend>
+</service>

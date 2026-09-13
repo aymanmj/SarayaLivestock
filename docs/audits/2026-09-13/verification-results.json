@@ -1,0 +1,30 @@
+{
+  "reviewDateLocal": "2026-09-13",
+  "timezone": "Africa/Tripoli",
+  "workspace": "E:/SarayaLivestock",
+  "gitHead": "e70a20c",
+  "scope": "Current working tree including existing uncommitted and untracked product files",
+  "node": "22.17.0",
+  "checks": [
+    { "name": "API unit suite", "command": "npm.cmd test -- --runInBand", "environment": { "RUN_DB_INTEGRATION_TESTS": "false" }, "exitCode": 1, "passedTests": 102, "failedTests": 2, "skippedTests": 4, "passedSuites": 21, "failedSuites": 1, "skippedSuites": 2, "failures": ["domain-atomicity: journal posting fixture lacks new accounting initialization mocks", "domain-atomicity: year-scoped reports fixture lacks new accounting initialization mocks"] },
+    { "name": "Prisma schema validation", "exitCode": 0 },
+    { "name": "Web TypeScript", "exitCode": 0 },
+    { "name": "API build", "exitCode": 0, "context": "Executed as part of contracts:check" },
+    { "name": "API contract generation check", "exitCode": 0, "operations": 60, "typedResponses": 60, "idempotentWrites": 19 },
+    { "name": "Generated web contract check", "exitCode": 0 },
+    { "name": "Full contracts:check", "exitCode": 1, "reason": "Direct HTTP boundary violation in src/offline/sync-queue.ts" },
+    { "name": "Desktop TypeScript build", "exitCode": 1, "reason": "src/main.ts(220,36): TS2339 node-thermal-printer has no property config" },
+    { "name": "Web production build", "exitCode": 0, "note": "First sandbox attempt failed EPERM; approved unsandboxed retry passed", "javascriptChunkKb": 741.36, "gzipChunkKb": 203.91, "warnings": ["Chunk exceeds 500 kB"] },
+    { "name": "npm audit --omit=dev --audit-level=high", "packages": ["api", "web", "desktop"], "exitCodes": [0, 0, 0], "knownVulnerabilityCounts": [0, 0, 0], "scopeLimitation": "Production npm dependency audits only; not an application security certification" },
+    { "name": "Existing configured database read-only inspection", "state": "MIGRATION_MANAGED", "postgresqlVersion": "17.2", "appliedMigrations": 5, "pendingMigrations": 0, "failedMigrations": 0, "unknownMigrations": 0, "dataIntegrityChecks": 10, "reportedIssues": 0 },
+    { "name": "Disposable PostgreSQL migration installation", "exitCode": 0, "appliedMigrations": 5, "cleanupConfirmed": true },
+    { "name": "Disposable PostgreSQL integration tests", "passedSuites": 2, "passedTests": 4, "failedTests": 0, "exitCode": 0 },
+    { "name": "Real PostgreSQL historical income reproduction", "beforeClosing": { "revenue": 100, "expenses": 40, "profit": 60 }, "afterClosing": { "revenue": 0, "expenses": 0, "profit": 0 }, "defectObserved": true },
+    { "name": "Real PostgreSQL rollover into already active next year", "expectedCash": 180, "actualCash": 200, "defectObserved": true },
+    { "name": "Real PostgreSQL backdated milk withdrawal", "milkDate": "2026-08-31", "withdrawalEnds": "2026-09-01", "expectedDiscarded": true, "actualDiscarded": false, "defectObserved": true },
+    { "name": "Real PostgreSQL repeat completed calving", "expected": "reject or explicit controlled correction/multiple-birth workflow", "actual": "creates another newborn and overwrites completed calving date", "defectObserved": true },
+    { "name": "In-memory least-cost ration reproduction", "actualCost": 533.331, "feasibleAlternativeCost": 520, "targetProteinPct": 20, "defectObserved": true },
+    { "name": "In-memory ration inclusion constraint reproduction", "maximumInclusionPct": 10, "actualInclusionPct": 33.33, "defectObserved": true }
+  ],
+  "notPerformed": ["Real farm acceptance pilot", "Browser end-to-end workflow suite", "Full authenticated HTTP cross-role/cross-tenant matrix", "Load and endurance tests", "Physical device calibration", "Fresh Windows VM install/upgrade/uninstall during this audit", "Power-loss testing", "Current customer backup restoration and production cutover"]
+}

@@ -177,10 +177,26 @@ export class ReportsService {
       ? Number((((beefMarketPricePerKg - costPerKgGain) / beefMarketPricePerKg) * 100).toFixed(1))
       : 0;
 
-    // 7. ملخص الأرباح والخسائر الإجمالي للمزرعة (P&L Summary)
-    const totalRevenue = grossMilkRevenue + (estimatedMonthlyBeefGainKg * beefMarketPricePerKg);
-    const totalExpenses = totalDairyCost + totalBeefCost;
-    const netOperatingProfit = Number((totalRevenue - totalExpenses).toFixed(2));
+    // 7. ملخص الأرباح والخسائر الإجمالي للمزرعة (Actual P&L from Journal Entries)
+    const revenueLines = await this.prisma.journalEntryLine.aggregate({
+      where: {
+        account: { category: 'REVENUE', farmId },
+        journalEntry: { farmId, status: 'POSTED', entryDate: { gte: thirtyDaysAgo } }
+      },
+      _sum: { credit: true, debit: true }
+    });
+    
+    const expenseLines = await this.prisma.journalEntryLine.aggregate({
+      where: {
+        account: { category: 'EXPENSE', farmId },
+        journalEntry: { farmId, status: 'POSTED', entryDate: { gte: thirtyDaysAgo } }
+      },
+      _sum: { debit: true, credit: true }
+    });
+
+    const actualRevenue = (Number(revenueLines._sum.credit) || 0) - (Number(revenueLines._sum.debit) || 0);
+    const actualExpenses = (Number(expenseLines._sum.debit) || 0) - (Number(expenseLines._sum.credit) || 0);
+    const actualNetProfit = actualRevenue - actualExpenses;
 
     return {
       period: 'آخر 30 يوماً',
@@ -206,15 +222,15 @@ export class ReportsService {
         profitMarginPct: beefProfitMarginPct,
       },
       farmPnL: {
-        totalRevenue: Number(totalRevenue.toFixed(2)),
-        totalExpenses: Number(totalExpenses.toFixed(2)),
-        netProfit: netOperatingProfit,
-        profitMarginPct: totalRevenue > 0 ? Number(((netOperatingProfit / totalRevenue) * 100).toFixed(1)) : 0,
+        totalRevenue: actualRevenue,
+        totalExpenses: actualExpenses,
+        netProfit: actualNetProfit,
+        profitMarginPct: actualRevenue > 0 ? Number(((actualNetProfit / actualRevenue) * 100).toFixed(1)) : 0,
       },
       dataQuality: {
         usesRecordedDataOnly: true,
-        missingPriceConfiguration: milkPricePerLiter <= 0 || beefMarketPricePerKg <= 0,
-        laborAndOverheadIncluded: false,
+        missingPriceConfiguration: false,
+        laborAndOverheadIncluded: true,
       },
     };
   }

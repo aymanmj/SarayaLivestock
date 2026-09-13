@@ -1,0 +1,13 @@
+# =============================================================================
+# PostgreSQL Client Authentication Configuration
+# Saraya Livestock Server - Local connections only
+# =============================================================================
+# TYPE  DATABASE        USER            ADDRESS                 METHOD
+
+# Local socket connections (Windows named pipes)
+host    all             all             127.0.0.1/32            scram-sha-256
+host    all             all             ::1/128                 scram-sha-256
+
+# Reject all other connections
+host    all             all             0.0.0.0/0               reject
+host    all             all             ::/0                    reject

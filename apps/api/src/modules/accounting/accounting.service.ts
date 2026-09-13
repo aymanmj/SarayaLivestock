@@ -7,16 +7,127 @@ import { appendDomainAudit, AuditActor } from '../../common/audit/domain-audit';
 import { IdempotencyContext } from '../../common/idempotency/idempotency-context';
 import { runIdempotentTransaction } from '../../common/idempotency/idempotency-transaction';
 
+const ARABIC_MONTH_NAMES = [
+  'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
+  'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر',
+] as const;
+
+const SYSTEM_ACCOUNTS = [
+  { code: '1101', name: 'الصندوق والخزينة الرئيسية (Cash)', category: AccountCategory.ASSET, isLocked: true },
+  { code: '1102', name: 'الحسابات البنكية للمزرعة (Bank Accounts)', category: AccountCategory.ASSET, isLocked: true },
+  { code: '1103', name: 'العملاء ومدينو مبيعات الحليب والماشية (AR)', category: AccountCategory.ASSET, isLocked: true },
+  { code: '1104', name: 'مخزون خامات وأعلاف التغذية (Feed Stock)', category: AccountCategory.ASSET, isLocked: true },
+  { code: '1105', name: 'مخزون الأدوية واللقاحات البيطرية (Medical Stock)', category: AccountCategory.ASSET, isLocked: true },
+  { code: '1201', name: 'الأصول البيولوجية - قطيع الألبان الحلاب (IAS 41 Dairy Herd)', category: AccountCategory.ASSET, isLocked: true },
+  { code: '1202', name: 'الأصول البيولوجية - قطيع التسمين واللحم (IAS 41 Beef Cattle)', category: AccountCategory.ASSET, isLocked: true },
+  { code: '1203', name: 'الأصول البيولوجية - العجول والمواليد الرضيعة (Calves)', category: AccountCategory.ASSET, isLocked: true },
+  { code: '1301', name: 'المحالب الآلية وتجهيزات التبريد (Milking Plants)', category: AccountCategory.ASSET, isLocked: true },
+  { code: '1302', name: 'عنابر وحظائر الماشية والمباني (Barns & Buildings)', category: AccountCategory.ASSET, isLocked: true },
+  { code: '2101', name: 'الموردون ودائنو الأعلاف والأدوية (AP)', category: AccountCategory.LIABILITY, isLocked: true },
+  { code: '2102', name: 'مستحقات ورواتب العمالة الميدانية والبيطرة', category: AccountCategory.LIABILITY, isLocked: true },
+  { code: '3101', name: 'رأس مال المزرعة المستثمر (Farm Capital)', category: AccountCategory.EQUITY, isLocked: true },
+  { code: '3102', name: 'الأرباح والخسائر المرحلة (Retained Earnings)', category: AccountCategory.EQUITY, isLocked: true },
+  { code: '4101', name: 'إيرادات مبيعات الحليب الخام (Raw Milk Sales)', category: AccountCategory.REVENUE, isLocked: true },
+  { code: '4102', name: 'إيرادات مبيعات ماشية التسمين واللحوم (Beef Cattle Sales)', category: AccountCategory.REVENUE, isLocked: true },
+  { code: '4103', name: 'إيرادات مبيعات الأسمدة العضوية (Organic Fertilizer)', category: AccountCategory.REVENUE, isLocked: true },
+  { code: '4201', name: 'مكاسب التغير في القيمة العادلة للأصول البيولوجية (IAS 41 Gain)', category: AccountCategory.REVENUE, isLocked: true },
+  { code: '5101', name: 'تكلفة استهلاك الأعلاف والعلائق (Feed Expense)', category: AccountCategory.EXPENSE, isLocked: true },
+  { code: '5102', name: 'مصروفات الرعاية والعلاجات البيطرية (Vet & Medical)', category: AccountCategory.EXPENSE, isLocked: true },
+  { code: '5103', name: 'أجور ورواتب عمالة المحلب والمزرعة (Farm Labor)', category: AccountCategory.EXPENSE, isLocked: true },
+  { code: '5104', name: 'كهرباء وطاقة وتبريد المحالب (Power & Utilities)', category: AccountCategory.EXPENSE, isLocked: true },
+  { code: '5105', name: 'خسائر نفوق واستبعاد الماشية (Mortality Loss)', category: AccountCategory.EXPENSE, isLocked: true },
+] as const;
+
 @Injectable()
 export class AccountingService implements OnModuleInit {
   private readonly logger = new Logger(AccountingService.name);
+  private readonly initializedFarms = new Set<string>();
+  private readonly initializationTasks = new Map<string, Promise<void>>();
 
   constructor(private prisma: PrismaService) {}
 
   async onModuleInit() {
     if (process.env.NODE_ENV !== 'production' && process.env.ALLOW_DEMO_SEED === 'true') {
       await this.seedDefaultChartOfAccountsAndFiscalYear();
+      return;
     }
+
+    const farms = await this.prisma.farm.findMany({ select: { id: true } });
+    await Promise.all(farms.map(farm => this.ensureAccountingStructure(farm.id)));
+  }
+
+  private async ensureAccountingStructure(farmId: string) {
+    if (this.initializedFarms.has(farmId)) return;
+
+    const runningTask = this.initializationTasks.get(farmId);
+    if (runningTask) return runningTask;
+
+    const task = this.initializeAccountingStructure(farmId)
+      .then(() => {
+        this.initializedFarms.add(farmId);
+      })
+      .finally(() => {
+        this.initializationTasks.delete(farmId);
+      });
+
+    this.initializationTasks.set(farmId, task);
+    return task;
+  }
+
+  private async initializeAccountingStructure(farmId: string) {
+    let fiscalYear = await this.prisma.fiscalYear.findFirst({
+      where: { farmId },
+      orderBy: [{ isCurrent: 'desc' }, { startDate: 'desc' }],
+    });
+
+    if (!fiscalYear) {
+      const year = new Date().getUTCFullYear();
+      const yearName = String(year);
+      fiscalYear = await this.prisma.fiscalYear.upsert({
+        where: { farmId_yearName: { farmId, yearName } },
+        update: {},
+        create: {
+          farmId,
+          yearName,
+          startDate: new Date(Date.UTC(year, 0, 1)),
+          endDate: new Date(Date.UTC(year, 11, 31)),
+          status: FiscalStatus.OPEN,
+          isCurrent: true,
+        },
+      });
+    }
+
+    const firstPeriodYear = fiscalYear.startDate.getUTCFullYear();
+    const firstPeriodMonth = fiscalYear.startDate.getUTCMonth();
+    const periods = Array.from({ length: 12 }, (_, index) => {
+      const startDate = new Date(Date.UTC(firstPeriodYear, firstPeriodMonth + index, 1));
+      const endDate = new Date(Date.UTC(firstPeriodYear, firstPeriodMonth + index + 1, 0));
+      return {
+        fiscalYearId: fiscalYear.id,
+        periodNumber: index + 1,
+        periodName: `${ARABIC_MONTH_NAMES[startDate.getUTCMonth()]} ${startDate.getUTCFullYear()}`,
+        startDate,
+        endDate,
+        status: FiscalStatus.OPEN,
+      };
+    });
+
+    await Promise.all([
+      this.prisma.fiscalPeriod.createMany({ data: periods, skipDuplicates: true }),
+      this.prisma.account.createMany({
+        data: SYSTEM_ACCOUNTS.map(account => ({
+          farmId,
+          code: account.code,
+          name: account.name,
+          category: account.category,
+          isSystemLocked: account.isLocked,
+          currentBalance: 0,
+        })),
+        skipDuplicates: true,
+      }),
+    ]);
+
+    this.logger.log(`تمت تهيئة البنية المحاسبية الإنتاجية للمزرعة ${farmId} دون أرصدة تجريبية`);
   }
 
   /**
@@ -175,6 +286,7 @@ export class AccountingService implements OnModuleInit {
    * جلب شجرة الحسابات
    */
   async getChartOfAccounts(farmId: string) {
+    await this.ensureAccountingStructure(farmId);
     return this.prisma.account.findMany({
       where: { farmId },
       orderBy: { code: 'asc' },
@@ -188,6 +300,7 @@ export class AccountingService implements OnModuleInit {
    * إضافة حساب جديد لشجرة الحسابات
    */
   async createAccount(dto: CreateAccountDto, farmId: string, actor?: AuditActor, idempotency?: IdempotencyContext) {
+    await this.ensureAccountingStructure(farmId);
     return runIdempotentTransaction(this.prisma, actor, idempotency, async tx => {
       if (dto.parentId) {
         const parent = await tx.account.findFirst({ where: { id: dto.parentId, farmId } });
@@ -224,6 +337,7 @@ export class AccountingService implements OnModuleInit {
    * جلب السنوات المالية
    */
   async getFiscalYears(farmId: string) {
+    await this.ensureAccountingStructure(farmId);
     return this.prisma.fiscalYear.findMany({
       where: { farmId },
       include: {
@@ -244,6 +358,7 @@ export class AccountingService implements OnModuleInit {
     actor?: AuditActor,
     idempotency?: IdempotencyContext,
   ) {
+    await this.ensureAccountingStructure(farmId);
     if (!dto.lines?.length) throw new BadRequestException('يجب أن يحتوي القيد على سطرين محاسبيين على الأقل');
     // 1. التحقق من التوازن الحسابي للقيد
     let totalDebit = new Decimal(0);
@@ -366,6 +481,7 @@ export class AccountingService implements OnModuleInit {
    * جلب سجل قيود اليومية
    */
   async getJournalEntries(farmId: string, limit = 50) {
+    await this.ensureAccountingStructure(farmId);
     return this.prisma.journalEntry.findMany({
       where: { farmId },
       include: {
@@ -786,6 +902,7 @@ export class AccountingService implements OnModuleInit {
   }
 
   private async resolveReportingYear(farmId: string, fiscalYearId?: string) {
+    await this.ensureAccountingStructure(farmId);
     const fiscalYear = fiscalYearId
       ? await this.prisma.fiscalYear.findFirst({ where: { id: fiscalYearId, farmId } })
       : await this.prisma.fiscalYear.findFirst({

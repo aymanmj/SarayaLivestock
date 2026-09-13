@@ -18,7 +18,7 @@ async function bootstrap() {
   app.use(helmet());
 
   app.enableCors({
-    origin: allowedOrigins,
+    origin: isProduction ? allowedOrigins : true,
     credentials: true,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     allowedHeaders: 'Content-Type, Accept, Authorization, X-Saraya-Client, Idempotency-Key',
@@ -45,9 +45,8 @@ async function bootstrap() {
   }
 
   const port = Number(process.env.PORT || 4000);
-  const host = process.env.HOST || '0.0.0.0';
-  await app.listen(port, host);
-  console.log(`🚀 SarayaLivestock API Server is running on ${host}:${port}/api/v1`);
+  await app.listen(port);
+  console.log(`🚀 SarayaLivestock API Server is running on port ${port}/api/v1`);
   if (!isProduction || process.env.ENABLE_SWAGGER === 'true') {
     console.log(`📚 Interactive Swagger Docs available at: http://localhost:${port}/docs`);
   }

@@ -54,22 +54,22 @@ export const AddFeedIngredientModal: React.FC<Props> = ({ isOpen, onClose, onSuc
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-50 bg-slate-50/80 dark:bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200">
         {/* Header */}
-        <div className="px-6 py-5 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
+        <div className="px-6 py-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50/60 dark:bg-slate-950/60">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
+            <div className="w-10 h-10 rounded-2xl bg-amber-100 dark:bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-600 dark:text-amber-400">
               <Wheat className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-bold text-base text-white">إضافة مادة علفية جديدة للمستودع</h3>
-              <p className="text-xs text-slate-400">تسجيل أسعار الشراء والتحليل الغذائي ونقاط إعادة الطلب</p>
+              <h3 className="font-bold text-base text-slate-900 dark:text-white">إضافة مادة علفية جديدة للمستودع</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400">تسجيل أسعار الشراء والتحليل الغذائي ونقاط إعادة الطلب</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-slate-800 text-slate-400 hover:text-white rounded-xl transition"
+            className="p-2 hover:bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-white rounded-xl transition"
           >
             <X className="w-5 h-5" />
           </button>
@@ -84,96 +84,96 @@ export const AddFeedIngredientModal: React.FC<Props> = ({ isOpen, onClose, onSuc
           )}
 
           <div>
-            <label className="block font-semibold text-slate-300 mb-1.5">اسم المادة العلفية *</label>
+            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1.5">اسم المادة العلفية *</label>
             <input
               type="text"
               required
               value={name}
               onChange={e => setName(e.target.value)}
               placeholder="مثال: دريس حجازي نخب أول، نخالة قمح، كسب صويا"
-              className="w-full bg-slate-950 border border-slate-800 focus:border-amber-500 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none transition"
+              className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-amber-500 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none transition"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block font-semibold text-slate-300 mb-1.5">سعر الكيلوجرام (د.ل) *</label>
+              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1.5">سعر الكيلوجرام (د.ل) *</label>
               <input
                 type="number"
                 step="0.001"
                 required
                 value={costPerUnit}
                 onChange={e => setCostPerUnit(Number(e.target.value))}
-                className="w-full bg-slate-950 border border-slate-800 focus:border-amber-500 rounded-xl px-3.5 py-2.5 text-sm font-bold text-emerald-400 focus:outline-none transition"
+                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-amber-500 rounded-xl px-3.5 py-2.5 text-sm font-bold text-emerald-700 dark:text-emerald-400 focus:outline-none transition"
               />
             </div>
             <div>
-              <label className="block font-semibold text-slate-300 mb-1.5">الرصيد الافتتاحي (كجم) *</label>
+              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1.5">الرصيد الافتتاحي (كجم) *</label>
               <input
                 type="number"
                 step="100"
                 required
                 value={currentStock}
                 onChange={e => setCurrentStock(Number(e.target.value))}
-                className="w-full bg-slate-950 border border-slate-800 focus:border-amber-500 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none transition"
+                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-amber-500 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none transition"
               />
             </div>
           </div>
 
           {/* Nutritional Profile */}
-          <div className="p-4 bg-slate-950/60 border border-slate-800 rounded-2xl space-y-3">
-            <span className="font-bold text-white block text-xs">التحليل الغذائي المعملي (Nutritional Specs):</span>
+          <div className="p-4 bg-slate-50/60 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 rounded-2xl space-y-3">
+            <span className="font-bold text-slate-900 dark:text-white block text-xs">التحليل الغذائي المعملي (Nutritional Specs):</span>
             <div className="grid grid-cols-3 gap-2">
               <div>
-                <label className="block text-[11px] text-slate-400 mb-1">البروتين الخام %</label>
+                <label className="block text-[11px] text-slate-500 dark:text-slate-400 mb-1">البروتين الخام %</label>
                 <input
                   type="number"
                   step="0.1"
                   value={proteinPct}
                   onChange={e => setProteinPct(Number(e.target.value))}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white"
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 dark:text-white"
                 />
               </div>
               <div>
-                <label className="block text-[11px] text-slate-400 mb-1">الطاقة (Mcal/kg)</label>
+                <label className="block text-[11px] text-slate-500 dark:text-slate-400 mb-1">الطاقة (Mcal/kg)</label>
                 <input
                   type="number"
                   step="0.1"
                   value={energyMcal}
                   onChange={e => setEnergyMcal(Number(e.target.value))}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white"
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 dark:text-white"
                 />
               </div>
               <div>
-                <label className="block text-[11px] text-slate-400 mb-1">المادة الجافة DM%</label>
+                <label className="block text-[11px] text-slate-500 dark:text-slate-400 mb-1">المادة الجافة DM%</label>
                 <input
                   type="number"
                   step="0.5"
                   value={dryMatterPct}
                   onChange={e => setDryMatterPct(Number(e.target.value))}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white"
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 dark:text-white"
                 />
               </div>
             </div>
           </div>
 
           <div>
-            <label className="block font-semibold text-slate-300 mb-1.5">حد الأمان وإعادة الطلب (كجم)</label>
+            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1.5">حد الأمان وإعادة الطلب (كجم)</label>
             <input
               type="number"
               step="500"
               value={minStockAlert}
               onChange={e => setMinStockAlert(Number(e.target.value))}
-              className="w-full bg-slate-950 border border-slate-800 focus:border-amber-500 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none transition"
+              className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-amber-500 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none transition"
             />
           </div>
 
           {/* Action Buttons */}
-          <div className="pt-4 border-t border-slate-800 flex items-center justify-end gap-3">
+          <div className="pt-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-end gap-3">
             <button
               type="button"
               onClick={onClose}
-              className="px-5 py-2.5 rounded-xl border border-slate-700 hover:bg-slate-800 text-slate-300 text-xs font-bold transition"
+              className="px-5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold transition"
             >
               إلغاء
             </button>

@@ -130,7 +130,7 @@ export const NotificationsDropdown: React.FC<Props> = ({ onNavigate }) => {
       {/* Bell Trigger Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/80 text-slate-300 hover:text-white transition relative"
+        className="p-2 rounded-xl bg-slate-100/80 dark:bg-slate-800/80 hover:bg-slate-200/80 dark:bg-slate-700/80 border border-slate-300/80 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 hover:text-white transition relative"
         title="تنبيهات المزرعة الحية"
       >
         <Bell className="w-4 h-4" />
@@ -148,13 +148,13 @@ export const NotificationsDropdown: React.FC<Props> = ({ onNavigate }) => {
             className="fixed inset-0 z-40" 
             onClick={() => setIsOpen(false)} 
           />
-          <div className="absolute left-0 mt-3 w-80 md:w-96 bg-slate-900/95 backdrop-blur-xl border border-slate-700/80 rounded-2xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+          <div className="absolute left-0 mt-3 w-80 md:w-96 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-2xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.8)] z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
             {/* Header */}
-            <div className="p-3.5 border-b border-slate-800 bg-slate-800/40 flex items-center justify-between">
+            <div className="p-3.5 border-b border-slate-200 dark:border-slate-800 bg-slate-100/80 dark:bg-slate-800/80 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                <span className="text-xs font-bold text-white">مركز التنبيهات الميدانية الحي</span>
-                <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                <span className="text-xs font-bold text-slate-900 dark:text-white">مركز التنبيهات الميدانية الحي</span>
+                <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-500/20">
                   {unreadCount} غير مقروء
                 </span>
               </div>
@@ -162,7 +162,7 @@ export const NotificationsDropdown: React.FC<Props> = ({ onNavigate }) => {
               {unreadCount > 0 && (
                 <button
                   onClick={handleMarkAllAsRead}
-                  className="text-[10px] text-slate-400 hover:text-emerald-400 flex items-center gap-1 transition"
+                  className="text-[10px] text-slate-500 dark:text-slate-400 hover:text-emerald-700 dark:text-emerald-400 flex items-center gap-1 transition"
                 >
                   <Check className="w-3 h-3" />
                   قراءة الكل
@@ -171,11 +171,11 @@ export const NotificationsDropdown: React.FC<Props> = ({ onNavigate }) => {
             </div>
 
             {/* Notification Items List */}
-            <div className="max-h-[380px] overflow-y-auto divide-y divide-slate-800/60 custom-scrollbar">
+            <div className="max-h-[380px] overflow-y-auto divide-y divide-slate-200 dark:divide-slate-800 custom-scrollbar bg-white dark:bg-slate-900">
               {notifications.length === 0 ? (
-                <div className="p-8 text-center text-slate-400 space-y-2">
-                  <Sparkles className="w-8 h-8 mx-auto text-emerald-400/60" />
-                  <p className="text-xs font-medium text-slate-300">جميع مؤشرات المزرعة مستقرة</p>
+                <div className="p-8 text-center text-slate-500 dark:text-slate-400 space-y-2">
+                  <Sparkles className="w-8 h-8 mx-auto text-emerald-700 dark:text-emerald-400/60" />
+                  <p className="text-xs font-medium text-slate-700 dark:text-slate-300">جميع مؤشرات المزرعة مستقرة</p>
                   <p className="text-[10px] text-slate-500">لا توجد أقفال تحريم أو مهام بيطرية متأخرة حالياً</p>
                 </div>
               ) : (
@@ -185,21 +185,21 @@ export const NotificationsDropdown: React.FC<Props> = ({ onNavigate }) => {
                     <div
                       key={n.id}
                       onClick={() => handleNotificationClick(n.targetView, n.id)}
-                      className={`p-3 transition cursor-pointer flex items-start gap-3 hover:bg-slate-800/60 ${
-                        isRead ? 'opacity-60 bg-transparent' : 'bg-slate-800/20'
+                      className={`p-3 transition cursor-pointer flex items-start gap-3 hover:bg-slate-100 dark:bg-slate-800 ${
+                        isRead ? 'opacity-80 bg-white/50 dark:bg-slate-900/50' : 'bg-slate-100/30 dark:bg-slate-800/30'
                       }`}
                     >
                       <div className="mt-0.5 shrink-0">
                         {n.severity === 'URGENT' ? (
-                          <div className="w-8 h-8 rounded-xl bg-rose-500/20 border border-rose-500/30 flex items-center justify-center text-rose-400">
+                          <div className="w-8 h-8 rounded-xl bg-rose-500/20 border border-rose-500/30 flex items-center justify-center text-rose-600 dark:text-rose-400">
                             <ShieldAlert className="w-4 h-4" />
                           </div>
                         ) : n.severity === 'WARNING' ? (
-                          <div className="w-8 h-8 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400">
+                          <div className="w-8 h-8 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-600 dark:text-amber-400">
                             <AlertTriangle className="w-4 h-4" />
                           </div>
                         ) : (
-                          <div className="w-8 h-8 rounded-xl bg-blue-500/20 border border-blue-500/30 flex items-center justify-center text-blue-400">
+                          <div className="w-8 h-8 rounded-xl bg-blue-500/20 border border-blue-500/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
                             <Baby className="w-4 h-4" />
                           </div>
                         )}
@@ -207,10 +207,10 @@ export const NotificationsDropdown: React.FC<Props> = ({ onNavigate }) => {
 
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-1 mb-0.5">
-                          <span className="text-xs font-bold text-slate-100 truncate">{n.title}</span>
+                          <span className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">{n.title}</span>
                           <span className="text-[9px] text-slate-500 shrink-0 font-mono">{n.timeAgo}</span>
                         </div>
-                        <p className="text-[11px] text-slate-400 line-clamp-2 leading-relaxed">{n.description}</p>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed">{n.description}</p>
                       </div>
 
                       <ChevronLeft className="w-4 h-4 text-slate-500 self-center shrink-0" />
@@ -221,7 +221,7 @@ export const NotificationsDropdown: React.FC<Props> = ({ onNavigate }) => {
             </div>
 
             {/* Footer */}
-            <div className="p-2.5 border-t border-slate-800 bg-slate-800/30 text-center">
+            <div className="p-2.5 border-t border-slate-200 dark:border-slate-800 bg-slate-100/30 dark:bg-slate-800/30 text-center">
               <span className="text-[10px] text-slate-500 flex items-center justify-center gap-1">
                 ⚡ مزامنة حية مع قاعدة بيانات المزرعة (SSOT)
               </span>

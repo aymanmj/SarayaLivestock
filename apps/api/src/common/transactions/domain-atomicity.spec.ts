@@ -307,6 +307,22 @@ describe('Atomic domain workflows', () => {
     };
     const prisma = {
       $transaction: jest.fn((callback: any) => callback(tx)),
+      fiscalYear: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'year-a', yearName: '2027', status: FiscalStatus.OPEN,
+          startDate: new Date('2027-01-01'), endDate: new Date('2027-12-31'),
+        }),
+        upsert: jest.fn().mockResolvedValue({
+          id: 'year-a', yearName: '2027', status: FiscalStatus.OPEN,
+          startDate: new Date('2027-01-01'), endDate: new Date('2027-12-31'),
+        }),
+      },
+      fiscalPeriod: {
+        createMany: jest.fn().mockResolvedValue({ count: 12 }),
+      },
+      account: {
+        createMany: jest.fn().mockResolvedValue({ count: 5 }),
+      }
     } as any;
     const service = new AccountingService(prisma);
 
@@ -339,8 +355,16 @@ describe('Atomic domain workflows', () => {
           id: 'year-a', yearName: '2027', status: FiscalStatus.OPEN,
           startDate: new Date('2027-01-01'), endDate: new Date('2027-12-31'),
         }),
+        upsert: jest.fn().mockResolvedValue({
+          id: 'year-a', yearName: '2027', status: FiscalStatus.OPEN,
+          startDate: new Date('2027-01-01'), endDate: new Date('2027-12-31'),
+        }),
+      },
+      fiscalPeriod: {
+        createMany: jest.fn().mockResolvedValue({ count: 12 }),
       },
       account: {
+        createMany: jest.fn().mockResolvedValue({ count: 5 }),
         findMany: jest.fn().mockResolvedValue([
           { id: 'revenue-a', code: '4101', name: 'إيراد', category: 'REVENUE', children: [] },
           { id: 'expense-a', code: '5101', name: 'مصروف', category: 'EXPENSE', children: [] },

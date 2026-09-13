@@ -64,22 +64,22 @@ export const AddWeightModal: React.FC<Props> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-50 bg-slate-50/80 dark:bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200">
         {/* Header */}
-        <div className="px-6 py-5 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
+        <div className="px-6 py-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50/60 dark:bg-slate-950/60">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
+            <div className="w-10 h-10 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-700 dark:text-purple-400">
               <Scale className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-bold text-base text-white">تسجيل وزن جديد ومعدل التحويل</h3>
-              <p className="text-xs text-slate-400">حساب الزيادة اليومية (ADG) والـ FCR آلياً</p>
+              <h3 className="font-bold text-base text-slate-900 dark:text-white">تسجيل وزن جديد ومعدل التحويل</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400">حساب الزيادة اليومية (ADG) والـ FCR آلياً</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-slate-800 text-slate-400 hover:text-white rounded-xl transition"
+            className="p-2 hover:bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-white rounded-xl transition"
           >
             <X className="w-5 h-5" />
           </button>
@@ -94,32 +94,32 @@ export const AddWeightModal: React.FC<Props> = ({
           )}
 
           <div>
-            <label className="block font-semibold text-slate-300 mb-1.5">رقم قرط الحيوان *</label>
+            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1.5">رقم قرط الحيوان *</label>
             <input
               type="text"
               required
               value={animalTag}
               onChange={e => setAnimalTag(e.target.value)}
               placeholder="مثال: 2001"
-              className="w-full bg-slate-950 border border-slate-800 focus:border-purple-500 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none transition"
+              className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-purple-500 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none transition"
             />
           </div>
 
           <div>
-            <label className="block font-semibold text-slate-300 mb-1.5">تاريخ الوزن *</label>
+            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1.5">تاريخ الوزن *</label>
             <input
               type="date"
               required
               value={weighDate}
               onChange={e => setWeighDate(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 focus:border-purple-500 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none transition"
+              className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-purple-500 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none transition"
             />
           </div>
 
           <div>
-            <label className="block font-semibold text-slate-300 mb-1.5 flex items-center justify-between">
+            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center justify-between">
               <span>الوزن المقروء (كجم) *</span>
-              <span className="text-purple-400 text-[11px] font-bold">من الميزان الإلكتروني</span>
+              <span className="text-purple-700 dark:text-purple-400 text-[11px] font-bold">من الميزان الإلكتروني</span>
             </label>
             <input
               type="number"
@@ -128,16 +128,16 @@ export const AddWeightModal: React.FC<Props> = ({
               value={weightKg}
               onChange={e => setWeightKg(Number(e.target.value))}
               placeholder="480.5"
-              className="w-full bg-slate-950 border border-purple-500/40 focus:border-purple-500 rounded-xl px-3.5 py-3 text-lg font-extrabold text-purple-300 focus:outline-none transition"
+              className="w-full bg-slate-50 dark:bg-slate-950 border border-purple-500/40 focus:border-purple-500 rounded-xl px-3.5 py-3 text-lg font-extrabold text-purple-700 dark:text-purple-300 focus:outline-none transition"
             />
           </div>
 
           {/* Action Buttons */}
-          <div className="pt-4 border-t border-slate-800 flex items-center justify-end gap-3">
+          <div className="pt-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-end gap-3">
             <button
               type="button"
               onClick={onClose}
-              className="px-5 py-2.5 rounded-xl border border-slate-700 hover:bg-slate-800 text-slate-300 text-xs font-bold transition"
+              className="px-5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold transition"
             >
               إلغاء
             </button>

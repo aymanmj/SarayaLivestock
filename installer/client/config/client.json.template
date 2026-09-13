@@ -1,0 +1,5 @@
+{
+  "apiBaseUrl": "https://{{HOSTNAME}}/api/v1",
+  "stationId": "{{STATION_ID}}",
+  "farmBranch": "{{FARM_BRANCH}}"
+}

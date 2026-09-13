@@ -1,0 +1,18 @@
+<service>
+  <id>SarayaAPI</id>
+  <name>Saraya Livestock - API Server</name>
+  <description>خادم الواجهات البرمجية NestJS لمنظومة سرايا لإدارة مزارع الماشية والألبان</description>
+  <executable>{{INSTALL_DIR}}\node\node.exe</executable>
+  <arguments>-r dotenv/config "{{INSTALL_DIR}}\server\dist\main.js"</arguments>
+  <workingdirectory>{{INSTALL_DIR}}\server</workingdirectory>
+  <env name="NODE_ENV" value="production" />
+  <env name="DOTENV_CONFIG_PATH" value="{{DATA_DIR}}\config\server.env" />
+  <env name="SARAYA_DATA_DIR" value="{{DATA_DIR}}" />
+  <log mode="roll">
+    <logpath>{{DATA_DIR}}\logs\services</logpath>
+  </log>
+  <stopparentprocessfirst>true</stopparentprocessfirst>
+  <onfailure action="restart" delay="10 sec"/>
+  <startmode>Automatic</startmode>
+  <depend>SarayaPostgreSQL</depend>
+</service>

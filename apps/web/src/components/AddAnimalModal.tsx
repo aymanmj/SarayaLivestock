@@ -63,22 +63,22 @@ export const AddAnimalModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) 
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-50 bg-slate-50/80 dark:bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200">
         {/* Header */}
-        <div className="px-6 py-5 border-b border-slate-800 flex items-center justify-between bg-slate-950/50">
+        <div className="px-6 py-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-950/50">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+            <div className="w-10 h-10 rounded-2xl bg-emerald-100 dark:bg-emerald-500/10 border border-emerald-300 dark:border-emerald-500/20 flex items-center justify-center text-emerald-700 dark:text-emerald-400">
               <Plus className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-bold text-base text-white">تسجيل رأس أو مولود جديد في القطيع</h3>
-              <p className="text-xs text-slate-400">إدخال البيانات البيولوجية ورقم التعريف وشجرة النسب</p>
+              <h3 className="font-bold text-base text-slate-900 dark:text-white">تسجيل رأس أو مولود جديد في القطيع</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400">إدخال البيانات البيولوجية ورقم التعريف وشجرة النسب</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-slate-800 text-slate-400 hover:text-white rounded-xl transition"
+            className="p-2 hover:bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-white rounded-xl transition"
           >
             <X className="w-5 h-5" />
           </button>
@@ -95,8 +95,8 @@ export const AddAnimalModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Tag Number */}
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center gap-1.5">
-                <Tag className="w-3.5 h-3.5 text-emerald-400" />
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-1.5">
+                <Tag className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400" />
                 رقم القرط / الوسم البصري *
               </label>
               <input
@@ -105,13 +105,13 @@ export const AddAnimalModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) 
                 value={tagNumber}
                 onChange={e => setTagNumber(e.target.value)}
                 placeholder="مثال: 1042"
-                className="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none transition"
+                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-emerald-500 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none transition"
               />
             </div>
 
             {/* RFID Tag */}
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
                 شريحة الـ RFID / الوسم الإلكتروني
               </label>
               <input
@@ -119,13 +119,13 @@ export const AddAnimalModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) 
                 value={rfidTag}
                 onChange={e => setRfidTag(e.target.value)}
                 placeholder="982000345678912"
-                className="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none transition"
+                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-emerald-500 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none transition"
               />
             </div>
 
             {/* Name / Nickname */}
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
                 اسم / تسمية الرأس (اختياري)
               </label>
               <input
@@ -133,13 +133,13 @@ export const AddAnimalModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) 
                 value={name}
                 onChange={e => setName(e.target.value)}
                 placeholder="مثال: جميلة"
-                className="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none transition"
+                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-emerald-500 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none transition"
               />
             </div>
 
             {/* Species */}
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">النوع / الفصيلة</label>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">النوع / الفصيلة</label>
               <select
                 value={species}
                 onChange={e => {
@@ -147,7 +147,7 @@ export const AddAnimalModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) 
                   setSpecies(val);
                   setBreed('');
                 }}
-                className="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none transition"
+                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-emerald-500 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none transition"
               >
                 <option value="CATTLE">أبقار (Cattle)</option>
                 <option value="SHEEP">أغنام (Sheep)</option>
@@ -157,24 +157,24 @@ export const AddAnimalModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) 
 
             {/* Breed */}
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">السلالة</label>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">السلالة</label>
               <input
                 type="text"
                 value={breed}
                 onChange={e => setBreed(e.target.value)}
                 placeholder="مثال: هولشتاين، سيمينتال، أنجوس"
                 required
-                className="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none transition"
+                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-emerald-500 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none transition"
               />
             </div>
 
             {/* Gender */}
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">الجنس</label>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">الجنس</label>
               <select
                 value={gender}
                 onChange={e => setGender(e.target.value as Gender)}
-                className="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none transition"
+                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-emerald-500 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none transition"
               >
                 <option value="FEMALE">أنثى</option>
                 <option value="MALE">ذكر</option>
@@ -183,11 +183,11 @@ export const AddAnimalModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) 
 
             {/* Purpose */}
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">الغرض الإنتاجي</label>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">الغرض الإنتاجي</label>
               <select
                 value={purpose}
                 onChange={e => setPurpose(e.target.value as Purpose)}
-                className="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none transition"
+                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-emerald-500 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none transition"
               >
                 <option value="DAIRY">إنتاج حليب (Dairy)</option>
                 <option value="BEEF">تسمين ولحوم (Beef)</option>
@@ -197,11 +197,11 @@ export const AddAnimalModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) 
 
             {/* Life Stage */}
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">المرحلة الإنتاجية الحالية</label>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">المرحلة الإنتاجية الحالية</label>
               <select
                 value={currentLifeStage}
                 onChange={e => setCurrentLifeStage(e.target.value as LifeStage)}
-                className="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none transition"
+                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-emerald-500 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none transition"
               >
                 <option value="LACTATING">حلابة نشطة (Lactating)</option>
                 <option value="DRY">جافة / عشار (Dry)</option>
@@ -215,8 +215,8 @@ export const AddAnimalModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) 
 
             {/* Weight */}
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center gap-1.5">
-                <Scale className="w-3.5 h-3.5 text-emerald-400" />
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-1.5">
+                <Scale className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400" />
                 الوزن الابتدائي (كجم)
               </label>
               <input
@@ -225,55 +225,55 @@ export const AddAnimalModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) 
                 value={entryWeightKg}
                 onChange={e => setEntryWeightKg(Number(e.target.value))}
                 placeholder="550"
-                className="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none transition"
+                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-emerald-500 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none transition"
               />
             </div>
 
             {/* Birth Date */}
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center gap-1.5">
-                <Calendar className="w-3.5 h-3.5 text-emerald-400" />
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-1.5">
+                <Calendar className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400" />
                 تاريخ الميلاد
               </label>
               <input
                 type="date"
                 value={birthDate}
                 onChange={e => setBirthDate(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none transition"
+                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-emerald-500 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none transition"
               />
             </div>
 
             {/* Mother Tag */}
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">رقم قرط الأم (Mother Tag)</label>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">رقم قرط الأم (Mother Tag)</label>
               <input
                 type="text"
                 value={motherId}
                 onChange={e => setMotherId(e.target.value)}
                 placeholder="0890"
-                className="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none transition"
+                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-emerald-500 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none transition"
               />
             </div>
 
             {/* Father Semen Code */}
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">رمز السائل المنوي / الأب</label>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">رمز السائل المنوي / الأب</label>
               <input
                 type="text"
                 value={fatherSemenCode}
                 onChange={e => setFatherSemenCode(e.target.value)}
                 placeholder="USA-HO-9942 (Sire Straw)"
-                className="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none transition"
+                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-emerald-500 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none transition"
               />
             </div>
           </div>
 
           {/* Action Buttons */}
-          <div className="pt-4 border-t border-slate-800 flex items-center justify-end gap-3">
+          <div className="pt-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-end gap-3">
             <button
               type="button"
               onClick={onClose}
-              className="px-5 py-2.5 rounded-xl border border-slate-700 hover:bg-slate-800 text-slate-300 text-xs font-bold transition"
+              className="px-5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold transition"
             >
               إلغاء
             </button>

@@ -62,22 +62,22 @@ export const DispenseFeedModal: React.FC<Props> = ({ isOpen, onClose, onSuccess,
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-50 bg-slate-50/80 dark:bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200">
         {/* Header */}
-        <div className="px-6 py-5 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
+        <div className="px-6 py-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50/60 dark:bg-slate-950/60">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
+            <div className="w-10 h-10 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-700 dark:text-purple-400">
               <Truck className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-bold text-base text-white">صرف وجبة علفية للحظيرة (TMR)</h3>
-              <p className="text-xs text-slate-400">خصم آلي من المستودع وترحيل محاسبي لمركز التكلفة</p>
+              <h3 className="font-bold text-base text-slate-900 dark:text-white">صرف وجبة علفية للحظيرة (TMR)</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400">خصم آلي من المستودع وترحيل محاسبي لمركز التكلفة</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-slate-800 text-slate-400 hover:text-white rounded-xl transition"
+            className="p-2 hover:bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-white rounded-xl transition"
           >
             <X className="w-5 h-5" />
           </button>
@@ -92,11 +92,11 @@ export const DispenseFeedModal: React.FC<Props> = ({ isOpen, onClose, onSuccess,
           )}
 
           <div>
-            <label className="block font-semibold text-slate-300 mb-1.5">الحظيرة أو العنبر المستلم *</label>
+            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1.5">الحظيرة أو العنبر المستلم *</label>
             <select
               value={selectedBarnId}
               onChange={e => setSelectedBarnId(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 focus:border-purple-500 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none transition"
+              className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-purple-500 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none transition"
             >
               {barns.map(barn => (
                 <option key={barn.id} value={barn.id}>
@@ -108,11 +108,11 @@ export const DispenseFeedModal: React.FC<Props> = ({ isOpen, onClose, onSuccess,
           </div>
 
           <div>
-            <label className="block font-semibold text-slate-300 mb-1.5">الخلطة العلفية المعتمدة (TMR Formula) *</label>
+            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1.5">الخلطة العلفية المعتمدة (TMR Formula) *</label>
             <select
               value={selectedFormulaId}
               onChange={e => setSelectedFormulaId(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 focus:border-purple-500 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none transition"
+              className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-purple-500 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none transition"
             >
               {formulas.map(f => (
                 <option key={f.id} value={f.id}>{f.name} ({f.targetSector})</option>
@@ -122,7 +122,7 @@ export const DispenseFeedModal: React.FC<Props> = ({ isOpen, onClose, onSuccess,
           </div>
 
           <div>
-            <label className="block font-semibold text-slate-300 mb-1.5">الكمية المصروفة بالخلاط (كجم) *</label>
+            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1.5">الكمية المصروفة بالخلاط (كجم) *</label>
             <input
               type="number"
               step="50"
@@ -130,27 +130,27 @@ export const DispenseFeedModal: React.FC<Props> = ({ isOpen, onClose, onSuccess,
               value={quantityKg}
               onChange={e => setQuantityKg(Number(e.target.value))}
               placeholder="1200"
-              className="w-full bg-slate-950 border border-purple-500/40 focus:border-purple-500 rounded-xl px-3.5 py-3 text-lg font-black text-purple-300 focus:outline-none transition"
+              className="w-full bg-slate-50 dark:bg-slate-950 border border-purple-500/40 focus:border-purple-500 rounded-xl px-3.5 py-3 text-lg font-black text-purple-700 dark:text-purple-300 focus:outline-none transition"
             />
           </div>
 
-          <div className="p-3.5 bg-slate-950/60 border border-slate-800 rounded-2xl space-y-1 text-slate-400">
+          <div className="p-3.5 bg-slate-50/60 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 rounded-2xl space-y-1 text-slate-500 dark:text-slate-400">
             <div className="flex justify-between">
               <span>حصة الرأس التقريبية:</span>
-              <strong className="text-white">{(quantityKg / 80).toFixed(1)} كجم / رأس</strong>
+              <strong className="text-slate-900 dark:text-white">{(quantityKg / 80).toFixed(1)} كجم / رأس</strong>
             </div>
             <div className="flex justify-between">
               <span>التكلفة التقديرية للوجبة:</span>
-              <strong className="text-emerald-400">{(quantityKg * 0.24).toFixed(2)} $</strong>
+              <strong className="text-emerald-700 dark:text-emerald-400">{(quantityKg * 0.24).toFixed(2)} $</strong>
             </div>
           </div>
 
           {/* Action Buttons */}
-          <div className="pt-4 border-t border-slate-800 flex items-center justify-end gap-3">
+          <div className="pt-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-end gap-3">
             <button
               type="button"
               onClick={onClose}
-              className="px-5 py-2.5 rounded-xl border border-slate-700 hover:bg-slate-800 text-slate-300 text-xs font-bold transition"
+              className="px-5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold transition"
             >
               إلغاء
             </button>

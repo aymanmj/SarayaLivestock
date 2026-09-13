@@ -58,21 +58,21 @@ export const AnimalsDirectory: React.FC = () => {
       {/* Top Header & Search */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <Layers className="w-6 h-6 text-emerald-400" />
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <Layers className="w-6 h-6 text-emerald-700 dark:text-emerald-400" />
             سجل القطيع والماشية الرقمي
           </h2>
-          <p className="text-xs text-slate-400">إدارة ملفات الأبقار والأغنام والماعز مع شجرة النسب والحالة الإنتاجية والصحية</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">إدارة ملفات الأبقار والأغنام والماعز مع شجرة النسب والحالة الإنتاجية والصحية</p>
         </div>
 
         <div className="flex items-center gap-2 self-start md:self-auto">
           <button
             onClick={loadAnimals}
             disabled={loading}
-            className="p-2.5 bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-300 rounded-xl text-xs font-bold transition flex items-center gap-1.5"
+            className="p-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold transition flex items-center gap-1.5"
             title="تحديث القائمة"
           >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-emerald-400' : ''}`} />
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-emerald-700 dark:text-emerald-400' : ''}`} />
           </button>
           <button 
             onClick={() => setIsAddModalOpen(true)}
@@ -87,13 +87,13 @@ export const AnimalsDirectory: React.FC = () => {
       {/* Filters & Search Bar */}
       <div className="flex flex-col md:flex-row gap-3">
         <div className="relative flex-1">
-          <Search className="w-4 h-4 absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" />
+          <Search className="w-4 h-4 absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400" />
           <input
             type="text"
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
             placeholder="بحث برقم القرط، شريحة RFID، الاسم، أو السلالة..."
-            className="w-full bg-slate-900 border border-slate-800 rounded-2xl pr-11 pl-4 py-3 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-emerald-500 transition shadow-inner"
+            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl pr-11 pl-4 py-3 text-xs text-slate-900 dark:text-white placeholder:text-slate-500 focus:outline-none focus:border-emerald-500 transition shadow-inner"
           />
         </div>
 
@@ -102,7 +102,7 @@ export const AnimalsDirectory: React.FC = () => {
           <select
             value={speciesFilter}
             onChange={e => setSpeciesFilter(e.target.value)}
-            className="bg-slate-900 border border-slate-800 rounded-2xl px-4 py-3 text-xs text-slate-300 focus:outline-none focus:border-emerald-500"
+            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl px-4 py-3 text-xs text-slate-700 dark:text-slate-300 focus:outline-none focus:border-emerald-500"
           >
             <option value="ALL">جميع الفصائل</option>
             <option value="CATTLE">أبقار (Cattle)</option>
@@ -114,7 +114,7 @@ export const AnimalsDirectory: React.FC = () => {
           <select
             value={purposeFilter}
             onChange={e => setPurposeFilter(e.target.value)}
-            className="bg-slate-900 border border-slate-800 rounded-2xl px-4 py-3 text-xs text-slate-300 focus:outline-none focus:border-emerald-500"
+            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl px-4 py-3 text-xs text-slate-700 dark:text-slate-300 focus:outline-none focus:border-emerald-500"
           >
             <option value="ALL">جميع الأغراض</option>
             <option value="DAIRY">ألبان (Dairy)</option>
@@ -133,18 +133,18 @@ export const AnimalsDirectory: React.FC = () => {
             <div
               key={animal.id}
               onClick={() => setSelectedAnimalId(animal.id)}
-              className={`bg-slate-900/90 border rounded-2xl p-5 shadow-lg transition hover:-translate-y-1 cursor-pointer flex flex-col justify-between ${
+              className={`bg-white/90 dark:bg-slate-900/90 border rounded-2xl p-5 shadow-lg transition hover:-translate-y-1 cursor-pointer flex flex-col justify-between ${
                 isQuarantined 
                   ? 'border-red-500/50 hover:border-red-500 shadow-red-950/20' 
-                  : 'border-slate-800/80 hover:border-emerald-500/50'
+                  : 'border-slate-200/80 dark:border-slate-800/80 hover:border-emerald-500/50'
               }`}
             >
               <div>
                 {/* Card Top: Tag Number & Status */}
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
-                    <span className="text-base font-extrabold text-white">#{animal.tagNumber}</span>
-                    {animal.name && <span className="text-xs text-slate-400 font-semibold">({animal.name})</span>}
+                    <span className="text-base font-extrabold text-slate-900 dark:text-white">#{animal.tagNumber}</span>
+                    {animal.name && <span className="text-xs text-slate-500 dark:text-slate-400 font-semibold">({animal.name})</span>}
                   </div>
                   {isQuarantined ? (
                     <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-500/10 border border-red-500/30 text-red-400 flex items-center gap-1">
@@ -152,32 +152,32 @@ export const AnimalsDirectory: React.FC = () => {
                       تحريم
                     </span>
                   ) : (
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-400">
                       {animal.currentLifeStage || 'نشط'}
                     </span>
                   )}
                 </div>
 
                 {/* Card Meta Info */}
-                <div className="space-y-1.5 text-xs text-slate-400">
+                <div className="space-y-1.5 text-xs text-slate-500 dark:text-slate-400">
                   <div className="flex items-center justify-between">
                     <span>السلالة:</span>
-                    <strong className="text-white font-medium">{animal.breed}</strong>
+                    <strong className="text-slate-900 dark:text-white font-medium">{animal.breed}</strong>
                   </div>
                   <div className="flex items-center justify-between">
                     <span>الجنس والغرض:</span>
-                    <span className="text-slate-300">{animal.gender === 'FEMALE' ? 'أنثى' : 'ذكر'} • {animal.purpose}</span>
+                    <span className="text-slate-700 dark:text-slate-300">{animal.gender === 'FEMALE' ? 'أنثى' : 'ذكر'} • {animal.purpose}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span>العنبر / الحظيرة:</span>
-                    <span className="text-slate-300">{animal.barn?.name || 'غير مرتبط بعنبر'}</span>
+                    <span className="text-slate-700 dark:text-slate-300">{animal.barn?.name || 'غير مرتبط بعنبر'}</span>
                   </div>
                 </div>
               </div>
 
               {/* Card Footer: Weight & View Profile */}
-              <div className="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs">
-                <div className="flex items-center gap-1.5 text-emerald-400 font-bold">
+              <div className="mt-4 pt-3 border-t border-slate-200/80 dark:border-slate-800/80 flex items-center justify-between text-xs">
+                <div className="flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400 font-bold">
                   <Scale className="w-3.5 h-3.5" />
                   <span>{animal.entryWeightKg != null ? `${animal.entryWeightKg} كجم` : 'الوزن غير مسجل'}</span>
                 </div>
@@ -187,7 +187,7 @@ export const AnimalsDirectory: React.FC = () => {
                     e.stopPropagation();
                     setSelectedAnimalId(animal.id);
                   }}
-                  className="p-1.5 hover:bg-slate-800 text-slate-400 hover:text-white rounded-lg transition flex items-center gap-1 text-[11px]"
+                  className="p-1.5 hover:bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-white rounded-lg transition flex items-center gap-1 text-[11px]"
                 >
                   <Eye className="w-3.5 h-3.5" />
                   عرض الملف
@@ -199,10 +199,10 @@ export const AnimalsDirectory: React.FC = () => {
       </div>
 
       {filtered.length === 0 && (
-        <div className="p-12 text-center bg-slate-900/40 border border-slate-800 rounded-3xl space-y-3">
+        <div className="p-12 text-center bg-white/40 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 rounded-3xl space-y-3">
           <Layers className="w-10 h-10 text-slate-600 mx-auto" />
-          <h3 className="font-bold text-white text-base">لم يتم العثور على أي نتائج مطابقة</h3>
-          <p className="text-xs text-slate-400">جرّب تغيير عبارة البحث أو الفلاتر المحددة</p>
+          <h3 className="font-bold text-slate-900 dark:text-white text-base">لم يتم العثور على أي نتائج مطابقة</h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400">جرّب تغيير عبارة البحث أو الفلاتر المحددة</p>
         </div>
       )}
 

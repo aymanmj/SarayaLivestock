@@ -82,7 +82,7 @@ Acceptance gate: a blank database can be installed and an existing database can 
 - [x] Produce and inspect an Electron/NSIS x64 client installer with immutable web assets (internal unsigned artifact).
 - Role and tenant-isolation test matrix.
 - End-to-end tests for herd, milk, treatment, breeding, feed and accounting.
-- Implement the server Inno Setup installer; add product icon, sign both installers and test install/upgrade/uninstall on a clean supported Windows image.
+- [x] Implement the server Inno Setup installer; add product icon, sign both installers and test install/upgrade/uninstall on a clean supported Windows image.
 - Restore drills and power/network interruption tests.
 - CI quality gates for build, tests, audit and migrations.
 

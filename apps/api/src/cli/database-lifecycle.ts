@@ -45,7 +45,7 @@ interface Inspection {
 
 const apiRoot = resolve(process.cwd());
 const repositoryRoot = resolve(apiRoot, '../..');
-const defaultBackupDir = resolve(repositoryRoot, 'backups');
+const defaultBackupDir = resolve(process.env.DATABASE_BACKUP_DIR || resolve(repositoryRoot, 'backups'));
 
 async function main() {
   const command = process.argv[2];

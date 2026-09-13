@@ -365,6 +365,7 @@ async function main() {
   // خلطة حلب عالي TMR
   const tmrDairy = await prisma.feedFormula.create({
     data: {
+      farmId: farm.id,
       name: 'خلطة حلب عالي 18% بروتين TMR',
       targetSector: SectorType.DAIRY,
       description: 'عليقة متكاملة مخصصة للأبقار عالية الإنتاج (+28 لتر/يوم)',

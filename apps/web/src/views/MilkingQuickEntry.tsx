@@ -274,17 +274,17 @@ export const MilkingQuickEntry: React.FC = () => {
       {/* Header & Shift Controls */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <Milk className="w-6 h-6 text-emerald-400" />
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <Milk className="w-6 h-6 text-emerald-700 dark:text-emerald-400" />
             محطة الحلب السريعة وإدارة خزانات الحليب
           </h2>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-slate-500 dark:text-slate-400">
             إدخال فوري للورديات، صمام أمان التحريم التلقائي، والربط المحاسبي بالدينار الليبي ({OFFICIAL_CURRENCY.symbol})
           </p>
         </div>
 
         {/* Shift Selector */}
-        <div className="flex items-center gap-1.5 bg-slate-900 border border-slate-800 p-1.5 rounded-2xl self-start md:self-auto shadow-lg">
+        <div className="flex items-center gap-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-1.5 rounded-2xl self-start md:self-auto shadow-lg">
           {(['MORNING', 'NOON', 'EVENING'] as MilkingShift[]).map(s => (
             <button
               key={s}
@@ -292,7 +292,7 @@ export const MilkingQuickEntry: React.FC = () => {
               className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
                 shift === s 
                   ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/30' 
-                  : 'text-slate-400 hover:text-white'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white'
               }`}
             >
               <Clock className="w-3.5 h-3.5" />
@@ -303,10 +303,10 @@ export const MilkingQuickEntry: React.FC = () => {
       </div>
 
       {/* Quick Cow Selection Chips (Touch friendly for parlor workers) */}
-      <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-3.5 shadow-md space-y-2">
+      <div className="bg-white/90 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-2xl p-3.5 shadow-md space-y-2">
         <div className="flex items-center justify-between text-xs">
-          <span className="font-bold text-slate-300 flex items-center gap-1.5">
-            <Layers className="w-4 h-4 text-emerald-400" />
+          <span className="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+            <Layers className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
             طابور الأبقار في محطة الحلب الحالية (انقر للاختيار الفوري):
           </span>
           <span className="text-[11px] text-slate-500">{availableCows.length} أبقار جاهزة</span>
@@ -322,11 +322,11 @@ export const MilkingQuickEntry: React.FC = () => {
                 className={`px-3.5 py-2.5 rounded-xl border text-xs font-bold transition shrink-0 flex items-center gap-2 ${
                   isSelected
                     ? 'bg-emerald-600 border-emerald-500 text-white shadow-md shadow-emerald-900/30'
-                    : 'bg-slate-950/70 border-slate-800 text-slate-300 hover:border-slate-700 hover:text-white'
+                    : 'bg-slate-50/70 dark:bg-slate-950/70 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:border-slate-700 hover:text-slate-900 dark:text-white'
                 }`}
               >
                 <div className={`w-6 h-6 rounded-lg flex items-center justify-center font-mono text-[11px] font-black ${
-                  isSelected ? 'bg-emerald-700 text-white' : 'bg-slate-900 text-emerald-400'
+                  isSelected ? 'bg-emerald-700 text-slate-900 dark:text-white' : 'bg-white dark:bg-slate-900 text-emerald-700 dark:text-emerald-400'
                 }`}>
                   #{cow.tagNumber.replace('SA-COW-', '')}
                 </div>
@@ -343,15 +343,15 @@ export const MilkingQuickEntry: React.FC = () => {
       {/* Main Grid: Entry Terminal vs Bulk Tank Monitor */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left 2 Cols: Touch-friendly Quick Terminal */}
-        <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl space-y-6">
+        <div className="lg:col-span-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-xl space-y-6">
           {/* Tag & RFID Search Bar */}
           <div className="space-y-2">
-            <label className="block text-xs font-bold text-slate-300">
+            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
               رقم القرط أو مسح شريحة الـ RFID التلقائي
             </label>
             <div className="flex gap-2">
               <div className="relative flex-1">
-                <Search className="w-5 h-5 absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                <Search className="w-5 h-5 absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400" />
                 <input
                   type="text"
                   value={tagInput}
@@ -362,15 +362,15 @@ export const MilkingQuickEntry: React.FC = () => {
                     if (e.key === 'Enter') handleSearch(tagInput);
                   }}
                   placeholder="أدخل رقم القرط (مثال: 1042 أو 1015)..."
-                  className="w-full bg-slate-950 border border-slate-700 focus:border-emerald-500 rounded-2xl pr-12 pl-4 py-3 text-base font-extrabold text-white focus:outline-none transition shadow-inner"
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 focus:border-emerald-500 rounded-2xl pr-12 pl-4 py-3 text-base font-extrabold text-slate-900 dark:text-white focus:outline-none transition shadow-inner"
                 />
               </div>
 
               <button 
                 onClick={() => handleSearch(tagInput)}
-                className="px-6 bg-slate-800 hover:bg-slate-700 text-white rounded-2xl font-bold text-xs flex items-center gap-2 border border-slate-700 transition"
+                className="px-6 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:bg-slate-700 text-white rounded-2xl font-bold text-xs flex items-center gap-2 border border-slate-300 dark:border-slate-700 transition"
               >
-                <QrCode className="w-4 h-4 text-emerald-400" />
+                <QrCode className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
                 بحث وتأكيد
               </button>
             </div>
@@ -379,20 +379,20 @@ export const MilkingQuickEntry: React.FC = () => {
           {/* Selected Cow Details Banner */}
           {selectedCow && (
             <div className="space-y-4">
-              <div className="p-4 sm:p-5 bg-slate-950/70 border border-slate-800 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="p-4 sm:p-5 bg-slate-50/70 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center font-black text-xl text-emerald-400 shadow-inner shrink-0">
+                  <div className="w-14 h-14 rounded-2xl bg-emerald-100 dark:bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center font-black text-xl text-emerald-700 dark:text-emerald-400 shadow-inner shrink-0">
                     #{selectedCow.tagNumber.replace('SA-COW-', '')}
                   </div>
                   <div>
-                    <h3 className="font-extrabold text-base sm:text-lg text-white">{selectedCow.name}</h3>
-                    <p className="text-xs text-slate-400">{selectedCow.breed} • أيام الحلب (DIM): <strong className="text-white">{selectedCow.daysInMilk} يوم</strong></p>
+                    <h3 className="font-extrabold text-base sm:text-lg text-slate-900 dark:text-white">{selectedCow.name}</h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{selectedCow.breed} • أيام الحلب (DIM): <strong className="text-slate-900 dark:text-white">{selectedCow.daysInMilk} يوم</strong></p>
                   </div>
                 </div>
 
-                <div className="text-left sm:text-right border-t sm:border-t-0 sm:border-r border-slate-800 pt-3 sm:pt-0 sm:pr-4">
-                  <span className="text-xs text-slate-400 block">المتوسط اليومي المعتاد</span>
-                  <span className="text-xl font-black text-emerald-400">{formatNumber(selectedCow.avgYield)} لتر/يوم</span>
+                <div className="text-left sm:text-right border-t sm:border-t-0 sm:border-r border-slate-200 dark:border-slate-800 pt-3 sm:pt-0 sm:pr-4">
+                  <span className="text-xs text-slate-500 dark:text-slate-400 block">المتوسط اليومي المعتاد</span>
+                  <span className="text-xl font-black text-emerald-700 dark:text-emerald-400">{formatNumber(selectedCow.avgYield)} لتر/يوم</span>
                 </div>
               </div>
 
@@ -407,7 +407,7 @@ export const MilkingQuickEntry: React.FC = () => {
                     {selectedCow.quarantineReason} • ينتهي الحظر بتاريخ: <strong className="underline">{selectedCow.quarantineEndDate}</strong>
                   </p>
                   <div className="pr-7 pt-1 flex flex-wrap items-center gap-2">
-                    <span className="px-3 py-1 bg-red-600 text-white font-bold rounded-lg text-[11px] flex items-center gap-1">
+                    <span className="px-3 py-1 bg-red-600 text-slate-900 dark:text-white font-bold rounded-lg text-[11px] flex items-center gap-1">
                       🔒 صمام الأمان مفعل: تحويل الحليب للإتلاف / رضاعة العجول
                     </span>
                   </div>
@@ -419,12 +419,12 @@ export const MilkingQuickEntry: React.FC = () => {
           {/* Milk Yield Input & Touch Keypad */}
           <div className="space-y-3 pt-2">
             <div className="flex items-center justify-between">
-              <label className="block text-xs font-bold text-slate-300">
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
                 كمية الحليب المسجلة لهذه الوردية (باللتر):
               </label>
               <button 
                 onClick={handleReadScale}
-                className="text-xs text-emerald-400 hover:text-emerald-300 font-bold flex items-center gap-1 transition"
+                className="text-xs text-emerald-700 dark:text-emerald-400 hover:text-emerald-300 font-bold flex items-center gap-1 transition"
               >
                 <Scale className="w-3.5 h-3.5" />
                 قراءة مباشرة من ميزان المحلب (COM1)
@@ -437,7 +437,7 @@ export const MilkingQuickEntry: React.FC = () => {
                 step="0.1"
                 value={currentYield}
                 onChange={e => setCurrentYield(e.target.value)}
-                className="w-full bg-slate-950 border-2 border-emerald-500/60 focus:border-emerald-400 rounded-2xl px-5 py-3.5 text-3xl font-black text-emerald-400 text-center focus:outline-none transition shadow-inner"
+                className="w-full bg-slate-50 dark:bg-slate-950 border-2 border-emerald-500/60 focus:border-emerald-400 rounded-2xl px-5 py-3.5 text-3xl font-black text-emerald-700 dark:text-emerald-400 text-center focus:outline-none transition shadow-inner"
               />
             </div>
 
@@ -451,7 +451,7 @@ export const MilkingQuickEntry: React.FC = () => {
                   className={`py-2 rounded-xl text-xs font-black transition border ${
                     Number(currentYield) === liters 
                       ? 'bg-emerald-600 border-emerald-500 text-white shadow-md' 
-                      : 'bg-slate-950 border-slate-800 text-slate-300 hover:bg-slate-800'
+                      : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:bg-slate-800'
                   }`}
                 >
                   {liters} لتر
@@ -461,30 +461,30 @@ export const MilkingQuickEntry: React.FC = () => {
           </div>
 
           {/* Milk Quality Specs & Valuation */}
-          <div className="p-4 bg-slate-950/60 border border-slate-800 rounded-2xl grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+          <div className="p-4 bg-slate-50/60 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 rounded-2xl grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
             <div>
-              <label className="block text-slate-400 text-[11px] mb-1">نسبة الدهن (Fat %):</label>
+              <label className="block text-slate-500 dark:text-slate-400 text-[11px] mb-1">نسبة الدهن (Fat %):</label>
               <input
                 type="number"
                 step="0.1"
                 value={fatPct}
                 onChange={e => setFatPct(Number(e.target.value))}
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-sm font-bold text-white"
+                className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-1.5 text-sm font-bold text-slate-900 dark:text-white"
               />
             </div>
             <div>
-              <label className="block text-slate-400 text-[11px] mb-1">نسبة البروتين (Protein %):</label>
+              <label className="block text-slate-500 dark:text-slate-400 text-[11px] mb-1">نسبة البروتين (Protein %):</label>
               <input
                 type="number"
                 step="0.1"
                 value={proteinPct}
                 onChange={e => setProteinPct(Number(e.target.value))}
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-sm font-bold text-white"
+                className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-1.5 text-sm font-bold text-slate-900 dark:text-white"
               />
             </div>
             <div>
-              <label className="block text-slate-400 text-[11px] mb-1">القيمة المالية للحلبة:</label>
-              <div className="p-2 bg-slate-900 border border-slate-700 rounded-xl font-black text-sm text-emerald-400 flex items-center justify-between">
+              <label className="block text-slate-500 dark:text-slate-400 text-[11px] mb-1">القيمة المالية للحلبة:</label>
+              <div className="p-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl font-black text-sm text-emerald-700 dark:text-emerald-400 flex items-center justify-between">
                 <span>{isDiscarded ? '0.000 د.ل (معزول)' : formatMoney(Number(currentYield || 0) * milkSellingPricePerLiter)}</span>
               </div>
             </div>
@@ -492,8 +492,8 @@ export const MilkingQuickEntry: React.FC = () => {
 
           {/* Feedback Banner */}
           {feedback && (
-            <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl text-xs text-emerald-300 flex items-center gap-2.5">
-              <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+            <div className="p-4 bg-emerald-100 dark:bg-emerald-500/10 border border-emerald-500/30 rounded-2xl text-xs text-emerald-300 flex items-center gap-2.5">
+              <CheckCircle2 className="w-5 h-5 text-emerald-700 dark:text-emerald-400 shrink-0" />
               <span className="font-semibold leading-relaxed">{feedback}</span>
             </div>
           )}
@@ -511,9 +511,9 @@ export const MilkingQuickEntry: React.FC = () => {
 
             <button
               onClick={handlePrintReceipt}
-              className="py-4 px-6 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 transition border border-slate-700"
+              className="py-4 px-6 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 transition border border-slate-300 dark:border-slate-700"
             >
-              <Printer className="w-4 h-4 text-slate-400" />
+              <Printer className="w-4 h-4 text-slate-500 dark:text-slate-400" />
               طباعة إذن الاستلام
             </button>
           </div>
@@ -522,25 +522,25 @@ export const MilkingQuickEntry: React.FC = () => {
         {/* Right 1 Col: Bulk Tank Monitor & Shift Progress */}
         <div className="space-y-6">
           {/* Bulk Tank Telemetry Card */}
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl space-y-5">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-xl space-y-5">
             <div className="flex items-center justify-between">
-              <h3 className="font-bold text-white text-sm flex items-center gap-2">
-                <Milk className="w-4 h-4 text-blue-400" />
+              <h3 className="font-bold text-slate-900 dark:text-white text-sm flex items-center gap-2">
+                <Milk className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                 خزان التبريد الرئيسي (Bulk Tank #1)
               </h3>
               <div className="flex items-center gap-1.5">
-                <ThermometerSnowflake className="w-3.5 h-3.5 text-blue-400" />
-                <span className="text-[11px] font-bold text-blue-400">3.8 °C</span>
+                <ThermometerSnowflake className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                <span className="text-[11px] font-bold text-blue-600 dark:text-blue-400">3.8 °C</span>
               </div>
             </div>
 
             {/* Tank Capacity Gauge */}
             <div className="space-y-2">
               <div className="flex items-baseline justify-between">
-                <span className="text-2xl font-black text-white">{formatNumber(bulkTankVolume)} لتر</span>
-                <span className="text-xs text-slate-400">من سعة {formatNumber(targetTankCapacity)} لتر</span>
+                <span className="text-2xl font-black text-slate-900 dark:text-white">{formatNumber(bulkTankVolume)} لتر</span>
+                <span className="text-xs text-slate-500 dark:text-slate-400">من سعة {formatNumber(targetTankCapacity)} لتر</span>
               </div>
-              <div className="h-4 bg-slate-950 rounded-full overflow-hidden border border-slate-800 p-0.5">
+              <div className="h-4 bg-slate-50 dark:bg-slate-950 rounded-full overflow-hidden border border-slate-200 dark:border-slate-800 p-0.5">
                 <div 
                   className="h-full bg-gradient-to-r from-blue-600 via-emerald-500 to-emerald-400 rounded-full transition-all duration-500"
                   style={{ width: `${Math.min(100, (bulkTankVolume / targetTankCapacity) * 100)}%` }}
@@ -553,25 +553,25 @@ export const MilkingQuickEntry: React.FC = () => {
             </div>
 
             {/* Quick Metrics */}
-            <div className="p-3.5 bg-slate-950/60 border border-slate-800 rounded-2xl text-xs space-y-2">
-              <div className="flex justify-between text-slate-400">
+            <div className="p-3.5 bg-slate-50/60 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 rounded-2xl text-xs space-y-2">
+              <div className="flex justify-between text-slate-500 dark:text-slate-400">
                 <span>إنتاج اليوم الإجمالي:</span>
-                <strong className="text-white font-bold">{formatNumber(totalTodayLiters)} لتر</strong>
+                <strong className="text-slate-900 dark:text-white font-bold">{formatNumber(totalTodayLiters)} لتر</strong>
               </div>
-              <div className="flex justify-between text-slate-400">
+              <div className="flex justify-between text-slate-500 dark:text-slate-400">
                 <span>الحليب الصالح للتسويق:</span>
-                <strong className="text-emerald-400 font-bold">{formatNumber(usableTodayLiters)} لتر</strong>
+                <strong className="text-emerald-700 dark:text-emerald-400 font-bold">{formatNumber(usableTodayLiters)} لتر</strong>
               </div>
-              <div className="flex justify-between text-slate-400 pt-1.5 border-t border-slate-800">
+              <div className="flex justify-between text-slate-500 dark:text-slate-400 pt-1.5 border-t border-slate-200 dark:border-slate-800">
                 <span>إجمالي الإيراد المقيد:</span>
-                <strong className="text-emerald-400 font-black">{formatMoney(totalFinancialValue)}</strong>
+                <strong className="text-emerald-700 dark:text-emerald-400 font-black">{formatMoney(totalFinancialValue)}</strong>
               </div>
             </div>
           </div>
 
           {/* Live Recent Milkings Ledger */}
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-xl space-y-3">
-            <h4 className="font-bold text-white text-xs flex items-center justify-between">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 shadow-xl space-y-3">
+            <h4 className="font-bold text-slate-900 dark:text-white text-xs flex items-center justify-between">
               <span>سجل آخر الحلبات المسجلة اليوم:</span>
               <span className="text-[10px] text-slate-500">{recentLogs.length} عمليات</span>
             </h4>
@@ -583,22 +583,22 @@ export const MilkingQuickEntry: React.FC = () => {
                   className={`p-3 rounded-xl border flex items-center justify-between transition ${
                     log.isDiscarded 
                       ? 'bg-red-500/10 border-red-500/30 text-red-300' 
-                      : 'bg-slate-950/60 border-slate-800 text-slate-200'
+                      : 'bg-slate-50/60 dark:bg-slate-950/60 border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200'
                   }`}
                 >
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="font-black text-white">#{log.tagNumber.replace('SA-COW-', '')}</span>
-                      <span className="text-[11px] text-slate-400">({log.cowName})</span>
+                      <span className="font-black text-slate-900 dark:text-white">#{log.tagNumber.replace('SA-COW-', '')}</span>
+                      <span className="text-[11px] text-slate-500 dark:text-slate-400">({log.cowName})</span>
                     </div>
                     <div className="text-[10px] text-slate-500">{log.time} • {log.shift === 'MORNING' ? 'صباح' : 'مساء'}</div>
                   </div>
 
                   <div className="text-left">
-                    <span className={`font-black text-sm block ${log.isDiscarded ? 'text-red-400' : 'text-emerald-400'}`}>
+                    <span className={`font-black text-sm block ${log.isDiscarded ? 'text-red-400' : 'text-emerald-700 dark:text-emerald-400'}`}>
                       {log.yieldLiters} لتر
                     </span>
-                    <span className="text-[10px] text-slate-400">
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400">
                       {log.isDiscarded ? 'معزول' : formatMoney(log.value)}
                     </span>
                   </div>
