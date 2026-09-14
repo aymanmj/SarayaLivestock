@@ -217,7 +217,7 @@ ipcMain.handle('print-receipt', async (event, receiptData) => {
     const printer = new ThermalPrinter.printer({
       type: ThermalPrinter.types.EPSON,
       interface: 'tcp://192.168.1.100', // مثال لطابعة متصلة بالشبكة
-      characterSet: 'ARABIC',
+      characterSet: ThermalPrinter.CharacterSet.PC864_ARABIC,
     });
 
     const isConnected = await printer.isPrinterConnected();

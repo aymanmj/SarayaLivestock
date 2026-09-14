@@ -24,18 +24,38 @@ export class MilkingService {
       });
       if (!animal) throw new NotFoundException('البقرة غير مسجلة (يرجى التحقق من رقم القرط أو الشريحة)');
 
-      const now = new Date();
+      const milkingDate = new Date(dto.logDate);
       let isDiscarded = dto.isDiscarded || false;
       let discardReason = dto.discardReason;
-      if (animal.withdrawalEndDate && animal.withdrawalEndDate > now) {
+      if (animal.withdrawalEndDate && milkingDate <= animal.withdrawalEndDate) {
         isDiscarded = true;
         discardReason = `🚨 حليب مهدر إجبارياً: البقرة تحت فترة تحريم دوائي تنتهي في (${animal.withdrawalEndDate.toISOString().split('T')[0]})`;
       }
 
+      if (tx.healthTreatment?.findMany) {
+        const treatments = await tx.healthTreatment.findMany({
+          where: {
+            animalId: animal.id,
+            treatmentDate: { lte: milkingDate },
+            milkWithdrawalDays: { gt: 0 },
+          },
+        });
+        for (const t of treatments) {
+          const tEnd = new Date(t.treatmentDate);
+          tEnd.setDate(tEnd.getDate() + t.milkWithdrawalDays);
+          if (milkingDate <= tEnd) {
+            isDiscarded = true;
+            discardReason = `🚨 حليب مهدر إجبارياً: علاج بيطري (${t.drugName}) تحت فترة تحريم حليب حتى (${tEnd.toISOString().split('T')[0]})`;
+            break;
+          }
+        }
+      }
+
+      const sevenDaysAgo = new Date(milkingDate.getTime() - 7 * 24 * 60 * 60 * 1000);
       const pastLogs = await tx.milkLog.findMany({
         where: {
           animalId: animal.id,
-          logDate: { gte: new Date(new Date().setDate(now.getDate() - 7)) },
+          logDate: { gte: sevenDaysAgo },
         },
       });
 

@@ -25,6 +25,7 @@ import { AuditInterceptor } from './common/audit/audit.interceptor';
 import { AuditController } from './common/audit/audit.controller';
 import { validateRuntimeConfig } from './config/runtime-config';
 import { SystemModule } from './system/system.module';
+import { SalesModule } from './modules/sales/sales.module';
 
 @Module({
   imports: [
@@ -50,6 +51,7 @@ import { SystemModule } from './system/system.module';
     ReportsModule,
     NutritionModule,
     SystemModule,
+    SalesModule,
   ],
   controllers: [AuditController],
   providers: [

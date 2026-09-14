@@ -142,6 +142,32 @@ export class AnimalsService {
     });
   }
 
+  async updateStatus(
+    id: string,
+    status: AnimalStatus,
+    farmId: string,
+    notes?: string,
+    actor?: AuditActor,
+    idempotency?: IdempotencyContext,
+  ) {
+    return runIdempotentTransaction(this.prisma, actor, idempotency, async tx => {
+      const animal = await tx.animal.findFirst({ where: { id, farmId } });
+      if (!animal) throw new NotFoundException('لم يتم العثور على سجل الحيوان');
+      const updated = await tx.animal.update({
+        where: { id },
+        data: { status },
+      });
+      if (actor) await appendDomainAudit(tx, actor, {
+        action: 'herd.animal.status-changed',
+        entityType: 'animal',
+        entityId: id,
+        farmId,
+        metadata: { previousStatus: animal.status, newStatus: status, notes },
+      });
+      return updated;
+    });
+  }
+
   private async assertRelatedEntitiesBelongToFarm(
     tx: Prisma.TransactionClient,
     farmId: string,

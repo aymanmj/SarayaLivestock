@@ -46,8 +46,8 @@ if (operations < 58) throw new Error(`OpenAPI operation count unexpectedly decre
 if (verifiedResponseDtoOperations.size !== operations) {
   throw new Error(`Expected every operation to have a typed response: ${verifiedResponseDtoOperations.size}/${operations}`);
 }
-if (idempotentOperations !== 19) {
-  throw new Error(`Expected 19 idempotent operations, found ${idempotentOperations}`);
+if (idempotentOperations !== 23) {
+  throw new Error(`Expected 23 idempotent operations, found ${idempotentOperations}`);
 }
 
 for (const [name, schema] of Object.entries(contract.components?.schemas ?? {})) {
@@ -75,6 +75,8 @@ const decimalStrings = [
   ['FeedFormulaItemResponseDto', 'percentage'],
   ['FeedDistributionRecordResponseDto', 'quantityKg'],
   ['FeedDistributionRecordResponseDto', 'totalCost'],
+  ['CommercialSaleResponseDto', 'totalAmount'],
+  ['AnimalMortalityResponseDto', 'netLoss'],
 ];
 for (const [schemaName, propertyName] of decimalStrings) {
   if (schemas[schemaName]?.properties?.[propertyName]?.type !== 'string') {

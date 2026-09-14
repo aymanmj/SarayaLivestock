@@ -18,7 +18,8 @@ import {
   PieChart,
   Globe,
   Sun,
-  Moon
+  Moon,
+  ShoppingBag
 } from 'lucide-react';
 
 import { useAuth } from './context/AuthContext';
@@ -70,6 +71,9 @@ export const AppLayout: React.FC = () => {
       : []),
     ...(role === 'SUPER_ADMIN' || ['FARM_MANAGER', 'ACCOUNTANT', 'WORKER'].includes(role)
       ? [{ id: 'nutrition', label: t('nav.nutrition'), icon: Wheat, badge: 'أقل تكلفة' }]
+      : []),
+    ...(role === 'SUPER_ADMIN' || ['FARM_MANAGER', 'ACCOUNTANT'].includes(role)
+      ? [{ id: 'sales', label: 'المبيعات والنفوق', icon: ShoppingBag, badge: 'فواتير وIAS 41' }]
       : []),
     ...(role === 'SUPER_ADMIN' || role === 'ACCOUNTANT'
       ? [{ id: 'accounting', label: t('nav.accounting'), icon: DollarSign, badge: 'GL & IAS 41' }]

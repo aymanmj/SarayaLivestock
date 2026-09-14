@@ -1188,6 +1188,57 @@
         ]
       }
     },
+    "/api/v1/animals/{id}/status": {
+      "patch": {
+        "operationId": "Animals_updateStatus",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "UUID v4 unique to this operational request and reused only for an identical retry",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAnimalStatusDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnimalRecordResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "تحديث حالة الحيوان (نشط، مستبعد، تم البيع، نافق)",
+        "tags": [
+          "Animals"
+        ]
+      }
+    },
     "/api/v1/barns": {
       "get": {
         "operationId": "Barns_findAll",
@@ -2057,6 +2108,249 @@
         },
         "tags": [
           "system"
+        ]
+      }
+    },
+    "/api/v1/sales/milk": {
+      "post": {
+        "operationId": "Sales_recordMilkSale",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "UUID v4 unique to this operational request and reused only for an identical retry",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordMilkSaleDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialSaleResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "sales"
+        ]
+      }
+    },
+    "/api/v1/sales/animal": {
+      "post": {
+        "operationId": "Sales_recordAnimalSale",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "UUID v4 unique to this operational request and reused only for an identical retry",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordAnimalSaleDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialSaleResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "sales"
+        ]
+      }
+    },
+    "/api/v1/sales/mortality": {
+      "post": {
+        "operationId": "Sales_recordMortality",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "UUID v4 unique to this operational request and reused only for an identical retry",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordMortalityDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnimalMortalityResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "sales"
+        ]
+      },
+      "get": {
+        "operationId": "Sales_getMortalities",
+        "parameters": [
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AnimalMortalityResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "sales"
+        ]
+      }
+    },
+    "/api/v1/sales/summary": {
+      "get": {
+        "operationId": "Sales_getSalesSummary",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SalesSummaryResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "sales"
+        ]
+      }
+    },
+    "/api/v1/sales": {
+      "get": {
+        "operationId": "Sales_getSales",
+        "parameters": [
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CommercialSaleResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "sales"
+        ]
+      }
+    },
+    "/api/v1/sales/{id}": {
+      "get": {
+        "operationId": "Sales_getSaleById",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialSaleResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "sales"
         ]
       }
     }
@@ -3050,11 +3344,11 @@
           "category": {
             "type": "string",
             "enum": [
-              "EXPENSE",
               "ASSET",
               "LIABILITY",
               "EQUITY",
-              "REVENUE"
+              "REVENUE",
+              "EXPENSE"
             ]
           },
           "parentId": {
@@ -4813,6 +5107,28 @@
           "barnId"
         ]
       },
+      "UpdateAnimalStatusDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "SOLD",
+              "CULLED",
+              "DECEASED",
+              "QUARANTINED"
+            ]
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
       "BarnAnimalCountResponseDto": {
         "type": "object",
         "properties": {
@@ -5198,6 +5514,31 @@
           "result"
         ]
       },
+      "TwinOffspringDto": {
+        "type": "object",
+        "properties": {
+          "tagNumber": {
+            "type": "string",
+            "pattern": "^[\\p{L}\\p{N}._/-]{1,50}$"
+          },
+          "gender": {
+            "type": "string",
+            "enum": [
+              "FEMALE",
+              "MALE"
+            ]
+          },
+          "weightKg": {
+            "type": "number",
+            "minimum": 0.1,
+            "maximum": 500
+          }
+        },
+        "required": [
+          "tagNumber",
+          "gender"
+        ]
+      },
       "RecordCalvingDto": {
         "type": "object",
         "properties": {
@@ -5219,6 +5560,24 @@
             "type": "number",
             "minimum": 0.1,
             "maximum": 500
+          },
+          "calvingDifficulty": {
+            "type": "string",
+            "enum": [
+              "EASY",
+              "ASSISTED",
+              "SURGICAL",
+              "ABORTION"
+            ]
+          },
+          "notes": {
+            "type": "string"
+          },
+          "twins": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TwinOffspringDto"
+            }
           }
         },
         "required": [
@@ -6613,6 +6972,380 @@
           "timestamp",
           "database",
           "requiredMigration"
+        ]
+      },
+      "RecordMilkSaleDto": {
+        "type": "object",
+        "properties": {
+          "liters": {
+            "type": "number",
+            "minimum": 0.001
+          },
+          "pricePerLiter": {
+            "type": "number",
+            "minimum": 0.001
+          },
+          "paymentMethod": {
+            "type": "string",
+            "enum": [
+              "CASH",
+              "BANK",
+              "ON_ACCOUNT"
+            ]
+          },
+          "buyerName": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "buyerPhone": {
+            "type": "string",
+            "maxLength": 50
+          },
+          "saleDate": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "liters",
+          "pricePerLiter",
+          "paymentMethod",
+          "buyerName"
+        ]
+      },
+      "SaleType": {
+        "type": "string",
+        "enum": [
+          "MILK",
+          "LIVE_ANIMAL"
+        ]
+      },
+      "PaymentMethod": {
+        "type": "string",
+        "enum": [
+          "CASH",
+          "BANK",
+          "ON_ACCOUNT"
+        ]
+      },
+      "AnimalPricingMethod": {
+        "type": "string",
+        "enum": [
+          "BY_WEIGHT",
+          "PER_HEAD"
+        ]
+      },
+      "CommercialSaleResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "farmId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "invoiceNumber": {
+            "type": "string"
+          },
+          "saleDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "saleType": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SaleType"
+              }
+            ]
+          },
+          "paymentMethod": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PaymentMethod"
+              }
+            ]
+          },
+          "buyerName": {
+            "type": "string"
+          },
+          "buyerPhone": {
+            "type": "string",
+            "nullable": true
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true
+          },
+          "liters": {
+            "type": "string",
+            "nullable": true,
+            "pattern": "^-?\\d+(?:\\.\\d{1,3})?$"
+          },
+          "pricePerLiter": {
+            "type": "string",
+            "nullable": true,
+            "pattern": "^-?\\d+(?:\\.\\d{1,3})?$"
+          },
+          "animalId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          },
+          "pricingMethod": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AnimalPricingMethod"
+              }
+            ]
+          },
+          "weightKg": {
+            "type": "string",
+            "nullable": true,
+            "pattern": "^-?\\d+(?:\\.\\d{1,3})?$"
+          },
+          "pricePerKg": {
+            "type": "string",
+            "nullable": true,
+            "pattern": "^-?\\d+(?:\\.\\d{1,3})?$"
+          },
+          "pricePerHead": {
+            "type": "string",
+            "nullable": true,
+            "pattern": "^-?\\d+(?:\\.\\d{1,3})?$"
+          },
+          "totalAmount": {
+            "type": "string",
+            "pattern": "^-?\\d+(?:\\.\\d{1,3})?$"
+          },
+          "journalEntryId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          },
+          "createdById": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "farmId",
+          "invoiceNumber",
+          "saleDate",
+          "saleType",
+          "paymentMethod",
+          "buyerName",
+          "totalAmount",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "RecordAnimalSaleDto": {
+        "type": "object",
+        "properties": {
+          "animalId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "pricingMethod": {
+            "type": "string",
+            "enum": [
+              "BY_WEIGHT",
+              "PER_HEAD"
+            ]
+          },
+          "weightKg": {
+            "type": "number",
+            "minimum": 0.1
+          },
+          "pricePerKg": {
+            "type": "number",
+            "minimum": 0.001
+          },
+          "pricePerHead": {
+            "type": "number",
+            "minimum": 0.001
+          },
+          "paymentMethod": {
+            "type": "string",
+            "enum": [
+              "CASH",
+              "BANK",
+              "ON_ACCOUNT"
+            ]
+          },
+          "buyerName": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "buyerPhone": {
+            "type": "string",
+            "maxLength": 50
+          },
+          "saleDate": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "animalId",
+          "pricingMethod",
+          "paymentMethod",
+          "buyerName"
+        ]
+      },
+      "RecordMortalityDto": {
+        "type": "object",
+        "properties": {
+          "animalId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "deathDate": {
+            "type": "string"
+          },
+          "causeOfDeath": {
+            "type": "string",
+            "maxLength": 300
+          },
+          "salvageValue": {
+            "type": "number",
+            "minimum": 0
+          },
+          "estimatedBookValue": {
+            "type": "number",
+            "minimum": 0
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "animalId",
+          "deathDate",
+          "causeOfDeath"
+        ]
+      },
+      "AnimalMortalityResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "farmId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "animalId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "deathDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "causeOfDeath": {
+            "type": "string"
+          },
+          "salvageValue": {
+            "type": "string",
+            "pattern": "^-?\\d+(?:\\.\\d{1,3})?$"
+          },
+          "bookValue": {
+            "type": "string",
+            "pattern": "^-?\\d+(?:\\.\\d{1,3})?$"
+          },
+          "netLoss": {
+            "type": "string",
+            "pattern": "^-?\\d+(?:\\.\\d{1,3})?$"
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true
+          },
+          "journalEntryId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          },
+          "recordedById": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "farmId",
+          "animalId",
+          "deathDate",
+          "causeOfDeath",
+          "salvageValue",
+          "bookValue",
+          "netLoss",
+          "createdAt"
+        ]
+      },
+      "SalesSummaryResponseDto": {
+        "type": "object",
+        "properties": {
+          "totalSalesLyd": {
+            "type": "string",
+            "pattern": "^-?\\d+(?:\\.\\d{1,3})?$"
+          },
+          "milkSalesLyd": {
+            "type": "string",
+            "pattern": "^-?\\d+(?:\\.\\d{1,3})?$"
+          },
+          "animalSalesLyd": {
+            "type": "string",
+            "pattern": "^-?\\d+(?:\\.\\d{1,3})?$"
+          },
+          "totalMilkLiters": {
+            "type": "string",
+            "pattern": "^-?\\d+(?:\\.\\d{1,3})?$"
+          },
+          "totalAnimalsSold": {
+            "type": "number"
+          },
+          "totalMortalityLossLyd": {
+            "type": "string",
+            "pattern": "^-?\\d+(?:\\.\\d{1,3})?$"
+          },
+          "totalDeceasedAnimals": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "totalSalesLyd",
+          "milkSalesLyd",
+          "animalSalesLyd",
+          "totalMilkLiters",
+          "totalAnimalsSold",
+          "totalMortalityLossLyd",
+          "totalDeceasedAnimals"
         ]
       }
     }

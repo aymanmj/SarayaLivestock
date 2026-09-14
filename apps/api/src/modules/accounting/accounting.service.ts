@@ -503,13 +503,20 @@ export class AccountingService implements OnModuleInit {
    * استخراج ميزان المراجعة (Trial Balance) بالمجاميع والأرصدة
    */
   async getTrialBalance(farmId: string, fiscalYearId?: string) {
+    return this.buildTrialBalance(farmId, fiscalYearId);
+  }
+
+  private async buildTrialBalance(farmId: string, fiscalYearId?: string, excludeClosing = false) {
     const fiscalYear = await this.resolveReportingYear(farmId, fiscalYearId);
     const [accounts, aggregates] = await Promise.all([
       this.getChartOfAccounts(farmId),
       this.prisma.journalEntryLine.groupBy({
         by: ['accountId'],
         where: {
-          journalEntry: { farmId, fiscalYearId: fiscalYear.id, status: JournalEntryStatus.POSTED },
+          journalEntry: {
+            farmId, fiscalYearId: fiscalYear.id, status: JournalEntryStatus.POSTED,
+            ...(excludeClosing ? { type: { not: JournalEntryType.YEAR_END_CLOSING } } : {}),
+          },
         },
         _sum: { debit: true, credit: true },
       }),
@@ -560,7 +567,7 @@ export class AccountingService implements OnModuleInit {
    * استخراج قائمة الدخل الزراعية (Farm Income Statement - P&L)
    */
   async getIncomeStatement(farmId: string, fiscalYearId?: string) {
-    return this.buildIncomeStatement(await this.getTrialBalance(farmId, fiscalYearId));
+    return this.buildIncomeStatement(await this.buildTrialBalance(farmId, fiscalYearId, true));
   }
 
   /**
@@ -825,11 +832,20 @@ export class AccountingService implements OnModuleInit {
         },
       });
       const openingLines: Array<{ accountId: string; debit: number; credit: number; memo: string }> = [];
+      // The source year's ledger (including its closing entry) is authoritative.
+      // A lifetime account cache can already contain transactions from the next year.
+      const sourceTotals = await tx.journalEntryLine.groupBy({
+        by: ['accountId'],
+        where: { journalEntry: { farmId, fiscalYearId: currentYear.id, status: JournalEntryStatus.POSTED } },
+        _sum: { debit: true, credit: true },
+      });
+      const sourceByAccount = new Map(sourceTotals.map(row => [row.accountId, row._sum]));
       let totalDebit = new Decimal(0);
       let totalCredit = new Decimal(0);
 
       for (const account of accounts) {
-        const balance = new Decimal(account.currentBalance);
+        const source = sourceByAccount.get(account.id);
+        const balance = new Decimal(source?.debit ?? 0).minus(source?.credit ?? 0);
         if (balance.isZero()) continue;
         if (balance.greaterThan(0)) {
           openingLines.push({ accountId: account.id, debit: balance.toNumber(), credit: 0, memo: `رصيد مرحل من ${currentYear.yearName}` });

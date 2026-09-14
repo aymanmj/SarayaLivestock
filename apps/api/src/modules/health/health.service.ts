@@ -69,6 +69,22 @@ export class HealthService {
         });
       }
 
+      if (dto.milkWithdrawalDays && dto.milkWithdrawalDays > 0 && tx.milkLog?.updateMany) {
+        const milkEnd = new Date(treatmentDate);
+        milkEnd.setDate(milkEnd.getDate() + dto.milkWithdrawalDays);
+        await tx.milkLog.updateMany({
+          where: {
+            animalId: animal.id,
+            logDate: { gte: treatmentDate, lte: milkEnd },
+            isDiscarded: false,
+          },
+          data: {
+            isDiscarded: true,
+            discardReason: `🚨 حليب مهدر بأثر رجعي: علاج بيطري متأخر (${dto.drugName}) تحت فترة تحريم حتى (${milkEnd.toISOString().split('T')[0]})`,
+          },
+        });
+      }
+
       if (actor) await appendDomainAudit(tx, actor, {
         action: 'health.treatment.recorded',
         entityType: 'healthTreatment',

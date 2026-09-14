@@ -56,6 +56,8 @@ model Farm {
   accounts         Account[]
   journalEntries   JournalEntry[]
   journalSequences JournalSequence[]
+  commercialSales   CommercialSale[]
+  animalMortalities AnimalMortality[]
 
   @@map("farms")
 }
@@ -283,6 +285,8 @@ model Animal {
   weightLogs       WeightLog[]
   breedingRecords  BreedingRecord[]
   healthTreatments HealthTreatment[]
+  commercialSales  CommercialSale[]
+  mortalities      AnimalMortality[]
 
   @@unique([farmId, tagNumber])
   @@index([farmId, status])
@@ -671,6 +675,8 @@ model JournalEntry {
   fiscalYear   FiscalYear         @relation(fields: [fiscalYearId], references: [id], onDelete: Cascade)
   fiscalPeriod FiscalPeriod?      @relation(fields: [fiscalPeriodId], references: [id], onDelete: SetNull)
   lines        JournalEntryLine[]
+  commercialSales   CommercialSale[]
+  animalMortalities AnimalMortality[]
 
   @@unique([farmId, entryNumber])
   @@map("journal_entries")
@@ -705,4 +711,85 @@ model JournalSequence {
 
   @@unique([farmId, fiscalYearId])
   @@map("journal_sequences")
+}
+
+// ----------------------------------------------------
+// 8. المبيعات التجارية ونفوق الحيوانات (Commercial Sales & Mortality)
+// ----------------------------------------------------
+
+enum SaleType {
+  MILK
+  LIVE_ANIMAL
+}
+
+enum PaymentMethod {
+  CASH
+  BANK
+  ON_ACCOUNT
+}
+
+enum AnimalPricingMethod {
+  BY_WEIGHT
+  PER_HEAD
+}
+
+model CommercialSale {
+  id            String               @id @default(uuid())
+  farmId        String
+  invoiceNumber String
+  saleDate      DateTime             @default(now())
+  saleType      SaleType
+  paymentMethod PaymentMethod        @default(CASH)
+  buyerName     String
+  buyerPhone    String?
+  notes         String?
+
+  // تفاصيل بيع الحليب الخام
+  liters        Decimal?             @db.Decimal(12, 3)
+  pricePerLiter Decimal?             @db.Decimal(10, 3)
+
+  // تفاصيل بيع الماشية الحية
+  animalId      String?
+  pricingMethod AnimalPricingMethod?
+  weightKg      Decimal?             @db.Decimal(10, 3)
+  pricePerKg    Decimal?             @db.Decimal(10, 3)
+  pricePerHead  Decimal?             @db.Decimal(15, 3)
+
+  // الإجماليات المالية والربط المحاسبي
+  totalAmount    Decimal       @db.Decimal(18, 3)
+  journalEntryId String?
+  createdById    String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  farm         Farm          @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  animal       Animal?       @relation(fields: [animalId], references: [id], onDelete: SetNull)
+  journalEntry JournalEntry? @relation(fields: [journalEntryId], references: [id], onDelete: SetNull)
+
+  @@unique([farmId, invoiceNumber])
+  @@index([farmId, saleDate])
+  @@index([farmId, saleType])
+  @@map("commercial_sales")
+}
+
+model AnimalMortality {
+  id             String   @id @default(uuid())
+  farmId         String
+  animalId       String
+  deathDate      DateTime @db.Date
+  causeOfDeath   String
+  salvageValue   Decimal  @default(0) @db.Decimal(15, 3)
+  bookValue      Decimal  @db.Decimal(15, 3)
+  netLoss        Decimal  @db.Decimal(15, 3)
+  notes          String?
+  journalEntryId String?
+  recordedById   String?
+  createdAt      DateTime @default(now())
+
+  farm         Farm          @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  animal       Animal        @relation(fields: [animalId], references: [id], onDelete: Cascade)
+  journalEntry JournalEntry? @relation(fields: [journalEntryId], references: [id], onDelete: SetNull)
+
+  @@index([farmId, deathDate])
+  @@map("animal_mortalities")
 }

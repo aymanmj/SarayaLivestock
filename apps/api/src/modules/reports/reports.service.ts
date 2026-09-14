@@ -8,6 +8,15 @@ import { ReportExportType } from './dto/reports.dto';
 export class ReportsService {
   constructor(private prisma: PrismaService) {}
 
+  private configuredPrice(name: string): number {
+    const raw = process.env[name]?.trim();
+    if (!raw) return 0;
+    if (!/^\d+(\.\d{1,6})?$/.test(raw) || !Number.isFinite(Number(raw))) {
+      throw new BadRequestException(`إعداد السعر ${name} غير صالح`);
+    }
+    return Money.decimal(raw).toNumber();
+  }
+
   async getExecutiveDashboard(farmId: string) {
     const todayKey = new Date().toISOString().split('T')[0];
     const today = new Date(`${todayKey}T00:00:00.000Z`);
@@ -121,7 +130,7 @@ export class ReportsService {
     });
 
     const totalMilkLiters = milkLogs.reduce((acc, log) => acc + Number(log.yieldLiters), 0);
-    const milkPricePerLiter = Money.fromPrisma(process.env.MILK_PRICE_PER_LITER as any) || 0;
+    const milkPricePerLiter = this.configuredPrice('MILK_PRICE_PER_LITER');
     const grossMilkRevenue = Money.mul(totalMilkLiters, milkPricePerLiter);
 
     // 2. تكلفة الأعلاف المنصرفة (TMR)
@@ -161,7 +170,6 @@ export class ReportsService {
     const totalDairyCost = Money.add(Money.add(dairyFeedCost, Money.mul(totalVetCost, 0.7)), Money.mul(estimatedLaborOverhead, 0.65));
     const actualCostPerLiter = totalMilkLiters > 0 ? Money.round(Money.div(totalDairyCost, totalMilkLiters), 3) : 0;
     const profitPerLiter = Money.round(Money.sub(milkPricePerLiter, actualCostPerLiter), 3);
-    const dairyMarginPct = milkPricePerLiter > 0 ? Money.round(Money.percent(profitPerLiter, 100), 1) : 0; // percent is wrong, (profit / price * 100) -> Money.round(Money.mul(Money.div(profitPerLiter, milkPricePerLiter), 100), 1)
 
     const actualDairyMarginPct = milkPricePerLiter > 0 ? Money.round(Money.mul(Money.div(profitPerLiter, milkPricePerLiter), 100), 1) : 0;
 
@@ -175,7 +183,7 @@ export class ReportsService {
     );
     const totalBeefCost = Money.add(Money.add(beefFeedCost, Money.mul(totalVetCost, 0.3)), Money.mul(estimatedLaborOverhead, 0.35));
     const costPerKgGain = estimatedMonthlyBeefGainKg > 0 ? Money.round(Money.div(totalBeefCost, estimatedMonthlyBeefGainKg), 2) : 0;
-    const beefMarketPricePerKg = Money.fromPrisma(process.env.BEEF_MARKET_PRICE_PER_KG as any) || 0;
+    const beefMarketPricePerKg = this.configuredPrice('BEEF_MARKET_PRICE_PER_KG');
     const beefProfitMarginPct = beefMarketPricePerKg > 0
       ? Money.round(Money.mul(Money.div(Money.sub(beefMarketPricePerKg, costPerKgGain), beefMarketPricePerKg), 100), 1)
       : 0;

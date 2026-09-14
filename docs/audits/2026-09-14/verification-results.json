@@ -1,0 +1,36 @@
+{
+  "date": "2026-09-14",
+  "head": "e6fa768",
+  "scope": "Current worktree including uncommitted license public-key lookup change",
+  "productEditedByReview": false,
+  "apiBuild": "pass",
+  "webTypecheck": "pass",
+  "webProductionBuild": "pass",
+  "prismaValidate": "pass",
+  "npmProductionAudits": { "api": 0, "web": 0, "desktop": 0 },
+  "apiUnitTests": {
+    "passed": 100,
+    "skippedDatabaseTests": 4,
+    "passedSuites": 21,
+    "failedSuites": 1,
+    "failure": "money.util.spec.ts fails compilation: missing Money.toDb; its test cases did not run",
+    "priorDomainAtomicityFailures": "now passing"
+  },
+  "desktopBuild": { "status": "fail", "error": "TS2322 main.ts:220 ARABIC is not assignable to CharacterSet" },
+  "contractsCheck": { "status": "fail", "error": "OpenAPI contract is stale" },
+  "httpBoundaryCheck": { "status": "fail", "file": "apps/web/src/offline/sync-queue.ts" },
+  "existingDatabaseReadOnlyInspection": { "state": "MIGRATION_MANAGED", "applied": 5, "pending": 0, "failed": 0, "unknown": 0, "includedDataChecks": 10, "reportedIssues": 0 },
+  "disposableDatabase": { "migrationsApplied": 5, "passedIntegrationSuites": 2, "passedIntegrationTests": 4, "cleanupConfirmed": true },
+  "reproductions": [
+    { "case": "configured price string in financial report", "result": "value?.toNumber is not a function", "scope": "current TypeScript with in-memory data" },
+    { "case": "Money.divide by zero", "result": "Infinity, no exception", "scope": "current TypeScript" },
+    { "case": "historical income after fiscal close", "before": { "revenue": 100, "expenses": 40, "profit": 60 }, "after": { "revenue": 0, "expenses": 0, "profit": 0 }, "scope": "current compiled API with disposable PostgreSQL" },
+    { "case": "rollover to year with existing transactions", "expectedCash": 180, "actualCash": 200, "scope": "current compiled API with disposable PostgreSQL" },
+    { "case": "milk produced during historical withdrawal", "actualDiscarded": false, "scope": "current compiled API with disposable PostgreSQL" },
+    { "case": "repeat completed calving", "result": "newborn created and date overwritten", "scope": "current compiled API with disposable PostgreSQL" },
+    { "case": "least-cost ration", "actual": 533.331, "feasibleAlternative": 520, "scope": "current TypeScript with in-memory data" },
+    { "case": "ration maximum inclusion", "maximumPct": 10, "actualPct": 33.33, "scope": "current TypeScript with in-memory data" }
+  ],
+  "installerVerification": { "serverSignature": "NotSigned", "clientSignature": "NotSigned", "bothArtifactsLastModified": "2026-08-30", "installedConfigAcl": "Inherited BUILTIN Users ReadAndExecute", "secretValuesRecorded": false },
+  "limitations": ["No real farm pilot", "No full authenticated HTTP tenant/role matrix", "No browser E2E suite", "No load test", "No actual printer/scale test", "No fresh Windows VM installation/upgrade/rollback executed"]
+}

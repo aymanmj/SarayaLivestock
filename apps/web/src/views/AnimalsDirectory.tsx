@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, Plus, ShieldAlert, HeartPulse, Scale, Milk, Layers, RefreshCw, Eye } from 'lucide-react';
+import { Link } from '@tanstack/react-router';
+import { Search, Filter, Plus, ShieldAlert, HeartPulse, Scale, Milk, Layers, RefreshCw, Eye, ShoppingBag } from 'lucide-react';
 import { Animal, Species } from '../api/types';
 import { getAnimals } from '../api/client';
 import { AddAnimalModal } from '../components/AddAnimalModal';
@@ -74,6 +75,13 @@ export const AnimalsDirectory: React.FC = () => {
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-emerald-700 dark:text-emerald-400' : ''}`} />
           </button>
+          <Link
+            to="/sales"
+            className="px-4 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 rounded-xl font-bold text-xs flex items-center gap-2 transition"
+          >
+            <ShoppingBag className="w-4 h-4 text-emerald-600" />
+            <span>المبيعات والنفوق (IAS 41)</span>
+          </Link>
           <button 
             onClick={() => setIsAddModalOpen(true)}
             className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold text-xs flex items-center gap-2 transition shadow-lg shadow-emerald-900/30"

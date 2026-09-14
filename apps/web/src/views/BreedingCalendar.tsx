@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Heart, Baby, Eye, Sparkles, CheckCircle2, Clock, Plus, ArrowLeftRight, RefreshCw } from 'lucide-react';
+import { Calendar, Heart, Baby, Eye, Sparkles, CheckCircle2, Clock, Plus, ArrowLeftRight, RefreshCw, X } from 'lucide-react';
 import { recordPdResult, recordCalving, getBreedingTasks } from '../api/client';
 import { AddInseminationModal } from '../components/AddInseminationModal';
 
@@ -30,6 +30,23 @@ interface CalvingTask {
   parity: number;
 }
 
+interface CalvingModalState {
+  isOpen: boolean;
+  taskId: string;
+  tag: string;
+  actualDate: string;
+  tagNumber: string;
+  gender: 'FEMALE' | 'MALE';
+  weightKg: number;
+  difficulty: 'EASY' | 'ASSISTED' | 'SURGICAL' | 'ABORTION';
+  isTwin: boolean;
+  twinTagNumber: string;
+  twinGender: 'FEMALE' | 'MALE';
+  twinWeightKg: number;
+  notes: string;
+  submitting: boolean;
+}
+
 export const BreedingCalendar: React.FC = () => {
   const [isInseminateOpen, setIsInseminateOpen] = useState(false);
   const [selectedTagForAction, setSelectedTagForAction] = useState<string | undefined>(undefined);
@@ -39,6 +56,7 @@ export const BreedingCalendar: React.FC = () => {
   const [pdTasks, setPdTasks] = useState<PDTask[]>([]);
   const [dryTasks, setDryTasks] = useState<DryOffTask[]>([]);
   const [calvingTasks, setCalvingTasks] = useState<CalvingTask[]>([]);
+  const [calvingModal, setCalvingModal] = useState<CalvingModalState | null>(null);
 
   const loadTasks = async () => {
     setLoading(true);
@@ -80,11 +98,8 @@ export const BreedingCalendar: React.FC = () => {
           })));
         }
       }
-    } catch (error: any) {
-      setPdTasks([]);
-      setDryTasks([]);
-      setCalvingTasks([]);
-      setFeedback(error.message || 'تعذر تحميل مهام التناسل');
+    } catch (e: any) {
+      setFeedback(e.message || 'تعذر تحميل مهام التناسل من الخادم');
     } finally {
       setLoading(false);
     }
@@ -98,15 +113,15 @@ export const BreedingCalendar: React.FC = () => {
     try {
       await recordPdResult(taskId, result);
     } catch (error: any) {
-      setFeedback(error.message || 'تعذر تسجيل نتيجة فحص الحمل');
+      setFeedback(error.message || 'تعذر حفظ نتيجة فحص الحمل');
       return;
     }
 
     setPdTasks(prev => prev.filter(t => t.id !== taskId));
     setFeedback(
-      result === 'PREGNANT' 
+      result === 'PREGNANT'
         ? `✓ تم تأكيد عشار البقرة #${tag} وجدولة موعد التجفيف والولادة آلياً.`
-        : `✗ تم تسجيل البقرة #${tag} كفارغة وجدولتها لإعادة التلقيح في الدورة القادمة.`
+        : `✗ تم تسجيل البقرة #${tag} كفارغة وجدولتها لإعادة التلقيح في الدورة القادمة.`,
     );
   };
 
@@ -114,24 +129,55 @@ export const BreedingCalendar: React.FC = () => {
     setFeedback(`تعذر تسجيل تجفيف البقرة #${tag}: هذه العملية تحتاج مساراً خادمياً معتمداً قبل تفعيلها.`);
   };
 
-  const handleCalvingConfirm = async (taskId: string, tag: string) => {
-    const offspringTag = prompt(`أدخل رقم قرط المولود الجديد للبقرة #${tag}:`, `${tag}-C1`);
-    if (!offspringTag) return;
+  const openCalvingModal = (taskId: string, tag: string) => {
+    setCalvingModal({
+      isOpen: true,
+      taskId,
+      tag,
+      actualDate: new Date().toISOString().split('T')[0],
+      tagNumber: `${tag}-C1`,
+      gender: 'FEMALE',
+      weightKg: 40,
+      difficulty: 'EASY',
+      isTwin: false,
+      twinTagNumber: `${tag}-C2`,
+      twinGender: 'MALE',
+      twinWeightKg: 38,
+      notes: '',
+      submitting: false,
+    });
+  };
+
+  const handleCalvingSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!calvingModal) return;
+    setCalvingModal(prev => prev ? { ...prev, submitting: true } : null);
 
     try {
-      await recordCalving(taskId, {
-        actualCalvingDate: new Date().toISOString(),
-        offspringTagNumber: offspringTag,
-        offspringGender: 'FEMALE',
-        offspringWeightKg: 42,
+      await recordCalving(calvingModal.taskId, {
+        actualCalvingDate: new Date(calvingModal.actualDate).toISOString(),
+        offspringTagNumber: calvingModal.tagNumber.trim(),
+        offspringGender: calvingModal.gender,
+        offspringWeightKg: Number(calvingModal.weightKg),
+        calvingDifficulty: calvingModal.difficulty,
+        notes: calvingModal.notes.trim() || undefined,
+        twins: calvingModal.isTwin ? [{
+          tagNumber: calvingModal.twinTagNumber.trim(),
+          gender: calvingModal.twinGender,
+          weightKg: Number(calvingModal.twinWeightKg),
+        }] : undefined,
       });
+
+      setCalvingTasks(prev => prev.filter(t => t.id !== calvingModal.taskId));
+      const successMsg = calvingModal.isTwin
+        ? `🎉 مبارك! تم تسجيل ولادة توأم للبقرة #${calvingModal.tag} وإضافة المواليد (#${calvingModal.tagNumber} و #${calvingModal.twinTagNumber}) إلى سجل القطيع.`
+        : `🎉 مبارك! تم تسجيل ولادة البقرة #${calvingModal.tag} وإضافة المولود الجديد #${calvingModal.tagNumber} إلى سجل القطيع.`;
+      setFeedback(successMsg);
+      setCalvingModal(null);
     } catch (error: any) {
       setFeedback(error.message || 'تعذر تسجيل الولادة');
-      return;
+      setCalvingModal(prev => prev ? { ...prev, submitting: false } : null);
     }
-
-    setCalvingTasks(prev => prev.filter(t => t.id !== taskId));
-    setFeedback(`🎉 مبارك! تم تسجيل ولادة البقرة #${tag} وإضافة المولود الجديد #${offspringTag} إلى سجل القطيع.`);
   };
 
   return (
@@ -295,7 +341,7 @@ export const BreedingCalendar: React.FC = () => {
                 </div>
                 <div className="pt-2">
                   <button 
-                    onClick={() => handleCalvingConfirm(item.id, item.tag)}
+                    onClick={() => openCalvingModal(item.id, item.tag)}
                     className="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition shadow-lg shadow-emerald-900/30 flex items-center justify-center gap-1.5"
                   >
                     <Baby className="w-4 h-4" />
@@ -323,6 +369,183 @@ export const BreedingCalendar: React.FC = () => {
         }}
         defaultTagNumber={selectedTagForAction}
       />
+
+      {/* Calving Registration Modal */}
+      {calvingModal?.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto" dir="rtl">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-5 my-8">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
+              <div className="flex items-center gap-2">
+                <div className="p-2 bg-pink-100 dark:bg-pink-500/10 rounded-xl text-pink-600 dark:text-pink-400">
+                  <Baby className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 dark:text-white text-base">تسجيل ولادة رسمية للبقرة #{calvingModal.tag}</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">إدخال بيانات المولود وتحديث مرحلة الأم إلى حلابة (Lactating)</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setCalvingModal(null)}
+                className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCalvingSubmit} className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">تاريخ الولادة الفعلي</label>
+                  <input
+                    type="date"
+                    required
+                    value={calvingModal.actualDate}
+                    onChange={e => setCalvingModal(prev => prev ? { ...prev, actualDate: e.target.value } : null)}
+                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-900 dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">درجة صعوبة الولادة</label>
+                  <select
+                    value={calvingModal.difficulty}
+                    onChange={e => setCalvingModal(prev => prev ? { ...prev, difficulty: e.target.value as any } : null)}
+                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-900 dark:text-white"
+                  >
+                    <option value="EASY">طبيعية سهلة (Easy)</option>
+                    <option value="ASSISTED">بمساعدة عادية (Assisted)</option>
+                    <option value="SURGICAL">تدخل جراحي/قيصرية (Surgical)</option>
+                    <option value="ABORTION">إجهاض (Abortion)</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Primary Offspring */}
+              <div className="p-3.5 bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 rounded-2xl space-y-3">
+                <span className="text-xs font-bold text-slate-900 dark:text-white block">بيانات المولود الأول</span>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  <div>
+                    <label className="block text-[11px] text-slate-500 mb-1">رقم القرط *</label>
+                    <input
+                      type="text"
+                      required
+                      value={calvingModal.tagNumber}
+                      onChange={e => setCalvingModal(prev => prev ? { ...prev, tagNumber: e.target.value } : null)}
+                      className="w-full px-2.5 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] text-slate-500 mb-1">الجنس *</label>
+                    <select
+                      value={calvingModal.gender}
+                      onChange={e => setCalvingModal(prev => prev ? { ...prev, gender: e.target.value as any } : null)}
+                      className="w-full px-2.5 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-xs"
+                    >
+                      <option value="FEMALE">أنثى (عجلة)</option>
+                      <option value="MALE">ذكر (عجل)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[11px] text-slate-500 mb-1">الوزن (كجم)</label>
+                    <input
+                      type="number"
+                      step="0.5"
+                      min="1"
+                      max="150"
+                      value={calvingModal.weightKg}
+                      onChange={e => setCalvingModal(prev => prev ? { ...prev, weightKg: Number(e.target.value) } : null)}
+                      className="w-full px-2.5 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-xs"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Twin Toggle */}
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  type="checkbox"
+                  id="twinCheck"
+                  checked={calvingModal.isTwin}
+                  onChange={e => setCalvingModal(prev => prev ? { ...prev, isTwin: e.target.checked } : null)}
+                  className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                />
+                <label htmlFor="twinCheck" className="text-xs font-semibold text-slate-800 dark:text-slate-200 cursor-pointer">
+                  ولادة توأم (تسجيل مولود ثانٍ)
+                </label>
+              </div>
+
+              {/* Second Offspring (Twins) */}
+              {calvingModal.isTwin && (
+                <div className="p-3.5 bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/40 rounded-2xl space-y-3">
+                  <span className="text-xs font-bold text-emerald-800 dark:text-emerald-300 block">بيانات المولود الثاني (التوأم)</span>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                    <div>
+                      <label className="block text-[11px] text-slate-500 mb-1">رقم القرط *</label>
+                      <input
+                        type="text"
+                        required={calvingModal.isTwin}
+                        value={calvingModal.twinTagNumber}
+                        onChange={e => setCalvingModal(prev => prev ? { ...prev, twinTagNumber: e.target.value } : null)}
+                        className="w-full px-2.5 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] text-slate-500 mb-1">الجنس *</label>
+                      <select
+                        value={calvingModal.twinGender}
+                        onChange={e => setCalvingModal(prev => prev ? { ...prev, twinGender: e.target.value as any } : null)}
+                        className="w-full px-2.5 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-xs"
+                      >
+                        <option value="FEMALE">أنثى (عجلة)</option>
+                        <option value="MALE">ذكر (عجل)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[11px] text-slate-500 mb-1">الوزن (كجم)</label>
+                      <input
+                        type="number"
+                        step="0.5"
+                        min="1"
+                        max="150"
+                        value={calvingModal.twinWeightKg}
+                        onChange={e => setCalvingModal(prev => prev ? { ...prev, twinWeightKg: Number(e.target.value) } : null)}
+                        className="w-full px-2.5 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-xs"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-[11px] text-slate-500 mb-1">ملاحظات الطبيب البيطري / القائم بالتوليد (اختياري)</label>
+                <textarea
+                  rows={2}
+                  value={calvingModal.notes}
+                  onChange={e => setCalvingModal(prev => prev ? { ...prev, notes: e.target.value } : null)}
+                  placeholder="ملاحظات سرسوب اللبأ، صحة المولود والأم..."
+                  className="w-full px-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-900 dark:text-white"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-200 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setCalvingModal(null)}
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-semibold"
+                >
+                  إلغاء
+                </button>
+                <button
+                  type="submit"
+                  disabled={calvingModal.submitting}
+                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition shadow-lg shadow-emerald-900/30 flex items-center gap-1.5"
+                >
+                  {calvingModal.submitting ? 'جاري التسجيل...' : 'اعتماد الولادة والمولود'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -70,15 +70,21 @@ async function main() {
       create: async ({ data }) => data,
     },
   };
-  const calving = await new BreedingService({ $transaction: async cb => cb(breedingTx) })
-    .recordCalving('breeding', {
-      actualCalvingDate: '2026-09-10', offspringTagNumber: 'second-newborn', offspringGender: 'MALE',
-    }, 'farm');
+  let calvingError = null;
+  let calving = null;
+  try {
+    calving = await new BreedingService({ $transaction: async cb => cb(breedingTx) })
+      .recordCalving('breeding', {
+        actualCalvingDate: '2026-09-10', offspringTagNumber: 'second-newborn', offspringGender: 'MALE',
+      }, 'farm');
+  } catch (error) {
+    calvingError = error;
+  }
   console.log(JSON.stringify({
     probe: 'repeat completed calving with a new offspring tag',
-    newbornTag: calving.newborn.tagNumber,
-    overwrittenCalvingDate: record.actualCalvingDate,
-    defectObserved: true,
+    rejectedWithConflict: !!calvingError,
+    errorMessage: calvingError?.message,
+    defectObserved: !calvingError,
   }));
 }
 

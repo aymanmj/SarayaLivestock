@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, Plus, Layers, Tag, Scale, Calendar, Building, Sparkles } from 'lucide-react';
 import { Species, Gender, Purpose, LifeStage } from '../api/types';
 import { createAnimal } from '../api/client';
+import { getBreedsForSpecies } from '../utils/breeds.data';
 
 interface Props {
   isOpen: boolean;
@@ -14,7 +15,8 @@ export const AddAnimalModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) 
   const [rfidTag, setRfidTag] = useState('');
   const [name, setName] = useState('');
   const [species, setSpecies] = useState<Species>('CATTLE');
-  const [breed, setBreed] = useState('');
+  const [breed, setBreed] = useState('هولشتاين فريزيان (Holstein Friesian)');
+  const [isCustomBreed, setIsCustomBreed] = useState(false);
   const [gender, setGender] = useState<Gender>('FEMALE');
   const [purpose, setPurpose] = useState<Purpose>('DAIRY');
   const [currentLifeStage, setCurrentLifeStage] = useState<LifeStage>('LACTATING');
@@ -145,27 +147,55 @@ export const AddAnimalModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) 
                 onChange={e => {
                   const val = e.target.value as Species;
                   setSpecies(val);
-                  setBreed('');
+                  const firstBreed = getBreedsForSpecies(val)[0]?.name || '';
+                  setBreed(firstBreed);
+                  setIsCustomBreed(false);
                 }}
                 className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-emerald-500 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none transition"
               >
                 <option value="CATTLE">أبقار (Cattle)</option>
-                <option value="SHEEP">أغنام (Sheep)</option>
+                <option value="SHEEP">أغنام / خراف (Sheep)</option>
                 <option value="GOAT">ماعز (Goat)</option>
               </select>
             </div>
 
             {/* Breed */}
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">السلالة</label>
-              <input
-                type="text"
-                value={breed}
-                onChange={e => setBreed(e.target.value)}
-                placeholder="مثال: هولشتاين، سيمينتال، أنجوس"
-                required
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center justify-between">
+                <span>السلالة</span>
+                <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-normal">سلالات معتمدة</span>
+              </label>
+              <select
+                value={isCustomBreed ? '__CUSTOM__' : breed}
+                onChange={e => {
+                  if (e.target.value === '__CUSTOM__') {
+                    setIsCustomBreed(true);
+                    setBreed('');
+                  } else {
+                    setIsCustomBreed(false);
+                    setBreed(e.target.value);
+                  }
+                }}
                 className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-emerald-500 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none transition"
-              />
+              >
+                {getBreedsForSpecies(species).map(b => (
+                  <option key={b.id} value={b.name}>
+                    {b.name} — [{b.origin} | {b.primaryPurpose}]
+                  </option>
+                ))}
+                <option value="__CUSTOM__">✨ سلالة أخرى (كتابة يدوية مخصصة)...</option>
+              </select>
+
+              {isCustomBreed && (
+                <input
+                  type="text"
+                  value={breed}
+                  onChange={e => setBreed(e.target.value)}
+                  placeholder="أدخل اسم السلالة يدوياً..."
+                  required
+                  className="mt-2 w-full bg-slate-50 dark:bg-slate-950 border border-emerald-500/60 rounded-xl px-3.5 py-2 text-sm text-slate-900 dark:text-white focus:outline-none transition"
+                />
+              )}
             </div>
 
             {/* Gender */}

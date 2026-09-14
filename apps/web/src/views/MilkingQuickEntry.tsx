@@ -55,16 +55,20 @@ export const MilkingQuickEntry: React.FC = () => {
   const [availableCows, setAvailableCows] = useState<CowInfo[]>([]);
   const [selectedCow, setSelectedCow] = useState<CowInfo | null>(null);
   const [currentYield, setCurrentYield] = useState<string>('');
-  const [fatPct, setFatPct] = useState<number>(3.8);
-  const [proteinPct, setProteinPct] = useState<number>(3.2);
+  const [fatPct, setFatPct] = useState<string>('');
+  const [proteinPct, setProteinPct] = useState<string>('');
   const [shift, setShift] = useState<MilkingShift>('MORNING');
   const [isDiscarded, setIsDiscarded] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [recentLogs, setRecentLogs] = useState<RecentMilkLog[]>([]);
+  const [lastSavedLog, setLastSavedLog] = useState<RecentMilkLog | null>(null);
 
   // Bulk Tank Telemetry
   const [bulkTankVolume, setBulkTankVolume] = useState<number>(0);
+  const [dailyTotalLiters, setDailyTotalLiters] = useState<number>(0);
+  const [dailyUsableLiters, setDailyUsableLiters] = useState<number>(0);
+  const [chillerTemp, setChillerTemp] = useState<number | null>(null);
   const targetTankCapacity = 5000;
   const milkSellingPricePerLiter = 3.5; // LYD
 
@@ -109,12 +113,30 @@ export const MilkingQuickEntry: React.FC = () => {
         discardReason: log.discardReason,
         value: log.isDiscarded ? 0 : Money.mul(log.yieldLiters as any, milkSellingPricePerLiter),
       })));
-      setBulkTankVolume(Number(summary.usableLiters));
+      setDailyTotalLiters(Number(summary.totalLiters || 0));
+      setDailyUsableLiters(Number(summary.usableLiters || 0));
+      setBulkTankVolume(Number(summary.usableLiters || 0));
+
+      if ((window as any).electronAPI?.getTankTelemetry) {
+        try {
+          const telemetry = await (window as any).electronAPI.getTankTelemetry();
+          if (telemetry?.temperature !== undefined && telemetry?.connected) {
+            setChillerTemp(telemetry.temperature);
+          } else {
+            setChillerTemp(null);
+          }
+        } catch {
+          setChillerTemp(null);
+        }
+      }
     } catch (error: any) {
       setAvailableCows([]);
       setSelectedCow(null);
       setRecentLogs([]);
       setBulkTankVolume(0);
+      setDailyTotalLiters(0);
+      setDailyUsableLiters(0);
+      setChillerTemp(null);
       setFeedback(error.message || 'تعذر تحميل بيانات محطة الحلب');
     }
   };
@@ -173,24 +195,44 @@ export const MilkingQuickEntry: React.FC = () => {
 
   // POS Thermal Receipt Print
   const handlePrintReceipt = async () => {
-    if (!selectedCow) return;
+    if (!selectedCow) {
+      setFeedback('يرجى اختيار بقرة أولاً لطباعة الإيصال');
+      return;
+    }
+
+    const targetLog = lastSavedLog && lastSavedLog.tagNumber === selectedCow.tagNumber
+      ? lastSavedLog
+      : null;
+
+    if (!targetLog && (!currentYield || Number(currentYield) <= 0)) {
+      setFeedback('يرجى حفظ الحلبة أولاً قبل طباعة إذن الاستلام المالي');
+      return;
+    }
+
+    const yieldToPrint = targetLog ? String(targetLog.yieldLiters) : currentYield;
+    const isDiscardedToPrint = targetLog ? targetLog.isDiscarded : isDiscarded;
+    const valueToPrint = isDiscardedToPrint ? 0 : Money.mul(yieldToPrint, milkSellingPricePerLiter);
+
     const receiptData = {
       cowTag: selectedCow.tagNumber,
       cowName: selectedCow.name,
-      yieldLiters: currentYield,
+      yieldLiters: yieldToPrint,
       shift,
       date: formatDate(new Date().toISOString()),
-      isDiscarded,
-      financialValue: isDiscarded ? 0 : Money.mul(currentYield, milkSellingPricePerLiter),
+      isDiscarded: isDiscardedToPrint,
+      financialValue: valueToPrint,
     };
 
     if ((window as any).electronAPI?.printReceipt) {
       try {
-        await (window as any).electronAPI.printReceipt(receiptData);
+        const res = await (window as any).electronAPI.printReceipt(receiptData);
+        if (res && res.success === false) {
+          throw new Error(res.error || 'فشلت عملية الطباعة الحرارية من الجهاز');
+        }
         setFeedback(`تم إصدار وطباعة إيصال استلام الحلبة للبقرة #${selectedCow.tagNumber} بنجاح.`);
-      } catch (e) {
+      } catch (e: any) {
         console.warn('Print error:', e);
-        setFeedback('تعذرت طباعة الإيصال');
+        setFeedback(e.message || 'تعذرت طباعة الإيصال');
       }
     } else {
       // Fallback to standard OS printer via browser print
@@ -253,8 +295,8 @@ export const MilkingQuickEntry: React.FC = () => {
         logDate: new Date().toISOString(),
         shift,
         yieldLiters: yieldNum,
-        fatPct,
-        proteinPct,
+        fatPct: fatPct !== '' ? Number(fatPct) : undefined,
+        proteinPct: proteinPct !== '' ? Number(proteinPct) : undefined,
         isDiscarded,
         discardReason: isDiscarded ? selectedCow.quarantineReason || 'عزل بيطري وتحريم دوائي' : undefined,
       });
@@ -262,7 +304,9 @@ export const MilkingQuickEntry: React.FC = () => {
       const savedLog = result.milkLog;
       const savedYield = Number(savedLog.yieldLiters);
 
+      setDailyTotalLiters(prev => Money.sum(prev, savedYield));
       if (!savedLog.isDiscarded) {
+        setDailyUsableLiters(prev => Money.sum(prev, savedYield));
         setBulkTankVolume(prev => prev + savedYield);
       }
 
@@ -278,11 +322,13 @@ export const MilkingQuickEntry: React.FC = () => {
         value: savedLog.isDiscarded ? 0 : Money.mul(savedYield, milkSellingPricePerLiter),
       };
 
+      setLastSavedLog(newLog);
       setRecentLogs(prev => [newLog, ...prev.slice(0, 7)]);
       
+      const estimatedValue = formatMoney(Money.mul(savedYield, milkSellingPricePerLiter));
       const financialNote = savedLog.isDiscarded
         ? '⚠️ تم توجيه الحليب للتغذية/الإتلاف (0 د.ل)' 
-        : `💰 تم قيد إيراد بقيمة ${formatMoney(Money.mul(savedYield, milkSellingPricePerLiter))} بحساب مبيعات الحليب (4101)`;
+        : `💰 القيمة الإنتاجية التقديرية: ${estimatedValue} (تُرحل للإيرادات عند اعتماد مبيعات الحليب)`;
 
       const serverAlerts = [result.safetyWarning, result.healthAlert].filter(Boolean).join(' ');
 
@@ -304,9 +350,9 @@ export const MilkingQuickEntry: React.FC = () => {
     }
   };
 
-  const totalTodayLiters = Money.sum(...recentLogs.map(l => l.yieldLiters));
-  const usableTodayLiters = Money.sum(...recentLogs.filter(l => !l.isDiscarded).map(l => l.yieldLiters));
-  const totalFinancialValue = Money.sum(...recentLogs.map(l => l.value || 0));
+  const totalTodayLiters = dailyTotalLiters;
+  const usableTodayLiters = dailyUsableLiters;
+  const totalFinancialValue = Money.mul(usableTodayLiters, milkSellingPricePerLiter);
 
   return (
     <div className="space-y-6">
@@ -502,22 +548,24 @@ export const MilkingQuickEntry: React.FC = () => {
           {/* Milk Quality Specs & Valuation */}
           <div className="p-4 bg-slate-50/60 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 rounded-2xl grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
             <div>
-              <label className="block text-slate-500 dark:text-slate-400 text-[11px] mb-1">نسبة الدهن (Fat %):</label>
+              <label className="block text-slate-500 dark:text-slate-400 text-[11px] mb-1">نسبة الدهن (اختياري %):</label>
               <input
                 type="number"
                 step="0.1"
+                placeholder="غير مقاس"
                 value={fatPct}
-                onChange={e => setFatPct(Number(e.target.value))}
-                className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-1.5 text-sm font-bold text-slate-900 dark:text-white"
+                onChange={e => setFatPct(e.target.value)}
+                className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-1.5 text-sm font-bold text-slate-900 dark:text-white placeholder:text-slate-400"
               />
             </div>
             <div>
-              <label className="block text-slate-500 dark:text-slate-400 text-[11px] mb-1">نسبة البروتين (Protein %):</label>
+              <label className="block text-slate-500 dark:text-slate-400 text-[11px] mb-1">نسبة البروتين (اختياري %):</label>
               <input
                 type="number"
                 step="0.1"
+                placeholder="غير مقاس"
                 value={proteinPct}
-                onChange={e => setProteinPct(Number(e.target.value))}
+                onChange={e => setProteinPct(e.target.value)}
                 className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-1.5 text-sm font-bold text-slate-900 dark:text-white"
               />
             </div>
@@ -545,7 +593,7 @@ export const MilkingQuickEntry: React.FC = () => {
               className="flex-1 py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-extrabold text-sm flex items-center justify-center gap-2 transition shadow-xl shadow-emerald-900/40 disabled:opacity-50"
             >
               <Save className="w-5 h-5" />
-              {loading ? 'جاري الاعتماد...' : 'اعتماد وتسجيل الحلبة والقيد المحاسبي'}
+              {loading ? 'جاري الاعتماد...' : 'اعتماد وتسجيل الحلبة في السجل'}
             </button>
 
             <button
@@ -568,8 +616,10 @@ export const MilkingQuickEntry: React.FC = () => {
                 خزان التبريد الرئيسي (Bulk Tank #1)
               </h3>
               <div className="flex items-center gap-1.5">
-                <ThermometerSnowflake className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-                <span className="text-[11px] font-bold text-blue-600 dark:text-blue-400">3.8 °C</span>
+                <ThermometerSnowflake className={`w-3.5 h-3.5 ${chillerTemp !== null ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400'}`} />
+                <span className={`text-[11px] font-bold ${chillerTemp !== null ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400'}`}>
+                  {chillerTemp !== null ? `${chillerTemp} °C` : '-- °C (غير متصل)'}
+                </span>
               </div>
             </div>
 

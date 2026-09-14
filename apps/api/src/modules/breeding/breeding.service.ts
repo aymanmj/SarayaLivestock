@@ -114,22 +114,51 @@ export class BreedingService {
       });
       if (!record) throw new NotFoundException('سجل التلقيح غير موجود');
 
+      if (record.actualCalvingDate) {
+        throw new ConflictException('تم تسجيل ولادة لهذا التلقيح مسبقاً ولا يمكن تكرار تسجيل ولادة لنفس السجل');
+      }
+
       const calvingDate = new Date(data.actualCalvingDate);
       if (calvingDate < record.inseminationDate) {
         throw new BadRequestException('تاريخ الولادة لا يمكن أن يسبق تاريخ التلقيح');
       }
 
-      const duplicateTag = await tx.animal.findFirst({
-        where: { farmId, tagNumber: data.offspringTagNumber },
-        select: { id: true },
-      });
-      if (duplicateTag) throw new ConflictException('رقم قرط المولود مسجل مسبقاً في مزرعة المستخدم');
+      // تجهيز قائمة المواليد (مفرد أو توأم)
+      const offspringList: Array<{ tagNumber: string; gender: Gender; weightKg?: number }> = [
+        {
+          tagNumber: data.offspringTagNumber,
+          gender: data.offspringGender,
+          weightKg: data.offspringWeightKg,
+        },
+      ];
+      if ((data as any).twins && Array.isArray((data as any).twins)) {
+        for (const twin of (data as any).twins) {
+          if (twin.tagNumber) {
+            offspringList.push({
+              tagNumber: twin.tagNumber,
+              gender: twin.gender || data.offspringGender,
+              weightKg: twin.weightKg,
+            });
+          }
+        }
+      }
+
+      for (const off of offspringList) {
+        const duplicateTag = await tx.animal.findFirst({
+          where: { farmId, tagNumber: off.tagNumber },
+          select: { id: true },
+        });
+        if (duplicateTag) throw new ConflictException(`رقم قرط المولود (${off.tagNumber}) مسجل مسبقاً في مزرعة المستخدم`);
+      }
 
       await tx.breedingRecord.update({
         where: { id: recordId },
         data: {
           actualCalvingDate: calvingDate,
           offspringGender: data.offspringGender,
+          offspringCount: offspringList.length,
+          calvingDifficulty: (data as any).calvingDifficulty || undefined,
+          notes: (data as any).notes || undefined,
         },
       });
 
@@ -138,34 +167,43 @@ export class BreedingService {
         data: { currentLifeStage: LifeStage.LACTATING },
       });
 
-      const newborn = await tx.animal.create({
-        data: {
-          farmId,
-          barnId: record.animal.barnId,
-          tagNumber: data.offspringTagNumber,
-          species: record.animal.species,
-          breed: record.animal.breed,
-          gender: data.offspringGender,
-          purpose: data.offspringGender === Gender.FEMALE ? Purpose.DAIRY : Purpose.BEEF,
-          currentLifeStage: LifeStage.CALF,
-          birthDate: calvingDate,
-          entryWeightKg: data.offspringWeightKg,
-          motherId: record.animalId,
-          fatherSemenCode: record.semenCode,
-        },
-      });
+      const createdNewborns = [];
+      for (const off of offspringList) {
+        const newborn = await tx.animal.create({
+          data: {
+            farmId,
+            barnId: record.animal.barnId,
+            tagNumber: off.tagNumber,
+            species: record.animal.species,
+            breed: record.animal.breed,
+            gender: off.gender,
+            purpose: off.gender === Gender.FEMALE ? Purpose.DAIRY : Purpose.BEEF,
+            currentLifeStage: LifeStage.CALF,
+            birthDate: calvingDate,
+            entryWeightKg: off.weightKg,
+            motherId: record.animalId,
+            fatherSemenCode: record.semenCode,
+          },
+        });
+        createdNewborns.push(newborn);
+      }
+
+      const newborn = createdNewborns[0];
       if (actor) await appendDomainAudit(tx, actor, {
         action: 'breeding.calving.recorded',
         entityType: 'breedingRecord',
         entityId: recordId,
         farmId,
-        metadata: { motherId: record.animalId, newbornId: newborn.id },
+        metadata: { motherId: record.animalId, newbornId: newborn.id, newbornIds: createdNewborns.map(n => n.id), count: createdNewborns.length },
       });
 
       return {
-        message: 'تم تسجيل الولادة بنجاح وإنشاء ملف المولود الجديد آلياً',
+        message: createdNewborns.length > 1
+          ? `تم تسجيل ولادة توأم (${createdNewborns.length} مواليد) بنجاح وإضافتهم إلى سجل القطيع`
+          : 'تم تسجيل الولادة بنجاح وإنشاء ملف المولود الجديد آلياً',
         motherId: record.animalId,
         newborn,
+        newborns: createdNewborns,
       };
     });
   }

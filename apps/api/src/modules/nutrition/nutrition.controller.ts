@@ -22,13 +22,14 @@ import {
   LeastCostRationResponseDto,
 } from './dto/nutrition-response.dto';
 
-@Roles(UserRole.SUPER_ADMIN, UserRole.FARM_MANAGER, UserRole.ACCOUNTANT, UserRole.WORKER)
+@Roles(UserRole.SUPER_ADMIN, UserRole.FARM_MANAGER, UserRole.ACCOUNTANT)
 @ApiTags('nutrition')
 @Controller('nutrition')
 export class NutritionController {
   constructor(private readonly rationService: RationService) {}
 
   @Post('formulate-least-cost')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.FARM_MANAGER, UserRole.ACCOUNTANT, UserRole.WORKER)
   @ApiOperation({ summary: 'حساب أرخص تركيبة علفية TMR تغطي الاحتياج البروتيني' })
   @ApiCreatedResponse({ type: LeastCostRationResponseDto })
   calculateLeastCost(@Body() body: FormulateLeastCostDto) {
@@ -36,6 +37,7 @@ export class NutritionController {
   }
 
   @Post('dispense')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.FARM_MANAGER, UserRole.ACCOUNTANT, UserRole.WORKER)
   @DomainAudited()
   @IdempotencyRequired()
   @ApiOperation({ summary: 'صرف عليقة للحظيرة مع الخصم المخزني والترحيل المالي' })
@@ -51,6 +53,7 @@ export class NutritionController {
   }
 
   @Get('stock')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.FARM_MANAGER, UserRole.ACCOUNTANT, UserRole.WORKER)
   @ApiOperation({ summary: 'عرض أرصدة مخزون المواد العلفية وتنبيهات النواقص' })
   @ApiOkResponse({ type: FeedIngredientResponseDto, isArray: true })
   getStock(@CurrentUser() user: AuthenticatedUser) {
@@ -87,6 +90,7 @@ export class NutritionController {
   }
 
   @Get('formulas')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.FARM_MANAGER, UserRole.ACCOUNTANT, UserRole.WORKER)
   @ApiOperation({ summary: 'عرض قائمة الخلطات والعلائق المعتمدة' })
   @ApiOkResponse({ type: FeedFormulaResponseDto, isArray: true })
   getFormulas(@CurrentUser() user: AuthenticatedUser) {

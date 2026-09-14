@@ -45,7 +45,7 @@ try {
     RUN_DB_INTEGRATION_TESTS: 'true',
   };
   run(process.execPath, ['node_modules/prisma/build/index.js', 'migrate', 'deploy'], testEnvironment);
-  run(process.execPath, ['node_modules/jest/bin/jest.js', '--runInBand'], testEnvironment);
+  run(process.execPath, ['node_modules/jest/bin/jest.js', '--runInBand', ...process.argv.slice(2)], testEnvironment);
 } finally {
   await administrator.query(
     'SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = $1 AND pid <> pg_backend_pid()',

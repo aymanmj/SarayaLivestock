@@ -16,7 +16,13 @@ export class LicenseCryptoService {
   }
 
   private loadPublicKey(): void {
-    const pubKeyPath = path.join(__dirname, 'saraya-license-public.pem');
+        let pubKeyPath = path.join(__dirname, 'saraya-license-public.pem');
+    if (!fs.existsSync(pubKeyPath)) {
+      pubKeyPath = path.join(process.cwd(), 'src/modules/license/saraya-license-public.pem');
+    }
+    if (!fs.existsSync(pubKeyPath)) {
+      pubKeyPath = path.join(process.cwd(), 'apps/api/src/modules/license/saraya-license-public.pem');
+    }
     try {
       if (fs.existsSync(pubKeyPath)) {
         this.publicKeyCache = fs.readFileSync(pubKeyPath, 'utf8');
@@ -162,3 +168,5 @@ export class LicenseCryptoService {
     return { isValid: true, payload };
   }
 }
+
+

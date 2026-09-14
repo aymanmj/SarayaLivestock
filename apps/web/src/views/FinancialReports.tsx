@@ -22,7 +22,7 @@ import {
   Activity
 } from 'lucide-react';
 import { FinancialOverviewData, CullingCandidate } from '../api/types';
-import { getFinancialOverview, getCullingCandidates, getExportData, type ExportDataType } from '../api/client';
+import { getFinancialOverview, getCullingCandidates, getExportData, updateAnimalStatus, type ExportDataType } from '../api/client';
 import { formatMoney, formatNumber, formatDate, formatPercent, OFFICIAL_CURRENCY } from '../utils/money.util';
 
 export const FinancialReports: React.FC = () => {
@@ -33,6 +33,33 @@ export const FinancialReports: React.FC = () => {
   const [exportMessage, setExportMessage] = useState<string | null>(null);
   const [exportFailed, setExportFailed] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [cullingTarget, setCullingTarget] = useState<CullingCandidate | null>(null);
+  const [cullingLoading, setCullingLoading] = useState(false);
+  const [cullingMessage, setCullingMessage] = useState<{ text: string; error?: boolean } | null>(null);
+
+  const handleConfirmCulling = async () => {
+    if (!cullingTarget) return;
+    setCullingLoading(true);
+    try {
+      await updateAnimalStatus(cullingTarget.id, {
+        status: 'CULLED',
+        notes: `استبعاد اقتصادي موصى به: ${cullingTarget.reasons.join('، ')} (قيمة تقديرية: ${cullingTarget.estimatedSalvageValue} د.ل)`,
+      });
+      setCullingList(prev => prev.filter(c => c.id !== cullingTarget.id));
+      setCullingMessage({
+        text: `تم استبعاد الرأس #${cullingTarget.tagNumber} وتحديث الحالة إلى 'مستبعد' (CULLED) بنجاح.`,
+      });
+      setCullingTarget(null);
+      setTimeout(() => setCullingMessage(null), 5000);
+    } catch (err: any) {
+      setCullingMessage({
+        text: `تعذر استبعاد الرأس: ${err.message || 'خطأ في الخادم'}`,
+        error: true,
+      });
+    } finally {
+      setCullingLoading(false);
+    }
+  };
 
   const loadData = async () => {
     setLoading(true);
@@ -457,6 +484,17 @@ export const FinancialReports: React.FC = () => {
             </button>
           </div>
 
+          {cullingMessage && (
+            <div className={`p-4 rounded-2xl text-xs flex items-center gap-2.5 ${
+              cullingMessage.error 
+                ? 'bg-red-500/10 border border-red-500/30 text-red-300' 
+                : 'bg-emerald-100 dark:bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-400'
+            }`}>
+              {cullingMessage.error ? <AlertTriangle className="w-5 h-5 shrink-0" /> : <CheckCircle2 className="w-5 h-5 shrink-0" />}
+              <span className="font-bold">{cullingMessage.text}</span>
+            </div>
+          )}
+
           <div className="space-y-3">
             {cullingList.map(cand => (
               <div
@@ -496,8 +534,8 @@ export const FinancialReports: React.FC = () => {
                     <strong className="text-emerald-700 dark:text-emerald-400 font-black text-base">{formatMoney(cand.estimatedSalvageValue)}</strong>
                   </div>
                   <button
-                    onClick={() => alert(`تم إصدار أمر بيع/ذبح للرأس (${cand.tagNumber}) بقيمة تقديرية ${formatMoney(cand.estimatedSalvageValue)}`)}
-                    className="px-4 py-2 bg-red-600 hover:bg-red-500 text-slate-900 dark:text-white rounded-xl text-xs font-bold transition shadow-lg shadow-red-900/30"
+                    onClick={() => setCullingTarget(cand)}
+                    className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-bold transition shadow-lg shadow-red-900/30"
                   >
                     إصدار أمر استبعاد
                   </button>
@@ -505,6 +543,60 @@ export const FinancialReports: React.FC = () => {
               </div>
             ))}
           </div>
+
+          {/* Culling Confirmation Modal */}
+          {cullingTarget && (
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4">
+                <div className="flex items-center gap-3 text-red-500">
+                  <div className="p-3 bg-red-500/10 rounded-2xl">
+                    <AlertOctagon className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-black text-slate-900 dark:text-white">تأكيد أمر استبعاد الماشية</h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">تحديث الحالة في سجل القطيع إلى 'مستبعد'</p>
+                  </div>
+                </div>
+
+                <div className="p-4 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-2 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">رقم القرط:</span>
+                    <strong className="text-slate-900 dark:text-white">{cullingTarget.tagNumber}</strong>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">السلالة:</span>
+                    <span className="text-slate-700 dark:text-slate-300">{cullingTarget.breed}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">القيمة الاستردادية التقديرية:</span>
+                    <strong className="text-emerald-700 dark:text-emerald-400">{formatMoney(cullingTarget.estimatedSalvageValue)}</strong>
+                  </div>
+                  <div className="pt-2 border-t border-slate-200 dark:border-slate-800 text-[11px] text-red-400">
+                    سيتم نقل هذا الحيوان إلى حالة CULLED وإلغاء إدراجه من الحظائر النشطة وجداول الحلب اليومية.
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-2">
+                  <button
+                    type="button"
+                    disabled={cullingLoading}
+                    onClick={() => setCullingTarget(null)}
+                    className="flex-1 py-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold transition"
+                  >
+                    إلغاء
+                  </button>
+                  <button
+                    type="button"
+                    disabled={cullingLoading}
+                    onClick={handleConfirmCulling}
+                    className="flex-1 py-3 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-black transition shadow-lg shadow-red-900/30 disabled:opacity-50"
+                  >
+                    {cullingLoading ? 'جاري الاعتماد...' : 'تأكيد الاستبعاد'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

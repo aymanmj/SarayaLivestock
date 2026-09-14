@@ -658,6 +658,10 @@ begin
 
   // STEP 7: Register + start PostgreSQL service, then create database
   WizardForm.StatusLabel.Caption := 'جاري تسجيل وتشغيل خدمة PostgreSQL...';
+  // Lock down config directory containing secrets
+  Exec(ExpandConstant('{sys}\icacls.exe'),
+    '"' + ConfigDir + '" /inheritance:r /grant:r *S-1-5-32-544:(OI)(CI)F /grant:r *S-1-5-18:(OI)(CI)F /grant:r *S-1-5-20:(OI)(CI)RX /T /C /Q',
+    '', SW_HIDE, ewWaitUntilTerminated, ExitCode);
   // PostgreSQL runs as NetworkService: executable tree is read-only; only DB/log paths are writable.
   Exec(ExpandConstant('{sys}\icacls.exe'),
     '"' + InstallDir + '\postgresql" /grant *S-1-5-20:(OI)(CI)RX /T /C /Q',
@@ -746,6 +750,8 @@ begin
       ResultLog := ResultLog + '• حساب المدير الأولي: تم الإنشاء بنجاح' + #13#10
     else
       ResultLog := ResultLog + '! تعذر إنشاء حساب المدير (يمكن إعداده لاحقاً)' + #13#10;
+    // Strip initial admin password from server.env post-provisioning
+    ReplaceInFile(ServerEnvPath, 'INITIAL_ADMIN_PASSWORD=' + AdminPage.Values[1], 'INITIAL_ADMIN_PASSWORD=');
   end;
 
   // STEP 10: API service

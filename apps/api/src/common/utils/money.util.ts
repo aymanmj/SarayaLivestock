@@ -246,7 +246,15 @@ export class Money {
   /** إنشاء كائن Money للعمليات المتسلسلة */
   static multiply(a: MoneyValue, b: MoneyValue): Decimal { return moneyDecimal(a).times(moneyDecimal(b)); }
 
-  static divide(a: MoneyValue, b: MoneyValue): Decimal { return moneyDecimal(a).div(moneyDecimal(b)); }
+  static divide(a: MoneyValue, b: MoneyValue): Decimal {
+    const divisor = moneyDecimal(b);
+    if (divisor.isZero()) throw new Error('Division by zero in Money calculation');
+    return moneyDecimal(a).div(divisor);
+  }
+
+  static toDb(value: MoneyValue): number {
+    return moneyDecimal(value).toDecimalPlaces(3, Decimal.ROUND_HALF_UP).toNumber();
+  }
 
   static roundDecimal(amount: MoneyValue, decimals: number = 3): Decimal { return moneyDecimal(amount).toDecimalPlaces(decimals, Decimal.ROUND_HALF_UP); }
 

@@ -1,5 +1,6 @@
 import localforage from 'localforage';
 import { v4 as uuidv4 } from 'uuid';
+import { executeSyncTask } from '../api/client';
 
 // تهيئة متجر IndexedDB للعمليات المعلقة
 const syncStore = localforage.createInstance({
@@ -10,7 +11,7 @@ const syncStore = localforage.createInstance({
 export interface SyncTask {
   id: string;
   url: string;
-  method: 'POST' | 'PUT' | 'DELETE';
+  method: 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   body?: any;
   timestamp: number;
   idempotencyKey: string;
@@ -21,7 +22,7 @@ export const SyncQueue = {
   /**
    * إضافة عملية إلى طابور الانتظار (في حالة انقطاع الاتصال)
    */
-  async enqueue(url: string, method: 'POST' | 'PUT' | 'DELETE', body: any): Promise<void> {
+  async enqueue(url: string, method: 'POST' | 'PUT' | 'PATCH' | 'DELETE', body: any): Promise<void> {
     const task: SyncTask = {
       id: uuidv4(),
       url,
@@ -65,26 +66,22 @@ export const SyncQueue = {
       if (!task) continue;
 
       try {
-        const response = await fetch(task.url, {
+        const result = await executeSyncTask({
+          url: task.url,
           method: task.method,
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Idempotency-Key': task.idempotencyKey,
-            // سيتم سحب التوكن من interceptor أو هنا
-            'Authorization': `Bearer ${localStorage.getItem('access_token') || ''}`
-          },
-          body: JSON.stringify(task.body)
+          body: task.body,
+          idempotencyKey: task.idempotencyKey,
         });
 
-        if (response.ok || response.status >= 400 && response.status < 500) {
-          // نجحت العملية أو حدث خطأ منطقي (لا يستحق إعادة المحاولة)
+        if (result.ok || !result.shouldRetry) {
+          // نجحت العملية أو حدث خطأ منطقي/غير قابل للإعادة (4xx ما عدا 408)
           await syncStore.removeItem(key);
         } else {
-          // خطأ في السيرفر 5xx، يمكن إعادة المحاولة
+          // خطأ في السيرفر 5xx، يمكن إعادة المحاولة مع الحفاظ على نفس مفتاح idempotencyKey
           task.retryCount++;
           await syncStore.setItem(key, task);
         }
-      } catch (error) {
+      } catch (_error) {
         // فشل الاتصال، احتفظ بالعملية للمحاولة القادمة
         task.retryCount++;
         await syncStore.setItem(key, task);

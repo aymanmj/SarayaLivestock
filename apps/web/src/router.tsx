@@ -10,6 +10,7 @@ import { AccountingGL } from './views/AccountingGL';
 import { FinancialReports } from './views/FinancialReports';
 import { UsersManagement } from './views/UsersManagement';
 import { AboutSystem } from './views/AboutSystem';
+import { CommercialSales } from './views/CommercialSales';
 
 // Root Route (Layout)
 export const rootRoute = createRootRoute({
@@ -83,6 +84,12 @@ const aboutRoute = createRoute({
   component: AboutSystem,
 });
 
+const salesRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/sales',
+  component: CommercialSales,
+});
+
 // Route Tree
 const routeTree = rootRoute.addChildren([
   indexRoute,
@@ -92,6 +99,7 @@ const routeTree = rootRoute.addChildren([
   breedingRoute,
   fatteningRoute,
   nutritionRoute,
+  salesRoute,
   accountingRoute,
   financialRoute,
   usersRoute,

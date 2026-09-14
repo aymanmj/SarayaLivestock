@@ -139,12 +139,71 @@ export async function apiFetch(input: RequestInfo | URL, options: RequestInit = 
       response = await fetch(new Request(retryRequest, { headers, credentials: 'include' }));
     }
   }
-  if (pending) removePendingIdempotency(pending.fingerprint);
+  if (pending && response.status < 500 && response.status !== 408) {
+    removePendingIdempotency(pending.fingerprint);
+  }
   if (response.status === 401) {
     await clearAuthentication();
     window.dispatchEvent(new Event('saraya:unauthorized'));
   }
   return response;
+}
+
+export interface ExecuteSyncTaskParams {
+  url: string;
+  method: string;
+  body?: unknown;
+  idempotencyKey?: string;
+}
+
+export interface ExecuteSyncTaskResult {
+  ok: boolean;
+  status: number;
+  shouldRetry: boolean;
+}
+
+export async function executeSyncTask(params: ExecuteSyncTaskParams): Promise<ExecuteSyncTaskResult> {
+  const token = getAccessToken();
+  const headers = new Headers();
+  headers.set('Content-Type', 'application/json');
+  headers.set('Accept', 'application/json');
+  if (token) headers.set('Authorization', `Bearer ${token}`);
+  if (params.idempotencyKey) headers.set('Idempotency-Key', params.idempotencyKey);
+
+  const fullUrl = params.url.startsWith('http') ? params.url : `${API_ORIGIN}${params.url}`;
+
+  try {
+    let response = await fetch(fullUrl, {
+      method: params.method,
+      headers,
+      body: params.body !== undefined ? JSON.stringify(params.body) : undefined,
+    });
+
+    if (response.status === 401 && !fullUrl.includes('/auth/refresh')) {
+      const refreshed = await refreshSession();
+      if (refreshed) {
+        headers.set('Authorization', `Bearer ${refreshed.accessToken}`);
+        response = await fetch(fullUrl, {
+          method: params.method,
+          headers,
+          body: params.body !== undefined ? JSON.stringify(params.body) : undefined,
+        });
+      }
+    }
+
+    const isClientError = response.status >= 400 && response.status < 500 && response.status !== 408;
+    return {
+      ok: response.ok,
+      status: response.status,
+      shouldRetry: !response.ok && !isClientError,
+    };
+  } catch (_error) {
+    return {
+      ok: false,
+      status: 0,
+      shouldRetry: true,
+    };
+  }
 }
 
 export const generatedApiClient = createClient<paths>({
@@ -304,6 +363,19 @@ export async function createAnimal(payload: CreateAnimalPayload): Promise<Animal
   return unwrapGenerated(await generatedApiClient.POST('/api/v1/animals', { body }), 'إنشاء الحيوان');
 }
 
+export async function updateAnimalStatus(
+  id: string,
+  payload: {
+    status: 'ACTIVE' | 'SOLD' | 'CULLED' | 'DECEASED' | 'QUARANTINED';
+    notes?: string;
+  }
+) {
+  return unwrapGenerated(await generatedApiClient.PATCH('/api/v1/animals/{id}/status' as any, {
+    params: { path: { id } },
+    body: payload,
+  } as any), 'تحديث حالة الحيوان');
+}
+
 // ----------------------------------------------------
 // 3. محطة الحلب والإنتاج (Milking Station)
 // ----------------------------------------------------
@@ -372,11 +444,18 @@ export async function recordCalving(
     offspringTagNumber: string;
     offspringGender: Gender;
     offspringWeightKg?: number;
+    calvingDifficulty?: 'EASY' | 'ASSISTED' | 'SURGICAL' | 'ABORTION';
+    notes?: string;
+    twins?: Array<{
+      tagNumber: string;
+      gender: Gender;
+      weightKg?: number;
+    }>;
   }
 ) {
   return unwrapGenerated(await generatedApiClient.POST('/api/v1/breeding/{id}/calving', {
     params: { path: { id } },
-    body: payload,
+    body: payload as any,
   }), 'تسجيل الولادة');
 }
 
@@ -580,3 +659,70 @@ export async function getExportData(type: ExportDataType, _farmId?: string): Pro
     params: { path: { type } },
   }), 'تجهيز بيانات التصدير');
 }
+
+// ----------------------------------------------------
+// 9. المبيعات التجارية ونفوق الماشية (Commercial Sales & Mortality)
+// ----------------------------------------------------
+
+export type CommercialSale = components['schemas']['CommercialSaleResponseDto'];
+export type AnimalMortality = components['schemas']['AnimalMortalityResponseDto'];
+export type SalesSummary = components['schemas']['SalesSummaryResponseDto'];
+export type RecordMilkSalePayload = components['schemas']['RecordMilkSaleDto'];
+export type RecordAnimalSalePayload = components['schemas']['RecordAnimalSaleDto'];
+export type RecordMortalityPayload = components['schemas']['RecordMortalityDto'];
+
+export async function getCommercialSales(limit = 100): Promise<CommercialSale[]> {
+  return unwrapGenerated(
+    await generatedApiClient.GET('/api/v1/sales', {
+      params: { query: { limit } },
+    }),
+    'تحميل سجل المبيعات التجارية',
+  );
+}
+
+export async function getSalesSummary(): Promise<SalesSummary> {
+  return unwrapGenerated(
+    await generatedApiClient.GET('/api/v1/sales/summary'),
+    'تحميل مؤشرات المبيعات والنفوق',
+  );
+}
+
+export async function getAnimalMortalities(limit = 100): Promise<AnimalMortality[]> {
+  return unwrapGenerated(
+    await generatedApiClient.GET('/api/v1/sales/mortality', {
+      params: { query: { limit } },
+    }),
+    'تحميل سجل النفوق والخسائر البيولوجية',
+  );
+}
+
+export async function recordMilkSale(payload: RecordMilkSalePayload): Promise<CommercialSale> {
+  return unwrapGenerated(
+    await generatedApiClient.POST('/api/v1/sales/milk', { body: payload }),
+    'تسجيل فاتورة بيع حليب',
+  );
+}
+
+export async function recordAnimalSale(payload: RecordAnimalSalePayload): Promise<CommercialSale> {
+  return unwrapGenerated(
+    await generatedApiClient.POST('/api/v1/sales/animal', { body: payload }),
+    'تسجيل فاتورة بيع ماشية حية',
+  );
+}
+
+export async function recordAnimalMortality(payload: RecordMortalityPayload): Promise<AnimalMortality> {
+  return unwrapGenerated(
+    await generatedApiClient.POST('/api/v1/sales/mortality', { body: payload }),
+    'تسجيل واقعة نفوق واحتساب الخسارة',
+  );
+}
+
+export async function getSaleById(id: string): Promise<CommercialSale> {
+  return unwrapGenerated(
+    await generatedApiClient.GET('/api/v1/sales/{id}', {
+      params: { path: { id } },
+    }),
+    'تحميل تفاصيل الفاتورة',
+  );
+}
+

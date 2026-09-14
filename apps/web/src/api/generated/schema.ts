@@ -223,6 +223,23 @@ export interface paths {
         patch: operations["Animals_updateLifeStage"];
         trace?: never;
     };
+    "/api/v1/animals/{id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** تحديث حالة الحيوان (نشط، مستبعد، تم البيع، نافق) */
+        patch: operations["Animals_updateStatus"];
+        trace?: never;
+    };
     "/api/v1/audit-events": {
         parameters: {
             query?: never;
@@ -763,6 +780,102 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/sales": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["Sales_getSales"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sales/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["Sales_getSaleById"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sales/animal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["Sales_recordAnimalSale"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sales/milk": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["Sales_recordMilkSale"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sales/mortality": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["Sales_getMortalities"];
+        put?: never;
+        post: operations["Sales_recordMortality"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sales/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["Sales_getSalesSummary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/security/rotate-secret": {
         parameters: {
             query?: never;
@@ -1005,6 +1118,28 @@ export interface components {
             /** Format: date-time */
             withdrawalEndDate: string | null;
         };
+        AnimalMortalityResponseDto: {
+            /** Format: uuid */
+            animalId: string;
+            bookValue: string;
+            causeOfDeath: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            deathDate: string;
+            /** Format: uuid */
+            farmId: string;
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            journalEntryId?: string | null;
+            netLoss: string;
+            notes?: string | null;
+            recordedById?: string | null;
+            salvageValue: string;
+        };
+        /** @enum {string} */
+        AnimalPricingMethod: "BY_WEIGHT" | "PER_HEAD";
         AnimalRecordResponseDto: {
             /** Format: uuid */
             barnId: string | null;
@@ -1232,6 +1367,36 @@ export interface components {
         };
         /** @enum {string} */
         CalvingDifficulty: "EASY" | "ASSISTED" | "SURGICAL" | "ABORTION";
+        CommercialSaleResponseDto: {
+            /** Format: uuid */
+            animalId?: string | null;
+            buyerName: string;
+            buyerPhone?: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            createdById?: string | null;
+            /** Format: uuid */
+            farmId: string;
+            /** Format: uuid */
+            id: string;
+            invoiceNumber: string;
+            /** Format: uuid */
+            journalEntryId?: string | null;
+            liters?: string | null;
+            notes?: string | null;
+            paymentMethod: components["schemas"]["PaymentMethod"];
+            pricePerHead?: string | null;
+            pricePerKg?: string | null;
+            pricePerLiter?: string | null;
+            pricingMethod?: components["schemas"]["AnimalPricingMethod"] | null;
+            /** Format: date-time */
+            saleDate: string;
+            saleType: components["schemas"]["SaleType"];
+            totalAmount: string;
+            /** Format: date-time */
+            updatedAt: string;
+            weightKg?: string | null;
+        };
         CostCenterResponseDto: {
             /** Format: date-time */
             createdAt: string;
@@ -1246,7 +1411,7 @@ export interface components {
         CostCenterType: "DAIRY_PRODUCTION" | "FATTENING_PRODUCTION" | "BREEDING_REPLACEMENT" | "GENERAL_OVERHEAD";
         CreateAccountDto: {
             /** @enum {string} */
-            category: "EXPENSE" | "ASSET" | "LIABILITY" | "EQUITY" | "REVENUE";
+            category: "ASSET" | "LIABILITY" | "EQUITY" | "REVENUE" | "EXPENSE";
             code: string;
             name: string;
             nameEn?: string;
@@ -1818,6 +1983,8 @@ export interface components {
             yieldLiters: string;
         };
         /** @enum {string} */
+        PaymentMethod: "CASH" | "BANK" | "ON_ACCOUNT";
+        /** @enum {string} */
         PregnancyResult: "PENDING" | "PREGNANT" | "OPEN";
         /** @enum {string} */
         Purpose: "DAIRY" | "BEEF" | "DUAL" | "BREEDING";
@@ -1886,12 +2053,31 @@ export interface components {
             /** @example 1.0.0 */
             version: string;
         };
+        RecordAnimalSaleDto: {
+            /** Format: uuid */
+            animalId: string;
+            buyerName: string;
+            buyerPhone?: string;
+            notes?: string;
+            /** @enum {string} */
+            paymentMethod: "CASH" | "BANK" | "ON_ACCOUNT";
+            pricePerHead?: number;
+            pricePerKg?: number;
+            /** @enum {string} */
+            pricingMethod: "BY_WEIGHT" | "PER_HEAD";
+            saleDate?: string;
+            weightKg?: number;
+        };
         RecordCalvingDto: {
             actualCalvingDate: string;
+            /** @enum {string} */
+            calvingDifficulty?: "EASY" | "ASSISTED" | "SURGICAL" | "ABORTION";
+            notes?: string;
             /** @enum {string} */
             offspringGender: "FEMALE" | "MALE";
             offspringTagNumber: string;
             offspringWeightKg?: number;
+            twins?: components["schemas"]["TwinOffspringDto"][];
         };
         RecordCalvingResponseDto: {
             message: string;
@@ -1918,6 +2104,25 @@ export interface components {
             healthAlert: string | null;
             milkLog: components["schemas"]["MilkLogWithAnimalResponseDto"];
             safetyWarning: string | null;
+        };
+        RecordMilkSaleDto: {
+            buyerName: string;
+            buyerPhone?: string;
+            liters: number;
+            notes?: string;
+            /** @enum {string} */
+            paymentMethod: "CASH" | "BANK" | "ON_ACCOUNT";
+            pricePerLiter: number;
+            saleDate?: string;
+        };
+        RecordMortalityDto: {
+            /** Format: uuid */
+            animalId: string;
+            causeOfDeath: string;
+            deathDate: string;
+            estimatedBookValue?: number;
+            notes?: string;
+            salvageValue?: number;
         };
         RecordPregnancyResultDto: {
             /** @enum {string} */
@@ -1982,6 +2187,17 @@ export interface components {
             source: "HASHICORP_VAULT" | "ENVIRONMENT";
             version: number;
         };
+        SalesSummaryResponseDto: {
+            animalSalesLyd: string;
+            milkSalesLyd: string;
+            totalAnimalsSold: number;
+            totalDeceasedAnimals: number;
+            totalMilkLiters: string;
+            totalMortalityLossLyd: string;
+            totalSalesLyd: string;
+        };
+        /** @enum {string} */
+        SaleType: "MILK" | "LIVE_ANIMAL";
         SecretAuditLogResponseDto: {
             action: string;
             key: string;
@@ -2023,6 +2239,12 @@ export interface components {
             totalCredit: number;
             totalDebit: number;
         };
+        TwinOffspringDto: {
+            /** @enum {string} */
+            gender: "FEMALE" | "MALE";
+            tagNumber: string;
+            weightKg?: number;
+        };
         UpdateAnimalBarnDto: {
             /** Format: uuid */
             barnId: string;
@@ -2030,6 +2252,11 @@ export interface components {
         UpdateAnimalLifeStageDto: {
             /** @enum {string} */
             stage: "CALF" | "WEANED" | "HEIFER" | "PREGNANT_HEIFER" | "LACTATING" | "DRY" | "FATTENING" | "SIRE";
+        };
+        UpdateAnimalStatusDto: {
+            notes?: string;
+            /** @enum {string} */
+            status: "ACTIVE" | "SOLD" | "CULLED" | "DECEASED" | "QUARANTINED";
         };
         UpdateFeedStockDto: {
             addedKg: number;
@@ -2472,6 +2699,31 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["UpdateAnimalLifeStageDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnimalRecordResponseDto"];
+                };
+            };
+        };
+    };
+    Animals_updateStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateAnimalStatusDto"];
             };
         };
         responses: {
@@ -3208,6 +3460,157 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FinancialOverviewResponseDto"];
+                };
+            };
+        };
+    };
+    Sales_getSales: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialSaleResponseDto"][];
+                };
+            };
+        };
+    };
+    Sales_getSaleById: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialSaleResponseDto"];
+                };
+            };
+        };
+    };
+    Sales_recordAnimalSale: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecordAnimalSaleDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialSaleResponseDto"];
+                };
+            };
+        };
+    };
+    Sales_recordMilkSale: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecordMilkSaleDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommercialSaleResponseDto"];
+                };
+            };
+        };
+    };
+    Sales_getMortalities: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnimalMortalityResponseDto"][];
+                };
+            };
+        };
+    };
+    Sales_recordMortality: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecordMortalityDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnimalMortalityResponseDto"];
+                };
+            };
+        };
+    };
+    Sales_getSalesSummary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SalesSummaryResponseDto"];
                 };
             };
         };

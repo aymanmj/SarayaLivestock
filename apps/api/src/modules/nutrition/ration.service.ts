@@ -1,7 +1,7 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { Money } from '../../common/utils/money.util';
-import { CostCenterType, Prisma, SectorType, TransactionType } from '@prisma/client';
+import { CostCenterType, FiscalStatus, JournalEntryStatus, JournalEntryType, Prisma, SectorType, TransactionType } from '@prisma/client';
 import { appendDomainAudit, AuditActor } from '../../common/audit/domain-audit';
 import { IdempotencyContext } from '../../common/idempotency/idempotency-context';
 import { runIdempotentTransaction } from '../../common/idempotency/idempotency-transaction';
@@ -27,51 +27,140 @@ export class RationService {
 
   /**
    * خوارزمية تركيب العليقة بأقل تكلفة (Least-Cost Ration Optimization)
-   * تبحث عن أفضل نسب خلط بين مصادر الطاقة والبروتين والمالئات لتحقيق الاحتياج الغذائي بأقل سعر
+   * تستخدم البرمجة الخطية المقيدة (Bounded Linear Optimization) لتحقيق الاحتياج الغذائي بأقل سعر
+   * مع الالتزام التام بالحدود الدنيا والقصوى لكل مادة علفية
    */
   calculateLeastCostRation(ingredients: RationIngredientInput[], target: FormulationTarget) {
     if (!ingredients || ingredients.length < 2) {
       throw new BadRequestException('يجب توفير مادتين علفيتين على الأقل للخلط (مصدر بروتين + مصدر طاقة)');
     }
-
-    // فرز المكونات إلى مصادر طاقة (بروتين أقل من الهدف) ومصادر بروتين (بروتين أعلى من الهدف)
-    const highProtein = ingredients.filter(i => i.proteinPct >= target.targetProteinPct);
-    const lowProtein = ingredients.filter(i => i.proteinPct < target.targetProteinPct);
-
-    if (highProtein.length === 0 || lowProtein.length === 0) {
-      throw new BadRequestException('يجب توفير مكونات ذات نسبة بروتين أعلى وأخرى أقل من النسبة المستهدفة لتحقيق التوازن');
+    if (!target.batchTotalKg || target.batchTotalKg <= 0) {
+      throw new BadRequestException('حجم الخلطة المطلوب يجب أن يكون رقماً موجباً');
+    }
+    if (!target.targetProteinPct || target.targetProteinPct <= 0) {
+      throw new BadRequestException('نسبة البروتين المستهدفة يجب أن تكون رقماً موجباً');
     }
 
-    // اختيار المكون الأكثر كفاءة اقتصادية من كل فئة (أقل تكلفة لكل 1% بروتين)
-    const bestHigh = highProtein.reduce((prev, curr) => 
-      (curr.costPerKg / curr.proteinPct) < (prev.costPerKg / prev.proteinPct) ? curr : prev
-    );
+    const P = target.targetProteinPct;
+    const n = ingredients.length;
 
-    const bestLow = lowProtein.reduce((prev, curr) => 
-      (curr.costPerKg / curr.proteinPct) < (prev.costPerKg / prev.proteinPct) ? curr : prev
-    );
+    // تجهيز الحدود الدنيا والقصوى لكل مادة كنسبة عشرية [0, 1]
+    const bounds = ingredients.map(ing => {
+      const minRatio = Math.max(0, (ing.minInclusionPct || 0) / 100);
+      const maxRatio = Math.min(1, Math.max(minRatio, (ing.maxInclusionPct !== undefined ? ing.maxInclusionPct : 100) / 100));
+      return { min: minRatio, max: maxRatio };
+    });
 
-    // معادلة مربع بيرسون (Pearson Square Method)
-    const partsHigh = Math.abs(target.targetProteinPct - bestLow.proteinPct);
-    const partsLow = Math.abs(bestHigh.proteinPct - target.targetProteinPct);
-    const totalParts = partsHigh + partsLow;
+    const sumMin = bounds.reduce((acc, b) => acc + b.min, 0);
+    const sumMax = bounds.reduce((acc, b) => acc + b.max, 0);
 
-    const highRatio = totalParts > 0 ? partsHigh / totalParts : 0.5;
-    const lowRatio = totalParts > 0 ? partsLow / totalParts : 0.5;
+    if (sumMin > 1.0001) {
+      throw new BadRequestException(`مجموع الحدود الدنيا للمكونات (${(sumMin * 100).toFixed(1)}%) يتجاوز 100%`);
+    }
+    if (sumMax < 0.9999) {
+      throw new BadRequestException(`مجموع الحدود القصوى للمكونات (${(sumMax * 100).toFixed(1)}%) أقل من 100%`);
+    }
 
-    const highKg = Money.roundDecimal(target.batchTotalKg * highRatio, 2).toNumber();
-    const lowKg = Money.roundDecimal(target.batchTotalKg * lowRatio, 2).toNumber();
+    // البحث عن التوليفة المثلى (الأقل تكلفة التي تغطي البروتين المطلوب ضمن الحدود)
+    let bestRatios: number[] | null = null;
+    let bestCost = Infinity;
+    let bestAchievedProtein = -1;
 
-    const costHigh = Money.multiply(highKg, bestHigh.costPerKg);
-    const costLow = Money.multiply(lowKg, bestLow.costPerKg);
-    const totalCostDecimal = Money.add(costHigh, costLow);
-    const totalCost = Money.roundDecimal(totalCostDecimal, 3).toNumber();
-    const costPerKg = Money.roundDecimal(Money.divide(totalCostDecimal, target.batchTotalKg), 3).toNumber();
+    // فحص كل الأزواج الممكنة (i, j) لتكون المتغيرات الحرة (Basic Variables)
+    for (let i = 0; i < n; i++) {
+      for (let j = i + 1; j < n; j++) {
+        const fixedRatios = new Array(n).fill(0);
+        let fixedSum = 0;
+        let fixedProtein = 0;
 
-    const actualProteinPct = Money.roundDecimal(
-      (highRatio * bestHigh.proteinPct) + (lowRatio * bestLow.proteinPct),
-      2
-    ).toNumber();
+        for (let k = 0; k < n; k++) {
+          if (k !== i && k !== j) {
+            fixedRatios[k] = bounds[k].min;
+            fixedSum += fixedRatios[k];
+            fixedProtein += fixedRatios[k] * ingredients[k].proteinPct;
+          }
+        }
+
+        const remSum = 1.0 - fixedSum;
+        const remProtein = P - fixedProtein;
+
+        const p_i = ingredients[i].proteinPct;
+        const p_j = ingredients[j].proteinPct;
+        const denom = p_i - p_j;
+
+        if (Math.abs(denom) > 1e-6) {
+          const x_i = (remProtein - p_j * remSum) / denom;
+          const x_j = remSum - x_i;
+
+          if (
+            x_i >= bounds[i].min - 1e-6 &&
+            x_i <= bounds[i].max + 1e-6 &&
+            x_j >= bounds[j].min - 1e-6 &&
+            x_j <= bounds[j].max + 1e-6
+          ) {
+            const clamped_i = Math.max(bounds[i].min, Math.min(bounds[i].max, x_i));
+            const clamped_j = Math.max(bounds[j].min, Math.min(bounds[j].max, x_j));
+            const candidateRatios = [...fixedRatios];
+            candidateRatios[i] = clamped_i;
+            candidateRatios[j] = clamped_j;
+
+            const cost = candidateRatios.reduce((sum, r, idx) => sum + r * ingredients[idx].costPerKg, 0);
+            const achievedP = candidateRatios.reduce((sum, r, idx) => sum + r * ingredients[idx].proteinPct, 0);
+
+            if (cost < bestCost) {
+              bestCost = cost;
+              bestRatios = candidateRatios;
+              bestAchievedProtein = achievedP;
+            }
+          }
+        }
+      }
+    }
+
+    let warning: string | undefined;
+    if (!bestRatios) {
+      // إشباع المكونات بالحدود القصوى للبروتين الأعلى، وملء الباقي بأقل المكونات تكلفة مع الالتزام بالحدود
+      const candidateRatios = bounds.map(b => b.min);
+      let allocated = candidateRatios.reduce((sum, r) => sum + r, 0);
+
+      const sortedIdx = ingredients
+        .map((ing, idx) => ({ idx, protein: ing.proteinPct, cost: ing.costPerKg }))
+        .sort((a, b) => (b.protein / (b.cost || 1)) - (a.protein / (a.cost || 1)));
+
+      for (const item of sortedIdx) {
+        const canAdd = Math.min(bounds[item.idx].max - candidateRatios[item.idx], 1.0 - allocated);
+        if (canAdd > 0) {
+          candidateRatios[item.idx] += canAdd;
+          allocated += canAdd;
+        }
+        if (Math.abs(allocated - 1.0) < 1e-6) break;
+      }
+
+      bestRatios = candidateRatios;
+      bestAchievedProtein = bestRatios.reduce((sum, r, idx) => sum + r * ingredients[idx].proteinPct, 0);
+      bestCost = bestRatios.reduce((sum, r, idx) => sum + r * ingredients[idx].costPerKg, 0);
+      warning = `تنبيه: تم الالتزام الصارم بحدود الإدراج القصوى؛ حققت الخلطة أعلى بروتين ممكن (${bestAchievedProtein.toFixed(1)}%) نظراً للقيود المفروضة.`;
+    }
+
+    const items = ingredients
+      .map((ing, idx) => {
+        const ratio = bestRatios![idx];
+        const percentage = Money.roundDecimal(ratio * 100, 2).toNumber();
+        const weightKg = Money.roundDecimal(target.batchTotalKg * ratio, 2).toNumber();
+        const cost = Money.roundDecimal(Money.multiply(weightKg, ing.costPerKg), 2).toNumber();
+        return {
+          ingredientId: ing.id,
+          name: ing.name,
+          percentage,
+          weightKg,
+          cost,
+        };
+      })
+      .filter(item => item.weightKg > 0);
+
+    const totalCost = Money.roundDecimal(items.reduce((sum, it) => sum + it.cost, 0), 2).toNumber();
+    const costPerKg = Money.roundDecimal(Money.divide(totalCost, target.batchTotalKg), 3).toNumber();
+    const actualProteinPct = Money.roundDecimal(bestAchievedProtein, 2).toNumber();
 
     return {
       targetProteinPct: target.targetProteinPct,
@@ -80,22 +169,8 @@ export class RationService {
       totalCost,
       costPerKg,
       costPerTon: Money.roundDecimal(Money.multiply(costPerKg, 1000), 2).toNumber(),
-      items: [
-        {
-          ingredientId: bestHigh.id,
-          name: bestHigh.name,
-          percentage: Money.roundDecimal(highRatio * 100, 2).toNumber(),
-          weightKg: highKg,
-          cost: Money.roundDecimal(costHigh, 2).toNumber(),
-        },
-        {
-          ingredientId: bestLow.id,
-          name: bestLow.name,
-          percentage: Money.roundDecimal(lowRatio * 100, 2).toNumber(),
-          weightKg: lowKg,
-          cost: Money.roundDecimal(costLow, 2).toNumber(),
-        },
-      ],
+      items,
+      ...(warning ? { warning } : {}),
     };
   }
 
@@ -184,6 +259,44 @@ export class RationService {
         });
       }
 
+      // إنشاء قيد اليومية المزدوج آلياً في الدفتر العام (General Ledger)
+      if (totalFormulaCost > 0 && tx.journalEntry?.create) {
+        const accFeedExp = await tx.account.findUnique({ where: { farmId_code: { farmId, code: '5101' } } });
+        const accFeedStock = await tx.account.findUnique({ where: { farmId_code: { farmId, code: '1104' } } });
+        const currentYear = await tx.fiscalYear.findFirst({
+          where: { farmId, isCurrent: true, status: FiscalStatus.OPEN },
+          include: { periods: { where: { status: FiscalStatus.OPEN }, orderBy: { periodNumber: 'asc' }, take: 1 } },
+        });
+
+        if (accFeedExp && accFeedStock && currentYear && currentYear.periods.length > 0) {
+          const fiscalPeriod = currentYear.periods[0];
+          const entryDate = new Date();
+          const entryNumber = `JV-${currentYear.yearName}-F${Date.now().toString().slice(-6)}`;
+          await tx.journalEntry.create({
+            data: {
+              farmId,
+              fiscalYearId: currentYear.id,
+              fiscalPeriodId: fiscalPeriod.id,
+              entryNumber,
+              entryDate,
+              type: JournalEntryType.FEED_DISPENSE,
+              status: JournalEntryStatus.POSTED,
+              description: `صرف ${quantityKg} كجم من خلطة (${formula.name}) للحظيرة (${barn.name})`,
+              referenceId: `FEED_DISPENSE:${createdDistribution.id}`,
+              totalDebit: totalFormulaCost,
+              totalCredit: totalFormulaCost,
+              postedAt: entryDate,
+              lines: {
+                create: [
+                  { accountId: accFeedExp.id, debit: totalFormulaCost, credit: 0, memo: `مصروف أعلاف - ${barn.name}` },
+                  { accountId: accFeedStock.id, debit: 0, credit: totalFormulaCost, memo: `صرف من مخزون الأعلاف (${formula.name})` },
+                ],
+              },
+            },
+          });
+        }
+      }
+
       if (actor) await appendDomainAudit(tx, actor, {
         action: 'nutrition.feed.dispensed',
         entityType: 'feedDistribution',
@@ -258,8 +371,25 @@ export class RationService {
       const ingredient = await tx.feedIngredient.findFirst({ where: { id, farmId } });
       if (!ingredient) throw new NotFoundException('المادة العلفية غير موجودة');
 
-      const updateData: Prisma.FeedIngredientUpdateInput = { currentStock: { increment: addedKg } };
-      if (costPerUnit !== undefined) updateData.costPerUnit = costPerUnit;
+      const currentStockNum = Number(ingredient.currentStock || 0);
+      const currentCostNum = Number(ingredient.costPerUnit || 0);
+      let effectiveCostPerUnit = currentCostNum;
+
+      if (costPerUnit !== undefined && Number.isFinite(costPerUnit) && costPerUnit >= 0) {
+        if (currentStockNum <= 0) {
+          effectiveCostPerUnit = costPerUnit;
+        } else {
+          const currentTotalVal = currentStockNum * currentCostNum;
+          const incomingTotalVal = addedKg * costPerUnit;
+          const totalNewStock = currentStockNum + addedKg;
+          effectiveCostPerUnit = totalNewStock > 0 ? (currentTotalVal + incomingTotalVal) / totalNewStock : costPerUnit;
+        }
+      }
+
+      const updateData: Prisma.FeedIngredientUpdateInput = {
+        currentStock: { increment: addedKg },
+        costPerUnit: Money.roundDecimal(effectiveCostPerUnit, 3).toNumber(),
+      };
       const updated = await tx.feedIngredient.update({ where: { id }, data: updateData });
       if (actor) await appendDomainAudit(tx, actor, {
         action: 'nutrition.stock.received',

@@ -127,7 +127,7 @@ describe('Atomic domain workflows', () => {
     expect(tx.auditEvent.create).toHaveBeenCalledWith(expect.objectContaining({
       data: expect.objectContaining({
         action: 'breeding.calving.recorded', entityId: 'record-a',
-        metadata: { motherId: 'dam-a', newbornId: 'newborn-a' },
+        metadata: expect.objectContaining({ motherId: 'dam-a', newbornId: 'newborn-a' }),
       }),
     }));
   });
@@ -386,7 +386,7 @@ describe('Atomic domain workflows', () => {
     expect(statement.totalExpenses).toBe(350);
     expect(statement.netProfit).toBe(550);
     expect(prisma.journalEntryLine.groupBy).toHaveBeenCalledWith(expect.objectContaining({
-      where: { journalEntry: { farmId: 'farm-a', fiscalYearId: 'year-a', status: 'POSTED' } },
+      where: { journalEntry: { farmId: 'farm-a', fiscalYearId: 'year-a', status: 'POSTED', type: { not: 'YEAR_END_CLOSING' } } },
     }));
   });
 
@@ -400,7 +400,9 @@ describe('Atomic domain workflows', () => {
         create: jest.fn().mockResolvedValue({ id: 'year-b', yearName: '2027', status: FiscalStatus.OPEN }),
       },
       fiscalPeriod: { updateMany: jest.fn().mockResolvedValue({ count: 12 }) },
-      journalEntryLine: { groupBy: jest.fn().mockResolvedValue([]) },
+      journalEntryLine: { groupBy: jest.fn()
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([{ accountId: 'asset-a', _sum: { debit: 100, credit: 0 } }]) },
       account: {
         findUnique: jest.fn().mockResolvedValue(null),
         update: jest.fn(),

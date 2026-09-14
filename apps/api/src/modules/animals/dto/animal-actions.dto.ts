@@ -26,3 +26,13 @@ export class UpdateAnimalBarnDto {
   @IsUUID('4')
   barnId: string;
 }
+
+export class UpdateAnimalStatusDto {
+  @IsEnum(AnimalStatus)
+  status: AnimalStatus;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  notes?: string;
+}

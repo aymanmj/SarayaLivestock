@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
     Vendor Binaries Download Script
 #>
@@ -75,7 +75,7 @@ try {
         if ($bin.ExpectedHash -like "PLACEHOLDER_*") {
             Write-Warning "Placeholder hash detected for $($bin.Name). Please update script with: $actualHash"
         } elseif ($actualHash -ne $bin.ExpectedHash) {
-            Write-Warning "Hash mismatch for $($bin.Name)! Expected $($bin.ExpectedHash), got $actualHash"
+            throw "Hash mismatch for $($bin.Name)! Expected $($bin.ExpectedHash), got $actualHash"
         } else {
             Write-Host "Hash verified successfully."
         }

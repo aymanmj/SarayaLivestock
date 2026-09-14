@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
     Rollback Script / نص التراجع
 .DESCRIPTION
@@ -90,8 +90,15 @@ try {
     $postgresDbUrl = $dbUrl -replace "$dbName(?:\?.*)?$", "postgres"
     $env:DATABASE_URL = $postgresDbUrl
     
-    & $psqlPath -c $dropCmd
-    & $psqlPath -c $createCmd
+    & $psqlPath -d $postgresDbUrl -c $dropCmd
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to drop database $dbName / فشل حذف قاعدة البيانات"
+    }
+
+    & $psqlPath -d $postgresDbUrl -c $createCmd
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to create database $dbName / فشل إنشاء قاعدة البيانات"
+    }
 
     Write-Host "Restoring data... / جاري استعادة البيانات..."
     $env:DATABASE_URL = $dbUrl
@@ -99,7 +106,7 @@ try {
     $process = Start-Process -FilePath $pgRestorePath -ArgumentList $restoreArgs -NoNewWindow -Wait -PassThru
     
     if ($process.ExitCode -ne 0) {
-        Write-Warning "pg_restore finished with exit code $($process.ExitCode). Check for errors. / انتهت عملية الاستعادة مع بعض الأخطاء المحتملة."
+        throw "pg_restore failed with exit code $($process.ExitCode). Rollback cannot continue safely. / فشلت عملية استعادة قاعدة البيانات."
     }
 
     Write-Host "Stopping PostgreSQL... / إيقاف قاعدة البيانات..."
