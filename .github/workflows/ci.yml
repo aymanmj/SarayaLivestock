@@ -138,14 +138,14 @@ jobs:
           npm run build
 
       - name: Upload Web Build Artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: web-dist
           path: apps/web/dist/
           retention-days: 7
 
       - name: Upload API Build Artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: api-dist
           path: apps/api/dist/
