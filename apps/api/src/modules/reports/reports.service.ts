@@ -98,7 +98,7 @@ export class ReportsService {
           wasted: wastedMilkToday,
           cowsMilked: new Set(todayMilk.map(log => log.animalId)).size,
           avgPerCow: todayMilk.length > 0
-            ? (totalMilkToday / new Set(todayMilk.map(log => log.animalId)).size).toFixed(1)
+            ? (totalMilkToday / new Set(todayMilk.map(log => log.animalId)).size).toFixed(3)
             : 0,
         },
       },
@@ -217,7 +217,7 @@ export class ReportsService {
     return {
       period: 'آخر 30 يوماً',
       milkEconomics: {
-        totalMilkLiters: Math.round(totalMilkLiters),
+        totalMilkLiters: Number(totalMilkLiters.toFixed(3)),
         sellingPricePerLiter: milkPricePerLiter,
         grossRevenue: Money.round(grossMilkRevenue, 3),
         feedCost: dairyFeedCost,
@@ -295,7 +295,7 @@ export class ReportsService {
         const avgYield = a.milkLogs.reduce((s, l) => s + Number(l.yieldLiters), 0) / a.milkLogs.length;
         if (avgYield < 14.0) {
           isCandidate = true;
-          reasons.push(`انخفاض حاد في إنتاج الحليب (متوسط ${avgYield.toFixed(1)} لتر/يوم - أقل من حد التكلفة)`);
+          reasons.push(`انخفاض حاد في إنتاج الحليب (متوسط ${avgYield.toFixed(3)} لتر/يوم - أقل من حد التكلفة)`);
           severity = 'HIGH';
         }
       }
@@ -322,7 +322,7 @@ export class ReportsService {
         const latestAdg = Number(a.weightLogs[0].dailyGainAdg || 0);
         if (latestAdg > 0 && latestAdg < 0.8) {
           isCandidate = true;
-          reasons.push(`ضعف معدل التحويل الغذائي (زيادة وزنية ${latestAdg.toFixed(2)} كجم/يوم فقط)`);
+          reasons.push(`ضعف معدل التحويل الغذائي (زيادة وزنية ${latestAdg.toFixed(3)} كجم/يوم فقط)`);
           severity = 'MEDIUM';
         }
       }

@@ -2,7 +2,8 @@ import { BadRequestException, ConflictException, Injectable, NotFoundException }
 import { PrismaService } from '../../database/prisma.service';
 import { InseminateDto } from './dto/inseminate.dto';
 import { BreedingEngine, TargetSpecies } from '../../common/utils/breeding.util';
-import { PregnancyResult, LifeStage, Gender, Purpose } from '@prisma/client';
+import { PregnancyResult, LifeStage, Gender, Purpose, Prisma, CalvingDifficulty } from '@prisma/client';
+import { RecordCalvingDto } from './dto/breeding-actions.dto';
 import { appendDomainAudit, AuditActor } from '../../common/audit/domain-audit';
 import { IdempotencyContext } from '../../common/idempotency/idempotency-context';
 import { runIdempotentTransaction } from '../../common/idempotency/idempotency-transaction';
@@ -10,6 +11,22 @@ import { runIdempotentTransaction } from '../../common/idempotency/idempotency-t
 @Injectable()
 export class BreedingService {
   constructor(private prisma: PrismaService) {}
+
+  async recordDryOff(recordId: string, farmId: string, actor?: AuditActor, idempotency?: IdempotencyContext) {
+    return runIdempotentTransaction(this.prisma, actor, idempotency, async tx => {
+      const record = await tx.breedingRecord.findFirst({ where: { id: recordId, animal: { farmId } }, include: { animal: true } });
+      if (!record) throw new NotFoundException('سجل الحمل غير موجود');
+      const maxAdvanceDate = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+      if (record.actualCalvingDate || record.pdResult !== PregnancyResult.PREGNANT ||
+          record.animal.status !== 'ACTIVE' || record.animal.currentLifeStage !== LifeStage.LACTATING ||
+          !record.expectedDryoffDate || record.expectedDryoffDate > maxAdvanceDate) {
+        throw new ConflictException('التجفيف يتطلب حملاً جارياً مؤكداً وأماً حلوباً وحلول نافذة التجفيف المعتمدة');
+      }
+      const animal = await tx.animal.update({ where: { id: record.animalId }, data: { currentLifeStage: LifeStage.DRY } });
+      if (actor) await appendDomainAudit(tx, actor, { action: 'breeding.dry-off.recorded', entityType: 'breedingRecord', entityId: recordId, farmId, metadata: { animalId: animal.id } });
+      return animal;
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+  }
 
   async recordInsemination(dto: InseminateDto, farmId: string, actor?: AuditActor, idempotency?: IdempotencyContext) {
     return runIdempotentTransaction(this.prisma, actor, idempotency, async tx => {
@@ -25,6 +42,13 @@ export class BreedingService {
       });
 
       if (!animal) throw new NotFoundException('الحيوان غير مسجل (يرجى التحقق من رقم القرط)');
+
+      if (animal.gender === Gender.MALE) {
+        throw new BadRequestException('لا يمكن تلقيح حيوان ذكر');
+      }
+      if (animal.status !== 'ACTIVE') {
+        throw new BadRequestException(`لا يمكن تلقيح الحيوان لأن حالته (${animal.status}) غير نشطة`);
+      }
 
       const insemDate = new Date(dto.inseminationDate);
       const species = animal.species as unknown as TargetSpecies;
@@ -97,12 +121,7 @@ export class BreedingService {
 
   async recordCalving(
     recordId: string,
-    data: {
-      actualCalvingDate: string;
-      offspringTagNumber: string;
-      offspringGender: Gender;
-      offspringWeightKg?: number;
-    },
+    data: RecordCalvingDto,
     farmId: string,
     actor?: AuditActor,
     idempotency?: IdempotencyContext,
@@ -123,16 +142,22 @@ export class BreedingService {
         throw new BadRequestException('تاريخ الولادة لا يمكن أن يسبق تاريخ التلقيح');
       }
 
+      const isAbortion = data.calvingDifficulty === CalvingDifficulty.ABORTION;
+      const diffDays = Math.round((calvingDate.getTime() - new Date(record.inseminationDate).getTime()) / (1000 * 60 * 60 * 24));
+      if (!isAbortion && diffDays < 150) {
+        throw new BadRequestException(`فترة الحمل غير منطقية بيولوجياً (${diffDays} يوماً). لا يمكن تسجيل ولادة طبيعية أو متعسرة قبل 150 يوماً من التلقيح`);
+      }
+
       // تجهيز قائمة المواليد (مفرد أو توأم)
-      const offspringList: Array<{ tagNumber: string; gender: Gender; weightKg?: number }> = [
+      const offspringList: Array<{ tagNumber: string; gender: Gender; weightKg?: number }> = isAbortion ? [] : [
         {
           tagNumber: data.offspringTagNumber,
           gender: data.offspringGender,
           weightKg: data.offspringWeightKg,
         },
       ];
-      if ((data as any).twins && Array.isArray((data as any).twins)) {
-        for (const twin of (data as any).twins) {
+      if (!isAbortion && data.twins) {
+        for (const twin of data.twins) {
           if (twin.tagNumber) {
             offspringList.push({
               tagNumber: twin.tagNumber,
@@ -157,14 +182,19 @@ export class BreedingService {
           actualCalvingDate: calvingDate,
           offspringGender: data.offspringGender,
           offspringCount: offspringList.length,
-          calvingDifficulty: (data as any).calvingDifficulty || undefined,
-          notes: (data as any).notes || undefined,
+          calvingDifficulty: data.calvingDifficulty,
+          pdResult: isAbortion ? PregnancyResult.OPEN : record.pdResult,
+          notes: data.notes,
         },
       });
 
+      const nextLifeStage = isAbortion
+        ? (record.animal.currentLifeStage === LifeStage.PREGNANT_HEIFER ? LifeStage.HEIFER : LifeStage.DRY)
+        : LifeStage.LACTATING;
+
       await tx.animal.update({
         where: { id: record.animalId },
-        data: { currentLifeStage: LifeStage.LACTATING },
+        data: { currentLifeStage: nextLifeStage },
       });
 
       const createdNewborns = [];
@@ -188,24 +218,24 @@ export class BreedingService {
         createdNewborns.push(newborn);
       }
 
-      const newborn = createdNewborns[0];
+      const newborn = createdNewborns[0] ?? null;
       if (actor) await appendDomainAudit(tx, actor, {
         action: 'breeding.calving.recorded',
         entityType: 'breedingRecord',
         entityId: recordId,
         farmId,
-        metadata: { motherId: record.animalId, newbornId: newborn.id, newbornIds: createdNewborns.map(n => n.id), count: createdNewborns.length },
+        metadata: { motherId: record.animalId, newbornId: newborn?.id ?? null, newbornIds: createdNewborns.map(n => n.id), count: createdNewborns.length, isAbortion },
       });
 
       return {
-        message: createdNewborns.length > 1
+        message: isAbortion ? 'تم تسجيل الإجهاض دون إنشاء مولود حي؛ يلزم تقييم حالة الأم بيطرياً' : createdNewborns.length > 1
           ? `تم تسجيل ولادة توأم (${createdNewborns.length} مواليد) بنجاح وإضافتهم إلى سجل القطيع`
           : 'تم تسجيل الولادة بنجاح وإنشاء ملف المولود الجديد آلياً',
         motherId: record.animalId,
         newborn,
         newborns: createdNewborns,
       };
-    });
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
   }
 
   async getUpcomingTasks(farmId: string) {
@@ -231,6 +261,7 @@ export class BreedingService {
         animal: { ...(filter.animal || {}), currentLifeStage: LifeStage.LACTATING },
         pdResult: PregnancyResult.PREGNANT,
         expectedDryoffDate: { lte: next7Days },
+        actualCalvingDate: null,
       },
       include: { animal: true },
       orderBy: { expectedDryoffDate: 'asc' },

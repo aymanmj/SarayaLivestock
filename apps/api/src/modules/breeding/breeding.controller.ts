@@ -9,6 +9,7 @@ import { RecordCalvingDto, RecordPregnancyResultDto } from './dto/breeding-actio
 import { DomainAudited } from '../../common/audit/domain-audited.decorator';
 import { CurrentIdempotency, IdempotencyContext, IdempotencyRequired } from '../../common/idempotency/idempotency-context';
 import { ApiCreatedResponse, ApiOkResponse } from '@nestjs/swagger';
+import { AnimalRecordResponseDto } from '../animals/dto/animal-response.dto';
 import {
   BreedingRecordWithAnimalResponseDto,
   BreedingTasksResponseDto,
@@ -19,6 +20,15 @@ import {
 @Controller('breeding')
 export class BreedingController {
   constructor(private readonly breedingService: BreedingService) {}
+
+  @Post(':id/dry-off')
+  @DomainAudited()
+  @IdempotencyRequired()
+  @ApiCreatedResponse({ type: AnimalRecordResponseDto })
+  recordDryOff(@Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @CurrentUser() user: AuthenticatedUser, @CurrentIdempotency() idempotency: IdempotencyContext) {
+    return this.breedingService.recordDryOff(id, requireFarmId(user), user, idempotency);
+  }
 
   @Post('inseminate')
   @DomainAudited()

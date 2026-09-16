@@ -370,10 +370,32 @@ export async function updateAnimalStatus(
     notes?: string;
   }
 ) {
-  return unwrapGenerated(await generatedApiClient.PATCH('/api/v1/animals/{id}/status' as any, {
+  return unwrapGenerated(await generatedApiClient.PATCH('/api/v1/animals/{id}/status', {
     params: { path: { id } },
     body: payload,
-  } as any), 'تحديث حالة الحيوان');
+  }), 'تحديث حالة الحيوان');
+}
+
+export async function updateAnimalLifeStage(
+  id: string,
+  stage: LifeStage,
+) {
+  return unwrapGenerated(await generatedApiClient.PATCH('/api/v1/animals/{id}/life-stage', {
+    params: { path: { id } },
+    body: { stage },
+  }), 'تحديث مرحلة الحيوان');
+}
+
+export async function recordDryOff(id: string) {
+  return unwrapGenerated(await generatedApiClient.POST('/api/v1/breeding/{id}/dry-off', {
+    params: { path: { id } },
+  }), 'تسجيل التجفيف');
+}
+
+export async function getAnimalBookValue(id: string, date: string) {
+  return unwrapGenerated(await generatedApiClient.GET('/api/v1/sales/animals/{id}/book-value', {
+    params: { path: { id }, query: { date } },
+  }), 'تحميل القيمة الدفترية');
 }
 
 // ----------------------------------------------------
@@ -723,6 +745,23 @@ export async function getSaleById(id: string): Promise<CommercialSale> {
       params: { path: { id } },
     }),
     'تحميل تفاصيل الفاتورة',
+  );
+}
+
+export type MilkPolicy = components['schemas']['MilkPolicyResponseDto'];
+export type UpdateMilkPolicyPayload = components['schemas']['UpdateMilkPolicyDto'];
+
+export async function getMilkPolicy(): Promise<MilkPolicy> {
+  return unwrapGenerated(
+    await generatedApiClient.GET('/api/v1/sales/milk-policy'),
+    'تحميل سياسة مخزون الحليب',
+  );
+}
+
+export async function updateMilkPolicy(payload: UpdateMilkPolicyPayload): Promise<MilkPolicy> {
+  return unwrapGenerated(
+    await generatedApiClient.PUT('/api/v1/sales/milk-policy', { body: payload }),
+    'تحديث سياسة مخزون الحليب',
   );
 }
 

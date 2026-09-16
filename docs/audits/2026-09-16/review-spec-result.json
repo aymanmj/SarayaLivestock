@@ -1,0 +1,68 @@
+{
+  "source": "live TypeScript",
+  "ration": {
+    "ingredients": [
+      {
+        "id": "0",
+        "name": "0",
+        "proteinPct": 89,
+        "costPerKg": 96,
+        "energyMcal": 1
+      },
+      {
+        "id": "1",
+        "name": "1",
+        "proteinPct": 78,
+        "costPerKg": 82,
+        "energyMcal": 1
+      },
+      {
+        "id": "2",
+        "name": "2",
+        "proteinPct": 42,
+        "costPerKg": 48,
+        "energyMcal": 1
+      }
+    ],
+    "target": 65.51,
+    "result": {
+      "targetProteinPct": 65.51,
+      "actualProteinPct": 65.51,
+      "batchTotalKg": 1000,
+      "totalCost": 70205.4,
+      "costPerKg": 70.205,
+      "costPerTon": 70205,
+      "items": [
+        {
+          "ingredientId": "1",
+          "name": "1",
+          "percentage": 65.31,
+          "weightKg": 653.1,
+          "cost": 53554.2
+        },
+        {
+          "ingredientId": "2",
+          "name": "2",
+          "percentage": 34.69,
+          "weightKg": 346.9,
+          "cost": 16651.2
+        }
+      ]
+    },
+    "alternative": [
+      0.02,
+      65.28,
+      34.7
+    ],
+    "alternativeProtein": 65.5102,
+    "alternativeCost": 70204.79999999999
+  },
+  "policyTransition": {
+    "productionDate": "2030-09-01",
+    "productionLiters": 100,
+    "saleDate": "2030-09-02",
+    "dailyResetRejected": true,
+    "afterCarryOverAcceptedLiters": 100,
+    "interpretation": "Switching policy reuses all historical production; no reset boundary or opening balance is recorded."
+  }
+}

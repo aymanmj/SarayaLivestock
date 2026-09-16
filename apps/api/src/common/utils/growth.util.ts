@@ -8,8 +8,8 @@ export class GrowthEngine {
    */
   static calculateAdg(currentWeightKg: number, previousWeightKg: number, daysBetween: number): number {
     if (daysBetween <= 0) return 0;
-    const gain = new Decimal(currentWeightKg).minus(new Decimal(previousWeightKg));
-    return gain.div(daysBetween).toDecimalPlaces(3, Decimal.ROUND_HALF_UP).toNumber();
+    const gain = Money.decimal(currentWeightKg).minus(Money.decimal(previousWeightKg));
+    return gain.div(daysBetween).toDecimalPlaces(3, Decimal.ROUND_HALF_EVEN).toNumber();
   }
 
   /**
@@ -17,9 +17,9 @@ export class GrowthEngine {
    * FCR = كمية العلف المستهلكة (كجم) / الوزن المكتسب (كجم)
    */
   static calculateFcr(totalFeedKg: number, totalWeightGainKg: number): number {
-    const gain = new Decimal(totalWeightGainKg);
+    const gain = Money.decimal(totalWeightGainKg);
     if (gain.lte(0)) return 0;
-    return new Decimal(totalFeedKg).div(gain).toDecimalPlaces(2, Decimal.ROUND_HALF_UP).toNumber();
+    return Money.decimal(totalFeedKg).div(gain).toDecimalPlaces(2, Decimal.ROUND_HALF_EVEN).toNumber();
   }
 
   /**
@@ -28,6 +28,6 @@ export class GrowthEngine {
    */
   static calculateCostPerKgGain(totalCosts: MoneyValue, totalWeightGainKg: number): number {
     if (totalWeightGainKg <= 0) return 0;
-    return Money.divide(totalCosts, totalWeightGainKg).toDecimalPlaces(3, Decimal.ROUND_HALF_UP).toNumber();
+    return Money.divide(totalCosts, totalWeightGainKg).toDecimalPlaces(3, Decimal.ROUND_HALF_EVEN).toNumber();
   }
 }

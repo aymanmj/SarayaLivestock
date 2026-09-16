@@ -31,7 +31,7 @@ type TrialBalance = components['schemas']['TrialBalanceResponseDto'];
 type IncomeStatement = components['schemas']['IncomeStatementResponseDto'];
 type BalanceSheet = components['schemas']['BalanceSheetResponseDto'];
 type FiscalYear = components['schemas']['FiscalYearResponseDto'];
-type EntryLine = { accountId: string; debit: number; credit: number; memo: string };
+type EntryLine = { accountId: string; animalId?: string; debit: number; credit: number; memo: string };
 
 export const AccountingGL: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'entries' | 'accounts' | 'trial' | 'statements' | 'years'>('entries');
@@ -42,6 +42,7 @@ export const AccountingGL: React.FC = () => {
   // Data States
   const [journalEntries, setJournalEntries] = useState<readonly JournalEntry[]>([]);
   const [accounts, setAccounts] = useState<readonly Account[]>([]);
+  const [animals, setAnimals] = useState<readonly components['schemas']['AnimalResponseDto'][]>([]);
   const [trialBalance, setTrialBalance] = useState<TrialBalance | null>(null);
   const [incomeStatement, setIncomeStatement] = useState<IncomeStatement | null>(null);
   const [balanceSheet, setBalanceSheet] = useState<BalanceSheet | null>(null);
@@ -66,17 +67,19 @@ export const AccountingGL: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const [entriesRes, accountsRes, trialRes, incomeRes, bsRes, yearsRes] = await Promise.all([
+      const [entriesRes, accountsRes, trialRes, incomeRes, bsRes, yearsRes, animalsRes] = await Promise.all([
         generatedApiClient.GET('/api/v1/accounting/journal-entries'),
         generatedApiClient.GET('/api/v1/accounting/chart-of-accounts'),
         generatedApiClient.GET('/api/v1/accounting/trial-balance'),
         generatedApiClient.GET('/api/v1/accounting/income-statement'),
         generatedApiClient.GET('/api/v1/accounting/balance-sheet'),
         generatedApiClient.GET('/api/v1/accounting/fiscal-years'),
+        generatedApiClient.GET('/api/v1/animals'),
       ]);
 
       setJournalEntries(unwrapGenerated(entriesRes, 'تحميل القيود اليومية'));
       setAccounts(unwrapGenerated(accountsRes, 'تحميل دليل الحسابات'));
+      setAnimals(unwrapGenerated(animalsRes, 'تحميل الحيوانات').filter(a => a.status !== 'SOLD' && a.status !== 'DECEASED'));
       setTrialBalance(unwrapGenerated(trialRes, 'تحميل ميزان المراجعة'));
       setIncomeStatement(unwrapGenerated(incomeRes, 'تحميل قائمة الدخل'));
       setBalanceSheet(unwrapGenerated(bsRes, 'تحميل الميزانية'));
@@ -112,9 +115,20 @@ export const AccountingGL: React.FC = () => {
     setEntryLines(entryLines.filter((_, i) => i !== idx));
   };
 
+  const handleApplyAnimalReclassTemplate = () => {
+    const bioAccount = accounts.find(a => a.code === '1202') || accounts.find(a => a.code === '1201') || accounts[0];
+    if (!bioAccount) return;
+    setEntryDescription('إعادة تصنيف رصيد أصل بيولوجي وربطه بحيوان محدد دون تكرار رأس المال');
+    setEntryLines([
+      { accountId: bioAccount.id, animalId: animals[0]?.id || '', debit: 0, credit: 0, memo: 'إثبات ربط أصل الحيوان (مدين)' },
+      { accountId: bioAccount.id, animalId: undefined, debit: 0, credit: 0, memo: 'استبعاد من الرصيد المجمع غير المرتبط (دائن)' },
+    ]);
+  };
+
   const handleLineChange = (idx: number, field: keyof EntryLine, value: string | number) => {
     const next = [...entryLines];
     next[idx] = { ...next[idx], [field]: value };
+    if (field === 'accountId') next[idx].animalId = undefined;
     setEntryLines(next);
   };
 
@@ -132,6 +146,7 @@ export const AccountingGL: React.FC = () => {
           description: entryDescription,
           lines: entryLines.map(l => ({
             accountId: l.accountId,
+            animalId: l.animalId || undefined,
             debit: Number(l.debit) || 0,
             credit: Number(l.credit) || 0,
             memo: l.memo,
@@ -147,8 +162,8 @@ export const AccountingGL: React.FC = () => {
         { accountId: '', debit: 0, credit: 0, memo: '' },
       ]);
       fetchData();
-    } catch (error: any) {
-      setError(error.message || 'تعذر الاتصال بالخادم');
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error.message : 'تعذر حفظ قيد اليومية');
     }
   };
 
@@ -775,21 +790,33 @@ export const AccountingGL: React.FC = () => {
               </div>
 
               {/* Entry Lines */}
+              <p className="text-xs text-slate-600 dark:text-slate-300">
+                اختر الحيوان عند إثبات أصله. لربط رصيد سابق دون زيادته: أدخل طرفاً مديناً مرتبطاً بالحيوان وطرفاً دائناً غير مرتبط في حساب الأصل نفسه وبالقيمة نفسها. لا تعِد إثبات الرصيد القديم مقابل رأس المال.
+              </p>
               <div className="space-y-2 pt-2">
                 <div className="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-300">
                   <span>أطراف القيد المحاسبي (مدين / دائن):</span>
-                  <button
-                    type="button"
-                    onClick={handleAddLine}
-                    className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:bg-slate-700 text-emerald-700 dark:text-emerald-400 text-xs font-bold flex items-center gap-1"
-                  >
-                    <Plus className="w-3.5 h-3.5" /> إضافة طرف
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleApplyAnimalReclassTemplate}
+                      className="px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 text-xs font-bold flex items-center gap-1 border border-emerald-200 dark:border-emerald-800"
+                    >
+                      <Sparkles className="w-3.5 h-3.5" /> قالب تسوية / ربط أصل حيوان
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleAddLine}
+                      className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:bg-slate-700 text-emerald-700 dark:text-emerald-400 text-xs font-bold flex items-center gap-1"
+                    >
+                      <Plus className="w-3.5 h-3.5" /> إضافة طرف
+                    </button>
+                  </div>
                 </div>
 
                 <div className="space-y-2">
                   {entryLines.map((line, idx) => (
-                    <div key={idx} className="flex items-center gap-2 bg-slate-100/40 dark:bg-slate-800/40 p-2.5 rounded-xl border border-slate-300 dark:border-slate-700">
+                    <div key={idx} className="flex flex-wrap items-center gap-2 bg-slate-100/40 dark:bg-slate-800/40 p-2.5 rounded-xl border border-slate-300 dark:border-slate-700">
                       <select
                         value={line.accountId}
                         onChange={e => handleLineChange(idx, 'accountId', e.target.value)}
@@ -803,6 +830,15 @@ export const AccountingGL: React.FC = () => {
                           </option>
                         ))}
                       </select>
+
+                      {['1201', '1202', '1203'].includes(accounts.find(a => a.id === line.accountId)?.code ?? '') && (
+                        <select aria-label="الحيوان المرتبط بالأصل" value={line.animalId ?? ''}
+                          onChange={e => handleLineChange(idx, 'animalId', e.target.value)}
+                          className="max-w-48 p-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700">
+                          <option value="">رصيد غير مرتبط بحيوان</option>
+                          {animals.map(a => <option key={a.id} value={a.id}>{a.tagNumber} {a.name ?? ''}</option>)}
+                        </select>
+                      )}
 
                       <input
                         type="number"

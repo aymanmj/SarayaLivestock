@@ -31,6 +31,8 @@ import {
   AnimalMortality,
   SalesSummary,
   getAnimals,
+  getAnimalBookValue,
+  updateMilkPolicy,
 } from '../api/client';
 import { Animal } from '../api/types';
 import { formatMoney, formatDate, OFFICIAL_CURRENCY } from '../utils/money.util';
@@ -42,6 +44,7 @@ export const CommercialSales: React.FC = () => {
   const [summary, setSummary] = useState<SalesSummary | null>(null);
   const [activeAnimals, setActiveAnimals] = useState<Animal[]>([]);
   const [loading, setLoading] = useState(false);
+  const [milkPolicy, setMilkPolicy] = useState<'DAILY_RESET' | 'CARRY_OVER'>('DAILY_RESET');
   const [feedback, setFeedback] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -73,6 +76,24 @@ export const CommercialSales: React.FC = () => {
   const [saleBuyerName, setSaleBuyerName] = useState('');
   const [saleBuyerPhone, setSaleBuyerPhone] = useState('');
   const [saleNotes, setSaleNotes] = useState('');
+  const [saleBookValue, setSaleBookValue] = useState<{ animalId: string; value: number } | null>(null);
+  const [saleBookValueError, setSaleBookValueError] = useState('');
+  const currentSaleBookValue = saleBookValue?.animalId === saleAnimalId ? saleBookValue.value : null;
+
+  useEffect(() => {
+    let cancelled = false;
+    setSaleBookValue(null);
+    setSaleBookValueError('');
+    if (saleAnimalId) {
+      const todayStr = new Date().toISOString().split('T')[0];
+      getAnimalBookValue(saleAnimalId, todayStr).then(result => {
+        if (!cancelled) setSaleBookValue({ animalId: saleAnimalId, value: Number(result.bookValue) });
+      }).catch((error: unknown) => {
+        if (!cancelled) setSaleBookValueError(error instanceof Error ? error.message : 'تعذر تحميل القيمة الدفترية للحيوان');
+      });
+    }
+    return () => { cancelled = true; };
+  }, [saleAnimalId]);
 
   // Mortality Form State
   const [mortAnimalId, setMortAnimalId] = useState('');
@@ -80,6 +101,23 @@ export const CommercialSales: React.FC = () => {
   const [mortCause, setMortCause] = useState('انتفاخ الكرش الحاد (Acute Bloat)');
   const [mortSalvageValue, setMortSalvageValue] = useState<number>(0);
   const [mortNotes, setMortNotes] = useState('');
+  const [bookValue, setBookValue] = useState<{ animalId: string; date: string; value: number } | null>(null);
+  const [bookValueError, setBookValueError] = useState('');
+  const currentBookValue = bookValue?.animalId === mortAnimalId && bookValue.date === mortDeathDate ? bookValue.value : null;
+
+  useEffect(() => {
+    let cancelled = false;
+    setBookValue(null);
+    setBookValueError('');
+    if (mortAnimalId && mortDeathDate) {
+      getAnimalBookValue(mortAnimalId, mortDeathDate).then(result => {
+        if (!cancelled) setBookValue({ animalId: mortAnimalId, date: mortDeathDate, value: Number(result.bookValue) });
+      }).catch((error: unknown) => {
+        if (!cancelled) setBookValueError(error instanceof Error ? error.message : 'تعذر تحميل القيمة الدفترية');
+      });
+    }
+    return () => { cancelled = true; };
+  }, [mortAnimalId, mortDeathDate]);
 
   const loadData = async () => {
     setLoading(true);
@@ -94,9 +132,29 @@ export const CommercialSales: React.FC = () => {
       setSales(salesData);
       setMortalities(mortData);
       setSummary(sumData);
+      if (sumData?.milkPolicy) setMilkPolicy(sumData.milkPolicy as 'DAILY_RESET' | 'CARRY_OVER');
       setActiveAnimals(animalsData);
     } catch (err: any) {
       setError(err.message || 'تعذر تحميل بيانات المبيعات والنفوق');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleTogglePolicy = async (newPolicy: 'DAILY_RESET' | 'CARRY_OVER') => {
+    try {
+      setLoading(true);
+      const changed = await updateMilkPolicy({ milkPolicy: newPolicy });
+      setMilkPolicy(newPolicy);
+      setFeedback(
+        `تم تحديث سياسة مخزون الحليب للمزرعة إلى: ${
+          newPolicy === 'CARRY_OVER' ? 'ترحيل الرصيد التراكمي (CARRY_OVER)' : 'تصفير المخزون اليومي (DAILY_RESET)'
+        } من ${changed.effectiveDate || 'تاريخ السريان السابق'}. لا يُعاد احتساب مخزون الأيام القديمة.`,
+      );
+      clearFeedback();
+      loadData();
+    } catch (err: any) {
+      setError(err.message || 'فشل تحديث سياسة المخزون');
     } finally {
       setLoading(false);
     }
@@ -144,8 +202,8 @@ export const CommercialSales: React.FC = () => {
   // Submit Animal Sale
   const handleAnimalSaleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!saleAnimalId || !saleBuyerName.trim()) {
-      setError('يرجى اختيار الحيوان وإدخال اسم المشتري');
+    if (!saleAnimalId || !saleBuyerName.trim() || currentSaleBookValue === null) {
+      setError('يرجى اختيار الحيوان والتأكد من وجود قيمة دفترية معتمدة له في دفتر الأستاذ وإدخال اسم المشتري');
       return;
     }
     setLoading(true);
@@ -168,17 +226,29 @@ export const CommercialSales: React.FC = () => {
       setSaleBuyerPhone('');
       setSaleNotes('');
       loadData();
-    } catch (err: any) {
-      setError(err.message || 'فشل تسجيل بيع الماشية');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'فشل تسجيل بيع الماشية');
     } finally {
       setLoading(false);
     }
   };
 
+  const totalSaleAmount = useMemo(() => {
+    if (salePricingMethod === 'BY_WEIGHT') {
+      return (saleWeightKg || 0) * (salePricePerKg || 0);
+    }
+    return salePricePerHead || 0;
+  }, [salePricingMethod, saleWeightKg, salePricePerKg, salePricePerHead]);
+
+  const estimatedSaleGainLoss = useMemo(() => {
+    if (currentSaleBookValue === null) return null;
+    return totalSaleAmount - currentSaleBookValue;
+  }, [totalSaleAmount, currentSaleBookValue]);
+
   // Submit Mortality
   const handleMortalitySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!mortAnimalId || !mortCause.trim()) {
+    if (!mortAnimalId || !mortCause.trim() || currentBookValue === null) {
       setError('يرجى اختيار الحيوان وسبب النفوق');
       return;
     }
@@ -204,27 +274,7 @@ export const CommercialSales: React.FC = () => {
     }
   };
 
-  // Selected animal for mortality book value preview
-  const selectedMortAnimal = useMemo(() => {
-    return activeAnimals.find(a => a.id === mortAnimalId);
-  }, [activeAnimals, mortAnimalId]);
-
-  const estimatedBookValue = useMemo(() => {
-    if (!selectedMortAnimal) return 0;
-    if (selectedMortAnimal.purchasePrice && Number(selectedMortAnimal.purchasePrice) > 0) {
-      return Number(selectedMortAnimal.purchasePrice);
-    }
-    switch (selectedMortAnimal.species) {
-      case 'CATTLE': return 1500;
-      case 'SHEEP': return 400;
-      case 'GOAT': return 300;
-      default: return 500;
-    }
-  }, [selectedMortAnimal]);
-
-  const estimatedNetLoss = useMemo(() => {
-    return Math.max(0, estimatedBookValue - (mortSalvageValue || 0));
-  }, [estimatedBookValue, mortSalvageValue]);
+  const estimatedNetLoss = currentBookValue === null ? null : Math.max(0, currentBookValue - (mortSalvageValue || 0));
 
   // Filtered Sales
   const filteredSales = useMemo(() => {
@@ -258,6 +308,21 @@ export const CommercialSales: React.FC = () => {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm text-xs">
+            <span className="text-slate-500 dark:text-slate-400 font-medium">سياسة الحليب:</span>
+            <select
+              value={milkPolicy}
+              disabled={loading}
+              onChange={e => handleTogglePolicy(e.target.value as 'DAILY_RESET' | 'CARRY_OVER')}
+              className="bg-transparent font-bold text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer text-xs"
+              title="التغيير يسري من اليوم قبل أول بيع؛ لا يرحّل مخزون الأيام السابقة ولا يسمح ببيع يسبق تاريخ التغيير"
+            >
+              <option value="DAILY_RESET">تصفير يومي</option>
+              <option value="CARRY_OVER">ترحيل الرصيد</option>
+            </select>
+          </div>
+          <span className="text-xs text-slate-500">تغيير السياسة يسري من اليوم قبل أول بيع، دون ترحيل مخزون الأيام القديمة.</span>
+
           <button
             onClick={() => setIsMilkModalOpen(true)}
             className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition-all"
@@ -551,13 +616,20 @@ export const CommercialSales: React.FC = () => {
                         {mort.deathDate}
                       </td>
                       <td className="p-3.5 font-bold text-slate-900 dark:text-white">
-                        <div className="flex items-center gap-1.5">
-                          <Skull className="w-3.5 h-3.5 text-rose-500" />
-                          <span>قرط: {(mort as any).animal?.tagNumber || mort.animalId.slice(0, 8)}</span>
-                        </div>
-                        <span className="text-[10px] text-slate-400 font-normal">
-                          {(mort as any).animal?.breed || (mort as any).animal?.species || 'ماشية'}
-                        </span>
+                        {(() => {
+                          const animal = mort.animal || activeAnimals.find(a => a.id === mort.animalId);
+                          return (
+                            <>
+                              <div className="flex items-center gap-1.5">
+                                <Skull className="w-3.5 h-3.5 text-rose-500" />
+                                <span>قرط: {animal?.tagNumber || mort.animalId.slice(0, 8)}</span>
+                              </div>
+                              <span className="text-[10px] text-slate-400 font-normal">
+                                {animal?.breed || animal?.species || 'ماشية'}
+                              </span>
+                            </>
+                          );
+                        })()}
                       </td>
                       <td className="p-3.5 font-medium text-slate-800 dark:text-slate-200">
                         {mort.causeOfDeath}
@@ -912,10 +984,49 @@ export const CommercialSales: React.FC = () => {
                 </div>
               </div>
 
+              {/* Biological Asset Valuation & Gain/Loss Breakdown */}
+              {saleAnimalId && (
+                <div className="space-y-2">
+                  {saleBookValueError && (
+                    <div role="alert" className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-xs text-rose-700 dark:text-rose-300">
+                      <p className="font-bold">{saleBookValueError}</p>
+                      <p className="mt-1 text-[11px] text-rose-600 dark:text-rose-400">
+                        يلزم ربط القيمة الدفترية للحيوان بقيد أصل بيولوجي في دفتر الأستاذ العام قبل إتمام البيع.
+                      </p>
+                    </div>
+                  )}
+                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-2 text-xs">
+                    <div className="flex justify-between items-center text-slate-600 dark:text-slate-400">
+                      <span>القيمة الدفترية للأصل البيولوجي (Book Value):</span>
+                      <span className="font-mono font-bold text-slate-900 dark:text-white">
+                        {currentSaleBookValue === null ? 'غير متاحة (يلزم ربط الأصل)' : formatMoney(currentSaleBookValue)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center text-slate-600 dark:text-slate-400">
+                      <span>إجمالي ثمن البيع المحصل:</span>
+                      <span className="font-mono font-bold text-slate-900 dark:text-white">
+                        {formatMoney(totalSaleAmount)}
+                      </span>
+                    </div>
+                    {estimatedSaleGainLoss !== null && (
+                      <div className="flex justify-between items-center pt-1 border-t border-slate-200 dark:border-slate-800">
+                        <span className="font-bold">
+                          {estimatedSaleGainLoss >= 0 ? 'الربح الرأسمالي المتوقع (Capital Gain):' : 'الخسارة الرأسمالية المتوقعة (Capital Loss):'}
+                        </span>
+                        <span className={`font-mono font-black ${estimatedSaleGainLoss >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                          {formatMoney(Math.abs(estimatedSaleGainLoss))}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 text-[11px] text-slate-500 space-y-1">
                 <span className="font-bold text-slate-700 dark:text-slate-300 block">الإجراءات الآلية المترتبة:</span>
                 <div>• تحديث حالة الحيوان المبيع فورياً إلى <strong className="text-emerald-600">SOLD</strong></div>
-                <div>• إنشاء قيد يومية CATTLE_SALE بدائن الحساب 4102 ومدين الخزينة/البنك</div>
+                <div>• استبعاد الأصل البيولوجي دفترياً ({currentSaleBookValue === null ? 'غير محدد' : formatMoney(currentSaleBookValue)}) وإثبات تكلفة التخلص</div>
+                <div>• إثبات إيراد البيع ({formatMoney(totalSaleAmount)}) في حساب 4102 ومدين الخزينة/البنك</div>
               </div>
 
               <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
@@ -928,8 +1039,8 @@ export const CommercialSales: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  disabled={loading}
-                  className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-sm"
+                  disabled={loading || currentSaleBookValue === null}
+                  className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-sm disabled:opacity-50"
                 >
                   إتمام البيع وترحيل القيد
                 </button>
@@ -1001,11 +1112,12 @@ export const CommercialSales: React.FC = () => {
               </div>
 
               {/* Biological Asset Valuation Breakdown */}
+              {bookValueError && <p role="alert" className="text-rose-600">{bookValueError} — يرجى مراجعة المحاسب لربط الأصل من دفتر الأستاذ.</p>}
               <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-2">
                 <div className="flex justify-between items-center text-slate-600 dark:text-slate-400">
                   <span>القيمة الدفترية للأصل البيولوجي (Book Value):</span>
                   <span className="font-mono font-bold text-slate-900 dark:text-white">
-                    {formatMoney(estimatedBookValue)}
+                    {currentBookValue === null ? 'القيمة غير متاحة' : formatMoney(currentBookValue)}
                   </span>
                 </div>
                 <div className="flex justify-between items-center text-slate-600 dark:text-slate-400">
@@ -1014,7 +1126,7 @@ export const CommercialSales: React.FC = () => {
                     <input
                       type="number"
                       min="0"
-                      max={estimatedBookValue}
+                      max={currentBookValue ?? 0}
                       value={mortSalvageValue}
                       onChange={e => setMortSalvageValue(parseFloat(e.target.value) || 0)}
                       className="w-full p-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 font-mono text-left"
@@ -1047,7 +1159,7 @@ export const CommercialSales: React.FC = () => {
                 {mortSalvageValue > 0 && (
                   <div>• مدين: 1101 الصندوق والخزينة بقيمة التخريد ({formatMoney(mortSalvageValue)})</div>
                 )}
-                <div>• دائن: الأصل البيولوجي بالقيمة الدفترية الكاملة ({formatMoney(estimatedBookValue)})</div>
+                <div>• دائن: الأصل البيولوجي بالقيمة الدفترية الكاملة ({currentBookValue === null ? 'غير متاحة' : formatMoney(currentBookValue)})</div>
                 <div>• تحديث حالة الحيوان فورياً إلى <strong className="text-rose-600">DECEASED</strong></div>
               </div>
 
@@ -1061,8 +1173,8 @@ export const CommercialSales: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  disabled={loading}
-                  className="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold shadow-sm"
+                  disabled={loading || currentBookValue === null}
+                  className="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold shadow-sm disabled:opacity-50"
                 >
                   اعتماد النفوق وإثبات الخسارة
                 </button>

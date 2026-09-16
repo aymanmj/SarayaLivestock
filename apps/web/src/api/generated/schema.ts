@@ -361,7 +361,7 @@ export interface paths {
         };
         get: operations["Barns_findAll"];
         put?: never;
-        post?: never;
+        post: operations["Barns_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -378,6 +378,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["Breeding_recordCalving"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/breeding/{id}/dry-off": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["Breeding_recordDryOff"];
         delete?: never;
         options?: never;
         head?: never;
@@ -828,6 +844,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/sales/animals/{id}/book-value": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["Sales_getAnimalBookValue"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/sales/milk": {
         parameters: {
             query?: never;
@@ -838,6 +870,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["Sales_recordMilkSale"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sales/milk-policy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["Sales_getMilkPolicy"];
+        put: operations["Sales_updateMilkPolicy"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1070,6 +1118,11 @@ export interface components {
         ActivateLicenseDto: {
             licenseKey: string;
         };
+        AnimalBookValueResponseDto: {
+            /** Format: uuid */
+            animalId: string;
+            bookValue: string;
+        };
         AnimalCountResponseDto: {
             breedingRecords: number;
             healthTreatments: number;
@@ -1119,6 +1172,7 @@ export interface components {
             withdrawalEndDate: string | null;
         };
         AnimalMortalityResponseDto: {
+            animal?: components["schemas"]["MortalityAnimalSummaryDto"] | null;
             /** Format: uuid */
             animalId: string;
             bookValue: string;
@@ -1451,6 +1505,25 @@ export interface components {
              */
             species?: "CATTLE" | "SHEEP" | "GOAT";
             tagNumber: string;
+        };
+        CreateBarnDto: {
+            /**
+             * @description الطاقة الاستيعابية للحظيرة
+             * @default 50
+             * @example 100
+             */
+            capacity?: number;
+            /**
+             * @description اسم الحظيرة أو العنبر
+             * @example حظيرة الأبقار الحلابة (A2)
+             */
+            name: string;
+            /**
+             * @description نوع القطاع
+             * @default DAIRY
+             * @enum {string}
+             */
+            sectorType?: "DAIRY" | "FATTENING" | "BREEDING" | "CALVES" | "ISOLATION";
         };
         CreateFeedFormulaDto: {
             description?: string;
@@ -1848,6 +1921,8 @@ export interface components {
             /** Format: uuid */
             accountId: string;
             /** Format: uuid */
+            animalId?: string;
+            /** Format: uuid */
             costCenterId?: string;
             credit: number;
             debit: number;
@@ -1947,6 +2022,8 @@ export interface components {
         };
         /** @enum {string} */
         MilkingShift: "MORNING" | "NOON" | "EVENING";
+        /** @enum {string} */
+        MilkInventoryPolicy: "DAILY_RESET" | "CARRY_OVER";
         MilkLogResponseDto: {
             /** Format: uuid */
             animalId: string;
@@ -1981,6 +2058,19 @@ export interface components {
             proteinPct: string | null;
             shift: components["schemas"]["MilkingShift"];
             yieldLiters: string;
+        };
+        MilkPolicyResponseDto: {
+            /** Format: date */
+            effectiveDate: string | null;
+            milkPolicy: components["schemas"]["MilkInventoryPolicy"];
+        };
+        MortalityAnimalSummaryDto: {
+            breed?: string | null;
+            gender?: string | null;
+            /** Format: uuid */
+            id: string;
+            species?: string | null;
+            tagNumber: string;
         };
         /** @enum {string} */
         PaymentMethod: "CASH" | "BANK" | "ON_ACCOUNT";
@@ -2083,7 +2173,8 @@ export interface components {
             message: string;
             /** Format: uuid */
             motherId: string;
-            newborn: components["schemas"]["AnimalRecordResponseDto"];
+            newborn: components["schemas"]["AnimalRecordResponseDto"] | null;
+            newborns: components["schemas"]["AnimalRecordResponseDto"][];
         };
         RecordedWeightResponseDto: {
             animal: components["schemas"]["AnimalRecordResponseDto"];
@@ -2189,6 +2280,9 @@ export interface components {
         };
         SalesSummaryResponseDto: {
             animalSalesLyd: string;
+            milkPolicy?: components["schemas"]["MilkInventoryPolicy"];
+            /** Format: date */
+            milkPolicyEffectiveDate: string | null;
             milkSalesLyd: string;
             totalAnimalsSold: number;
             totalDeceasedAnimals: number;
@@ -2261,6 +2355,10 @@ export interface components {
         UpdateFeedStockDto: {
             addedKg: number;
             costPerUnit?: number;
+        };
+        UpdateMilkPolicyDto: {
+            /** @enum {string} */
+            milkPolicy: "DAILY_RESET" | "CARRY_OVER";
         };
         UpdateUserRoleDto: {
             /** @enum {string} */
@@ -2912,6 +3010,29 @@ export interface operations {
             };
         };
     };
+    Barns_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateBarnDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BarnSummaryResponseDto"];
+                };
+            };
+        };
+    };
     Breeding_recordCalving: {
         parameters: {
             query?: never;
@@ -2933,6 +3054,27 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RecordCalvingResponseDto"];
+                };
+            };
+        };
+    };
+    Breeding_recordDryOff: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnimalRecordResponseDto"];
                 };
             };
         };
@@ -3529,6 +3671,29 @@ export interface operations {
             };
         };
     };
+    Sales_getAnimalBookValue: {
+        parameters: {
+            query?: {
+                date?: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnimalBookValueResponseDto"];
+                };
+            };
+        };
+    };
     Sales_recordMilkSale: {
         parameters: {
             query?: never;
@@ -3548,6 +3713,48 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CommercialSaleResponseDto"];
+                };
+            };
+        };
+    };
+    Sales_getMilkPolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MilkPolicyResponseDto"];
+                };
+            };
+        };
+    };
+    Sales_updateMilkPolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateMilkPolicyDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MilkPolicyResponseDto"];
                 };
             };
         };

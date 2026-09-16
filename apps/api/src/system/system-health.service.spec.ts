@@ -1,12 +1,13 @@
 import { ServiceUnavailableException } from '@nestjs/common';
 import { SystemHealthService } from './system-health.service';
+import { REQUIRED_DATABASE_MIGRATION } from '../database/prisma.service';
 
 describe('SystemHealthService', () => {
   it('reports readiness only after the database schema check passes', async () => {
     const prisma = { assertRequiredSchema: jest.fn().mockResolvedValue(undefined) } as any;
     const service = new SystemHealthService(prisma);
     await expect(service.readiness()).resolves.toEqual(expect.objectContaining({
-      status: 'ready', database: 'connected', requiredMigration: '0005_operational_idempotency',
+      status: 'ready', database: 'connected', requiredMigration: REQUIRED_DATABASE_MIGRATION,
     }));
   });
 

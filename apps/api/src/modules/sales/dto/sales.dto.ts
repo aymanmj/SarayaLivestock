@@ -10,7 +10,7 @@ import {
   MaxLength,
   Min,
 } from 'class-validator';
-import { PaymentMethod, AnimalPricingMethod } from '@prisma/client';
+import { PaymentMethod, AnimalPricingMethod, MilkInventoryPolicy } from '@prisma/client';
 
 export class RecordMilkSaleDto {
   @Type(() => Number)
@@ -130,3 +130,9 @@ export class SalesQueryDto {
   @Min(1)
   limit?: number;
 }
+
+export class UpdateMilkPolicyDto {
+  @IsEnum(MilkInventoryPolicy, { message: 'سياسة مخزون الحليب غير صالحة' })
+  milkPolicy: MilkInventoryPolicy;
+}
+

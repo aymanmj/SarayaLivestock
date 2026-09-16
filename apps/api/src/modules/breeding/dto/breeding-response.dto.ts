@@ -16,8 +16,11 @@ export class RecordCalvingResponseDto {
   @ApiProperty({ format: 'uuid' })
   motherId: string;
 
-  @ApiProperty({ type: () => AnimalRecordResponseDto })
-  newborn: AnimalRecordResponseDto;
+  @ApiProperty({ type: () => AnimalRecordResponseDto, nullable: true })
+  newborn: AnimalRecordResponseDto | null;
+
+  @ApiProperty({ type: () => [AnimalRecordResponseDto] })
+  newborns: AnimalRecordResponseDto[];
 }
 
 export class BreedingTasksResponseDto {

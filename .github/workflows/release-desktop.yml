@@ -6,7 +6,11 @@ on:
       - 'v*'
 
 jobs:
+  quality-gate:
+    uses: ./.github/workflows/ci.yml
+
   build-windows-installer:
+    needs: quality-gate
     name: Build NSIS Installer & Portable Executable
     runs-on: windows-latest
 
@@ -19,13 +23,18 @@ jobs:
         with:
           node-version: 22.x
           cache: 'npm'
+          cache-dependency-path: |
+            apps/api/package-lock.json
+            apps/web/package-lock.json
+            apps/desktop/package-lock.json
 
-      - name: Install All Dependencies
-        run: |
-          npm ci
-          cd apps/web && npm ci
-          cd ../api && npm ci
-          cd ../desktop && npm ci
+      - name: Install Web Dependencies
+        working-directory: ./apps/web
+        run: npm ci
+
+      - name: Install Desktop Dependencies
+        working-directory: ./apps/desktop
+        run: npm ci
 
       - name: Build Web Application
         working-directory: ./apps/web
@@ -47,6 +56,6 @@ jobs:
           files: |
             apps/desktop/dist-electron/*.exe
             apps/desktop/dist-electron/*.blockmap
-          draft: false
+          draft: true
           prerelease: false
           generate_release_notes: true

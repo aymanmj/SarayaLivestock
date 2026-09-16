@@ -232,7 +232,7 @@ export const NutritionRations: React.FC = () => {
           <div className="flex items-baseline gap-2">
             <span className="text-2xl font-extrabold text-emerald-700 dark:text-emerald-400">{formatMoney(totalInventoryValue)}</span>
           </div>
-          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-2">تسعير الوارد أولاً صادر أولاً (FIFO)</p>
+          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-2">تسعير المتوسط المرجح للتكلفة (Weighted Average Cost)</p>
         </div>
 
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-lg">

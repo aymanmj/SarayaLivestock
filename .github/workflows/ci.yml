@@ -1,12 +1,24 @@
 name: Saraya Livestock Enterprise CI/CD Pipeline
 
 on:
+  workflow_call:
   push:
     branches: [ main, develop ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, develop ]
+
+permissions:
+  contents: read
 
 jobs:
+  windows-storage:
+    name: Verify Windows storage permissions
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Exercise filesystem DACLs and repeat hardening
+        shell: powershell
+        run: ./installer/server/scripts/test-storage.ps1 -ApplyToDisposableDirectory
   # ----------------------------------------------------
   # Job 1: Lint, Test & Validate Backend & Frontend
   # ----------------------------------------------------

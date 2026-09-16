@@ -1,149 +1,66 @@
-﻿<#
-.SYNOPSIS
-    Pre-upgrade Backup Script / نص النسخ الاحتياطي قبل الترقية
-.DESCRIPTION
-    Creates a verified backup before upgrading the Saraya Livestock server.
-    يقوم بإنشاء نسخة احتياطية تم التحقق منها قبل ترقية خادم سرايا للثروة الحيوانية.
-#>
 [CmdletBinding()]
-param (
-    [Parameter(Mandatory=$true)]
-    [string]$InstallDir,
-
-    [Parameter(Mandatory=$true)]
-    [string]$DataDir
+param(
+    [Parameter(Mandatory=$true)][string]$InstallDir,
+    [Parameter(Mandatory=$true)][string]$DataDir,
+    [Parameter(Mandatory=$true)][string]$BackupDir
 )
-
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
-
+. (Join-Path $PSScriptRoot 'protected-storage.ps1')
 try {
-    Write-Host "Starting pre-upgrade backup... / بدء النسخ الاحتياطي قبل الترقية..."
-    $timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
-    $backupDir = Join-Path $DataDir "backups\upgrade-$timestamp"
-    
-    # 1. Create backup directory / إنشاء مجلد النسخ الاحتياطي
-    if (-not (Test-Path $backupDir)) {
-        New-Item -ItemType Directory -Path $backupDir | Out-Null
+    $installRoot = Assert-OrdinaryPath $InstallDir
+    $backupRoot = Assert-OrdinaryPath (Join-Path $DataDir 'backups')
+    $snapshotRoot = Assert-OrdinaryPath $BackupDir
+    if (-not $snapshotRoot.StartsWith($backupRoot.TrimEnd('\') + '\', [StringComparison]::OrdinalIgnoreCase)) { throw 'Backup must be inside protected backups' }
+    if (Test-Path -LiteralPath $snapshotRoot) { throw 'Backup destination already exists' }
+    Protect-Storage $backupRoot
+    New-Item -ItemType Directory -Path $snapshotRoot | Out-Null
+    Protect-Storage $snapshotRoot
+    foreach ($name in @('SarayaCaddy', 'SarayaAPI')) {
+        if (Get-Service -Name $name -ErrorAction SilentlyContinue) { Stop-Service -Name $name -Force -ErrorAction Stop }
     }
-
-    # 2. Stop SarayaCaddy and SarayaAPI services / إيقاف خدمات واجهة برمجة التطبيقات والويب
-    Write-Host "Stopping Caddy and API services... / إيقاف خدمات Caddy و API..."
-    $servicesToStop = @("SarayaCaddy", "SarayaAPI")
-    foreach ($service in $servicesToStop) {
-        if (Get-Service -Name $service -ErrorAction SilentlyContinue) {
-            Stop-Service -Name $service -Force
-            Write-Host "Service $service stopped. / تم إيقاف الخدمة."
+    Start-Service -Name 'SarayaPostgreSQL'
+    Set-PostgresEnvironment (Join-Path $DataDir 'config\server.env')
+    $dump = Join-Path $snapshotRoot 'database.backup'
+    Invoke-PgTool (Join-Path $installRoot 'postgresql\bin\pg_dump.exe') @('--no-password', '--format=custom', '--file', $dump)
+    Invoke-PgTool (Join-Path $installRoot 'postgresql\bin\pg_restore.exe') @('--list', $dump)
+    if ((Get-Item -LiteralPath $dump).Length -eq 0) { throw 'Empty database backup' }
+    Stop-Service -Name 'SarayaPostgreSQL' -Force -ErrorAction Stop
+    $snapshotInstall = Join-Path $snapshotRoot 'installation'
+    New-Item -ItemType Directory -Path $snapshotInstall | Out-Null
+    $roots = @('node', 'postgresql', 'caddy', 'services', 'server', 'web')
+    $hashes = @()
+    foreach ($name in $roots) {
+        $source = Assert-OrdinaryPath (Join-Path $installRoot $name)
+        if (-not (Test-Path -LiteralPath $source -PathType Container)) { throw "Missing installation directory: $name" }
+        $items = @(Get-ChildItem -LiteralPath $source -Recurse -Force)
+        if ($items | Where-Object { $_.Attributes -band [IO.FileAttributes]::ReparsePoint }) { throw 'Installation contains reparse points' }
+        Copy-Item -LiteralPath $source -Destination $snapshotInstall -Recurse -Force
+        foreach ($file in $items | Where-Object { -not $_.PSIsContainer }) {
+            $relative = $file.FullName.Substring($installRoot.Length).TrimStart('\')
+            $hash = (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash
+            if ((Get-FileHash -LiteralPath (Join-Path $snapshotInstall $relative) -Algorithm SHA256).Hash -ne $hash) { throw 'Binary backup verification failed' }
+            $hashes += @{ path = $relative; sha256 = $hash }
         }
     }
-
-    # 3. Read DATABASE_URL and run pg_dump / قراءة رابط قاعدة البيانات وتشغيل النسخ الاحتياطي
-    $envFile = Join-Path $DataDir "config\server.env"
-    if (-not (Test-Path $envFile)) {
-        throw "Environment file not found at $envFile / ملف البيئة غير موجود"
-    }
-
-    $envContent = Get-Content $envFile
-    $dbUrlMatch = $envContent | Select-String -Pattern "^DATABASE_URL=(.+)$"
-    if (-not $dbUrlMatch) {
-        throw "DATABASE_URL not found in server.env / لم يتم العثور على رابط قاعدة البيانات"
-    }
-    
-    $dbUrl = $dbUrlMatch.Matches[0].Groups[1].Value.Trim()
-    if (($dbUrl.Length -ge 2) -and
-        (($dbUrl.StartsWith('"') -and $dbUrl.EndsWith('"')) -or
-         ($dbUrl.StartsWith("'") -and $dbUrl.EndsWith("'")))) {
-        $dbUrl = $dbUrl.Substring(1, $dbUrl.Length - 2)
-    }
-
-    # Parse the connection URL explicitly. PostgreSQL command-line tools do not
-    # read DATABASE_URL automatically, and running pg_dump without -d can wait
-    # for interactive credentials in a hidden installer window.
-    $dbUri = [Uri]$dbUrl
-    if ($dbUri.Scheme -notin @('postgresql', 'postgres')) {
-        throw "Unsupported DATABASE_URL scheme: $($dbUri.Scheme)"
-    }
-
-    $userInfo = $dbUri.UserInfo.Split(':', 2)
-    if ($userInfo.Count -ne 2) {
-        throw "DATABASE_URL does not contain database credentials"
-    }
-
-    $dbUser = [Uri]::UnescapeDataString($userInfo[0])
-    $dbPassword = [Uri]::UnescapeDataString($userInfo[1])
-    $dbName = [Uri]::UnescapeDataString($dbUri.AbsolutePath.TrimStart('/'))
-    $dbPort = if ($dbUri.IsDefaultPort) { 5432 } else { $dbUri.Port }
-
-    if ([string]::IsNullOrWhiteSpace($dbName)) {
-        throw "DATABASE_URL does not contain a database name"
-    }
-
-    $pgDumpPath = Join-Path $InstallDir "postgresql\bin\pg_dump.exe"
-    if (-not (Test-Path $pgDumpPath)) {
-        throw "pg_dump.exe not found at $pgDumpPath / أداة النسخ الاحتياطي غير موجودة"
-    }
-
-    $backupFile = Join-Path $backupDir "database.backup"
-    Write-Host "Running pg_dump... / جاري أخذ نسخة احتياطية من قاعدة البيانات..."
-    
-    $env:PGPASSWORD = $dbPassword
-    $pgDumpArgs = @(
-        '-h', $dbUri.Host,
-        '-p', [string]$dbPort,
-        '-U', $dbUser,
-        '-d', $dbName,
-        '-Fc',
-        '-f', $backupFile
-    )
-
-    & $pgDumpPath @pgDumpArgs
-    if ($LASTEXITCODE -ne 0) {
-        throw "pg_dump failed with exit code $LASTEXITCODE / فشل النسخ الاحتياطي"
-    }
-
-    # 4. Copy server.env / نسخ ملف البيئة
-    Copy-Item -Path $envFile -Destination $backupDir -Force
-    Write-Host "server.env backed up. / تم نسخ ملف البيئة."
-
-    # 5. Create manifest.json / إنشاء ملف الوصف
-    $fileHash = (Get-FileHash -Path $backupFile -Algorithm SHA256).Hash
-    
+    $configSource = Assert-OrdinaryPath (Join-Path $DataDir 'config')
+    if (Get-ChildItem -LiteralPath $configSource -Recurse -Force | Where-Object { $_.Attributes -band [IO.FileAttributes]::ReparsePoint }) { throw 'Configuration contains reparse points' }
+    Copy-Item -LiteralPath $configSource -Destination (Join-Path $snapshotRoot 'config') -Recurse -Force
+    $configHashes = @(Get-ChildItem -LiteralPath (Join-Path $snapshotRoot 'config') -Recurse -File -Force | ForEach-Object {
+        @{ path = $_.FullName.Substring((Join-Path $snapshotRoot 'config').Length).TrimStart('\'); sha256 = (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash }
+    })
     $manifest = @{
-        version = "1.0"
-        timestamp = $timestamp
-        database_name = $dbName
-        backup_file_hash = $fileHash
-    } | ConvertTo-Json
-
-    $manifestPath = Join-Path $backupDir "manifest.json"
-    Set-Content -Path $manifestPath -Value $manifest -Encoding UTF8
-    Write-Host "Manifest created at $manifestPath / تم إنشاء ملف الوصف"
-
-    # 6. Verify backup file / التحقق من ملف النسخة الاحتياطية
-    $fileInfo = Get-Item $backupFile
-    if ($fileInfo.Length -eq 0) {
-        throw "Backup file is empty / ملف النسخة الاحتياطية فارغ"
+        version = 2; timestamp = [DateTime]::UtcNow.ToString('o'); install_dir = $installRoot
+        database_name = $env:PGDATABASE; backup_file_hash = (Get-FileHash -LiteralPath $dump -Algorithm SHA256).Hash
+        roots = $roots; files = $hashes; config_files = $configHashes
     }
-
-    $pgRestorePath = Join-Path $InstallDir "postgresql\bin\pg_restore.exe"
-    & $pgRestorePath '--list' $backupFile | Out-Null
-    if ($LASTEXITCODE -ne 0) {
-        throw "Backup verification failed with exit code $LASTEXITCODE / فشل التحقق من النسخة الاحتياطية"
-    }
-
-    # 7. Print backup summary / عرض ملخص النسخ الاحتياطي
-    Write-Host "Backup completed successfully! / اكتمل النسخ الاحتياطي بنجاح!"
-    Write-Host "Backup Directory: $backupDir"
-    Write-Host "Database Hash: $fileHash"
+    $manifest | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $snapshotRoot 'manifest.json') -Encoding UTF8
+    Protect-Storage $snapshotRoot
+    Write-Output "Verified database, configuration and executable backup: $snapshotRoot"
     exit 0
-}
-catch {
-    Write-Error "Backup failed / فشل النسخ الاحتياطي: $_"
+} catch {
+    Write-Error "Pre-upgrade backup failed; program files have not been replaced. $($_.Exception.Message)" -ErrorAction Continue
     exit 1
-}
-finally {
-    # Remove the temporary password from the process environment.
-    if (Test-Path env:\PGPASSWORD) {
-        Remove-Item Env:\PGPASSWORD
-    }
+} finally {
+    foreach ($key in @('PGHOST','PGPORT','PGUSER','PGPASSWORD','PGDATABASE','PGCONNECT_TIMEOUT')) { Remove-Item -LiteralPath "Env:\$key" -ErrorAction SilentlyContinue }
 }

@@ -9,7 +9,7 @@ datasource db {
 }
 
 // ----------------------------------------------------
-// 1. المؤسسة والمزارع والفروع (Multi-Tenant Hierarchy)
+// 1. Ø§Ù„Ù…Ø¤Ø³Ø³Ø© ÙˆØ§Ù„Ù…Ø²Ø§Ø±Ø¹ ÙˆØ§Ù„ÙØ±ÙˆØ¹ (Multi-Tenant Hierarchy)
 // ----------------------------------------------------
 
 enum PlanType {
@@ -58,8 +58,15 @@ model Farm {
   journalSequences JournalSequence[]
   commercialSales   CommercialSale[]
   animalMortalities AnimalMortality[]
+  milkPolicy        MilkInventoryPolicy @default(DAILY_RESET)
+  milkPolicyEffectiveDate DateTime? @db.Date
 
   @@map("farms")
+}
+
+enum MilkInventoryPolicy {
+  DAILY_RESET
+  CARRY_OVER
 }
 
 enum SectorType {
@@ -88,7 +95,7 @@ model Barn {
 }
 
 // ----------------------------------------------------
-// 2. المستخدمون والصلاحيات (Users & Roles)
+// 2. Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…ÙˆÙ† ÙˆØ§Ù„ØµÙ„Ø§Ø­ÙŠØ§Øª (Users & Roles)
 // ----------------------------------------------------
 
 enum UserRole {
@@ -131,7 +138,7 @@ enum SessionRevocationReason {
   EXPIRED
 }
 
-/// جلسة قابلة للإبطال. لا يُخزَّن رمز التحديث الخام؛ tokenHash هو SHA-256 فقط.
+/// Ø¬Ù„Ø³Ø© Ù‚Ø§Ø¨Ù„Ø© Ù„Ù„Ø¥Ø¨Ø·Ø§Ù„. Ù„Ø§ ÙŠÙØ®Ø²ÙŽÙ‘Ù† Ø±Ù…Ø² Ø§Ù„ØªØ­Ø¯ÙŠØ« Ø§Ù„Ø®Ø§Ù…Ø› tokenHash Ù‡Ùˆ SHA-256 ÙÙ‚Ø·.
 model UserSession {
   id                  String                   @id @default(uuid())
   userId              String
@@ -156,8 +163,8 @@ model UserSession {
   @@map("user_sessions")
 }
 
-/// سجل أدلة أمني/تشغيلي إلحاقي. المعرّفات غير مرتبطة بمفاتيح خارجية عمداً
-/// حتى تبقى الأدلة التاريخية محفوظة عند حذف الكيانات التشغيلية.
+/// Ø³Ø¬Ù„ Ø£Ø¯Ù„Ø© Ø£Ù…Ù†ÙŠ/ØªØ´ØºÙŠÙ„ÙŠ Ø¥Ù„Ø­Ø§Ù‚ÙŠ. Ø§Ù„Ù…Ø¹Ø±Ù‘ÙØ§Øª ØºÙŠØ± Ù…Ø±ØªØ¨Ø·Ø© Ø¨Ù…ÙØ§ØªÙŠØ­ Ø®Ø§Ø±Ø¬ÙŠØ© Ø¹Ù…Ø¯Ø§Ù‹
+/// Ø­ØªÙ‰ ØªØ¨Ù‚Ù‰ Ø§Ù„Ø£Ø¯Ù„Ø© Ø§Ù„ØªØ§Ø±ÙŠØ®ÙŠØ© Ù…Ø­ÙÙˆØ¸Ø© Ø¹Ù†Ø¯ Ø­Ø°Ù Ø§Ù„ÙƒÙŠØ§Ù†Ø§Øª Ø§Ù„ØªØ´ØºÙŠÙ„ÙŠØ©.
 model AuditEvent {
   id          String   @id @default(uuid())
   orgId       String
@@ -185,7 +192,7 @@ enum IdempotencyStatus {
   COMPLETED
 }
 
-/// سجل منع التكرار للطلبات التشغيلية. يُنشأ ويُستكمل داخل معاملة العملية نفسها.
+/// Ø³Ø¬Ù„ Ù…Ù†Ø¹ Ø§Ù„ØªÙƒØ±Ø§Ø± Ù„Ù„Ø·Ù„Ø¨Ø§Øª Ø§Ù„ØªØ´ØºÙŠÙ„ÙŠØ©. ÙŠÙÙ†Ø´Ø£ ÙˆÙŠÙØ³ØªÙƒÙ…Ù„ Ø¯Ø§Ø®Ù„ Ù…Ø¹Ø§Ù…Ù„Ø© Ø§Ù„Ø¹Ù…Ù„ÙŠØ© Ù†ÙØ³Ù‡Ø§.
 model IdempotencyRecord {
   id             String            @id @default(uuid())
   orgId          String
@@ -209,7 +216,7 @@ model IdempotencyRecord {
 }
 
 // ----------------------------------------------------
-// 3. إدارة القطيع والماشية (Herd & Animals)
+// 3. Ø¥Ø¯Ø§Ø±Ø© Ø§Ù„Ù‚Ø·ÙŠØ¹ ÙˆØ§Ù„Ù…Ø§Ø´ÙŠØ© (Herd & Animals)
 // ----------------------------------------------------
 
 enum Species {
@@ -253,11 +260,11 @@ model Animal {
   id               String       @id @default(uuid())
   farmId           String
   barnId           String?
-  tagNumber        String // الرقم التعريفي / رقم القرط
-  rfidTag          String? // شريحة الترقيم الإلكتروني
+  tagNumber        String // Ø§Ù„Ø±Ù‚Ù… Ø§Ù„ØªØ¹Ø±ÙŠÙÙŠ / Ø±Ù‚Ù… Ø§Ù„Ù‚Ø±Ø·
+  rfidTag          String? // Ø´Ø±ÙŠØ­Ø© Ø§Ù„ØªØ±Ù‚ÙŠÙ… Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠ
   name             String?
   species          Species      @default(CATTLE)
-  breed            String? // السلالة: هولشتاين، سيمينتال، عساف، رحماني، دمشقي
+  breed            String? // Ø§Ù„Ø³Ù„Ø§Ù„Ø©: Ù‡ÙˆÙ„Ø´ØªØ§ÙŠÙ†ØŒ Ø³ÙŠÙ…ÙŠÙ†ØªØ§Ù„ØŒ Ø¹Ø³Ø§ÙØŒ Ø±Ø­Ù…Ø§Ù†ÙŠØŒ Ø¯Ù…Ø´Ù‚ÙŠ
   gender           Gender       @default(FEMALE)
   purpose          Purpose      @default(DAIRY)
   status           AnimalStatus @default(ACTIVE)
@@ -267,13 +274,13 @@ model Animal {
   entryWeightKg    Decimal?     @db.Decimal(10, 3)
   purchasePrice    Decimal?     @db.Decimal(15, 3)
 
-  // شجرة النسب (Pedigree)
+  // Ø´Ø¬Ø±Ø© Ø§Ù„Ù†Ø³Ø¨ (Pedigree)
   motherId        String?
   mother          Animal?  @relation("MotherChildren", fields: [motherId], references: [id])
   children        Animal[] @relation("MotherChildren")
-  fatherSemenCode String? // كود القشة أو رقم الثور/الكبش
+  fatherSemenCode String? // ÙƒÙˆØ¯ Ø§Ù„Ù‚Ø´Ø© Ø£Ùˆ Ø±Ù‚Ù… Ø§Ù„Ø«ÙˆØ±/Ø§Ù„ÙƒØ¨Ø´
 
-  // صمام الأمان الصحي (Health Withdrawal Lock)
+  // ØµÙ…Ø§Ù… Ø§Ù„Ø£Ù…Ø§Ù† Ø§Ù„ØµØ­ÙŠ (Health Withdrawal Lock)
   withdrawalEndDate DateTime?
 
   createdAt DateTime @default(now())
@@ -287,6 +294,7 @@ model Animal {
   healthTreatments HealthTreatment[]
   commercialSales  CommercialSale[]
   mortalities      AnimalMortality[]
+  journalLines     JournalEntryLine[]
 
   @@unique([farmId, tagNumber])
   @@index([farmId, status])
@@ -295,7 +303,7 @@ model Animal {
 }
 
 // ----------------------------------------------------
-// 4. إنتاج الحليب والخزان (Milking & Bulk Tank)
+// 4. Ø¥Ù†ØªØ§Ø¬ Ø§Ù„Ø­Ù„ÙŠØ¨ ÙˆØ§Ù„Ø®Ø²Ø§Ù† (Milking & Bulk Tank)
 // ----------------------------------------------------
 
 enum MilkingShift {
@@ -310,10 +318,10 @@ model MilkLog {
   logDate        DateTime     @db.Date
   shift          MilkingShift @default(MORNING)
   yieldLiters    Decimal      @db.Decimal(10, 3)
-  fatPct         Decimal?     @db.Decimal(5, 2)
-  proteinPct     Decimal?     @db.Decimal(5, 2)
-  isDiscarded    Boolean      @default(false) // حليب مهدر / غير مخصص للبيع
-  discardReason  String? // السبب: فترة تحريم، التهاب ضرع، علاج
+  fatPct         Decimal?     @db.Decimal(6, 3)
+  proteinPct     Decimal?     @db.Decimal(6, 3)
+  isDiscarded    Boolean      @default(false) // Ø­Ù„ÙŠØ¨ Ù…Ù‡Ø¯Ø± / ØºÙŠØ± Ù…Ø®ØµØµ Ù„Ù„Ø¨ÙŠØ¹
+  discardReason  String? // Ø§Ù„Ø³Ø¨Ø¨: ÙØªØ±Ø© ØªØ­Ø±ÙŠÙ…ØŒ Ø§Ù„ØªÙ‡Ø§Ø¨ Ø¶Ø±Ø¹ØŒ Ø¹Ù„Ø§Ø¬
   loggedByUserId String?
   createdAt      DateTime     @default(now())
 
@@ -332,9 +340,9 @@ model BulkTankLog {
   soldLiters        Decimal  @db.Decimal(12, 3)
   calfFeedingLiters Decimal  @default(0) @db.Decimal(10, 3)
   wastedLiters      Decimal  @default(0) @db.Decimal(10, 3)
-  tankTemperature   Decimal? @db.Decimal(5, 2) // درجة حرارة التبريد
-  fatPctAvg         Decimal? @db.Decimal(5, 2)
-  proteinPctAvg     Decimal? @db.Decimal(5, 2)
+  tankTemperature   Decimal? @db.Decimal(6, 3) // Ø¯Ø±Ø¬Ø© Ø­Ø±Ø§Ø±Ø© Ø§Ù„ØªØ¨Ø±ÙŠØ¯
+  fatPctAvg         Decimal? @db.Decimal(6, 3)
+  proteinPctAvg     Decimal? @db.Decimal(6, 3)
   unitPrice         Decimal? @db.Decimal(10, 3)
   buyerName         String?
   invoiceNumber     String?
@@ -346,7 +354,7 @@ model BulkTankLog {
 }
 
 // ----------------------------------------------------
-// 5. التسمين والأوزان (Fattening & Weights)
+// 5. Ø§Ù„ØªØ³Ù…ÙŠÙ† ÙˆØ§Ù„Ø£ÙˆØ²Ø§Ù† (Fattening & Weights)
 // ----------------------------------------------------
 
 model WeightLog {
@@ -354,7 +362,7 @@ model WeightLog {
   animalId      String
   weighDate     DateTime @db.Date
   weightKg      Decimal  @db.Decimal(10, 3)
-  dailyGainAdg  Decimal? @db.Decimal(10, 3) // معدل الزيادة اليومية المحسوبة
+  dailyGainAdg  Decimal? @db.Decimal(10, 3) // Ù…Ø¹Ø¯Ù„ Ø§Ù„Ø²ÙŠØ§Ø¯Ø© Ø§Ù„ÙŠÙˆÙ…ÙŠØ© Ø§Ù„Ù…Ø­Ø³ÙˆØ¨Ø©
   daysSinceLast Int?
   notes         String?
   createdAt     DateTime @default(now())
@@ -367,7 +375,7 @@ model WeightLog {
 }
 
 // ----------------------------------------------------
-// 6. التناسل والتلقيح (Reproduction & Breeding)
+// 6. Ø§Ù„ØªÙ†Ø§Ø³Ù„ ÙˆØ§Ù„ØªÙ„Ù‚ÙŠØ­ (Reproduction & Breeding)
 // ----------------------------------------------------
 
 enum InseminationType {
@@ -378,7 +386,7 @@ enum InseminationType {
 enum PregnancyResult {
   PENDING
   PREGNANT
-  OPEN // غير عشار
+  OPEN // ØºÙŠØ± Ø¹Ø´Ø§Ø±
 }
 
 enum CalvingDifficulty {
@@ -414,7 +422,7 @@ model BreedingRecord {
 }
 
 // ----------------------------------------------------
-// 7. الصحة والأدوية وصمام الأمان (Veterinary & Health)
+// 7. Ø§Ù„ØµØ­Ø© ÙˆØ§Ù„Ø£Ø¯ÙˆÙŠØ© ÙˆØµÙ…Ø§Ù… Ø§Ù„Ø£Ù…Ø§Ù† (Veterinary & Health)
 // ----------------------------------------------------
 
 model HealthTreatment {
@@ -440,20 +448,20 @@ model HealthTreatment {
 }
 
 // ----------------------------------------------------
-// 8. التغذية والأعلاف والمخازن (Nutrition & Feeds)
+// 8. Ø§Ù„ØªØºØ°ÙŠØ© ÙˆØ§Ù„Ø£Ø¹Ù„Ø§Ù ÙˆØ§Ù„Ù…Ø®Ø§Ø²Ù† (Nutrition & Feeds)
 // ----------------------------------------------------
 
 model FeedIngredient {
   id            String   @id @default(uuid())
   farmId        String
-  name          String // ذرة صفراء، كسب صويا، نخالة، سيلاج
+  name          String // Ø°Ø±Ø© ØµÙØ±Ø§Ø¡ØŒ ÙƒØ³Ø¨ ØµÙˆÙŠØ§ØŒ Ù†Ø®Ø§Ù„Ø©ØŒ Ø³ÙŠÙ„Ø§Ø¬
   unit          String   @default("KG") // KG / TON
   currentStock  Decimal  @default(0) @db.Decimal(15, 3)
   minStockAlert Decimal  @default(0) @db.Decimal(15, 3)
   costPerUnit   Decimal  @default(0) @db.Decimal(15, 3)
-  dryMatterPct  Decimal? @db.Decimal(5, 2)
-  proteinPct    Decimal? @db.Decimal(5, 2)
-  energyMcal    Decimal? @db.Decimal(6, 2)
+  dryMatterPct  Decimal? @db.Decimal(6, 3)
+  proteinPct    Decimal? @db.Decimal(6, 3)
+  energyMcal    Decimal? @db.Decimal(7, 3)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -467,7 +475,7 @@ model FeedIngredient {
 model FeedFormula {
   id           String     @id @default(uuid())
   farmId       String
-  name         String // خلطة حلب عالي، خلطة تسمين مرحلة أولى
+  name         String // Ø®Ù„Ø·Ø© Ø­Ù„Ø¨ Ø¹Ø§Ù„ÙŠØŒ Ø®Ù„Ø·Ø© ØªØ³Ù…ÙŠÙ† Ù…Ø±Ø­Ù„Ø© Ø£ÙˆÙ„Ù‰
   targetSector SectorType @default(DAIRY)
   description  String?
   createdAt    DateTime   @default(now())
@@ -485,7 +493,7 @@ model FeedFormulaItem {
   id           String  @id @default(uuid())
   formulaId    String
   ingredientId String
-  percentage   Decimal @db.Decimal(6, 2) // نسبة المادة في الخلطة %
+  percentage   Decimal @db.Decimal(7, 3) // Ù†Ø³Ø¨Ø© Ø§Ù„Ù…Ø§Ø¯Ø© ÙÙŠ Ø§Ù„Ø®Ù„Ø·Ø© %
 
   formula    FeedFormula    @relation(fields: [formulaId], references: [id], onDelete: Cascade)
   ingredient FeedIngredient @relation(fields: [ingredientId], references: [id], onDelete: Restrict)
@@ -511,7 +519,7 @@ model FeedDistribution {
 }
 
 // ----------------------------------------------------
-// 9. المحاسبة ومراكز التكلفة (Cost Centers & Financials)
+// 9. Ø§Ù„Ù…Ø­Ø§Ø³Ø¨Ø© ÙˆÙ…Ø±Ø§ÙƒØ² Ø§Ù„ØªÙƒÙ„ÙØ© (Cost Centers & Financials)
 // ----------------------------------------------------
 
 enum CostCenterType {
@@ -545,10 +553,10 @@ model FinancialTransaction {
   costCenterId String
   transDate    DateTime        @db.Date
   type         TransactionType
-  category     String // أعلاف، أدوية، رواتب، كهرباء، وقود، مبيعات حليب، مبيعات مواشي
+  category     String // Ø£Ø¹Ù„Ø§ÙØŒ Ø£Ø¯ÙˆÙŠØ©ØŒ Ø±ÙˆØ§ØªØ¨ØŒ ÙƒÙ‡Ø±Ø¨Ø§Ø¡ØŒ ÙˆÙ‚ÙˆØ¯ØŒ Ù…Ø¨ÙŠØ¹Ø§Øª Ø­Ù„ÙŠØ¨ØŒ Ù…Ø¨ÙŠØ¹Ø§Øª Ù…ÙˆØ§Ø´ÙŠ
   amount       Decimal         @db.Decimal(15, 3)
   description  String?
-  referenceId  String? // ربط برقم فاتورة أو معرف حلبة أو وزن
+  referenceId  String? // Ø±Ø¨Ø· Ø¨Ø±Ù‚Ù… ÙØ§ØªÙˆØ±Ø© Ø£Ùˆ Ù…Ø¹Ø±Ù Ø­Ù„Ø¨Ø© Ø£Ùˆ ÙˆØ²Ù†
   createdAt    DateTime        @default(now())
 
   costCenter CostCenter @relation(fields: [costCenterId], references: [id], onDelete: Cascade)
@@ -557,7 +565,7 @@ model FinancialTransaction {
 }
 
 // ----------------------------------------------------
-// 10. الدفتر العام والسنوات والقيود المالية (General Ledger & IAS 41)
+// 10. Ø§Ù„Ø¯ÙØªØ± Ø§Ù„Ø¹Ø§Ù… ÙˆØ§Ù„Ø³Ù†ÙˆØ§Øª ÙˆØ§Ù„Ù‚ÙŠÙˆØ¯ Ø§Ù„Ù…Ø§Ù„ÙŠØ© (General Ledger & IAS 41)
 // ----------------------------------------------------
 
 enum FiscalStatus {
@@ -568,7 +576,7 @@ enum FiscalStatus {
 model FiscalYear {
   id        String       @id @default(uuid())
   farmId    String
-  yearName  String // مثال: "2026"
+  yearName  String // Ù…Ø«Ø§Ù„: "2026"
   startDate DateTime     @db.Date
   endDate   DateTime     @db.Date
   status    FiscalStatus @default(OPEN)
@@ -590,8 +598,8 @@ model FiscalYear {
 model FiscalPeriod {
   id           String       @id @default(uuid())
   fiscalYearId String
-  periodNumber Int // 1 إلى 12
-  periodName   String // مثال: "يناير 2026"
+  periodNumber Int // 1 Ø¥Ù„Ù‰ 12
+  periodName   String // Ù…Ø«Ø§Ù„: "ÙŠÙ†Ø§ÙŠØ± 2026"
   startDate    DateTime     @db.Date
   endDate      DateTime     @db.Date
   status       FiscalStatus @default(OPEN)
@@ -606,24 +614,24 @@ model FiscalPeriod {
 }
 
 enum AccountCategory {
-  ASSET // أصول (متداولة، ثابتة، بيولوجية IAS 41)
-  LIABILITY // خصوم والتزامات
-  EQUITY // حقوق ملكية ورأس مال
-  REVENUE // إيرادات النشاط والمكاسب البيولوجية
-  EXPENSE // مصروفات التشغيل والأعلاف والتغذية
+  ASSET // Ø£ØµÙˆÙ„ (Ù…ØªØ¯Ø§ÙˆÙ„Ø©ØŒ Ø«Ø§Ø¨ØªØ©ØŒ Ø¨ÙŠÙˆÙ„ÙˆØ¬ÙŠØ© IAS 41)
+  LIABILITY // Ø®ØµÙˆÙ… ÙˆØ§Ù„ØªØ²Ø§Ù…Ø§Øª
+  EQUITY // Ø­Ù‚ÙˆÙ‚ Ù…Ù„ÙƒÙŠØ© ÙˆØ±Ø£Ø³ Ù…Ø§Ù„
+  REVENUE // Ø¥ÙŠØ±Ø§Ø¯Ø§Øª Ø§Ù„Ù†Ø´Ø§Ø· ÙˆØ§Ù„Ù…ÙƒØ§Ø³Ø¨ Ø§Ù„Ø¨ÙŠÙˆÙ„ÙˆØ¬ÙŠØ©
+  EXPENSE // Ù…ØµØ±ÙˆÙØ§Øª Ø§Ù„ØªØ´ØºÙŠÙ„ ÙˆØ§Ù„Ø£Ø¹Ù„Ø§Ù ÙˆØ§Ù„ØªØºØ°ÙŠØ©
 }
 
 model Account {
   id             String          @id @default(uuid())
   farmId         String
-  code           String // مثال: "1101", "1201", "4101", "5101"
-  name           String // مثال: "الأصول البيولوجية - قطيع الألبان"
+  code           String // Ù…Ø«Ø§Ù„: "1101", "1201", "4101", "5101"
+  name           String // Ù…Ø«Ø§Ù„: "Ø§Ù„Ø£ØµÙˆÙ„ Ø§Ù„Ø¨ÙŠÙˆÙ„ÙˆØ¬ÙŠØ© - Ù‚Ø·ÙŠØ¹ Ø§Ù„Ø£Ù„Ø¨Ø§Ù†"
   nameEn         String?
   category       AccountCategory
   parentId       String?
   currentBalance Decimal         @default(0) @db.Decimal(18, 3)
   isActive       Boolean         @default(true)
-  isSystemLocked Boolean         @default(false) // لمنع حذف الحسابات النظامية الأساسية
+  isSystemLocked Boolean         @default(false) // Ù„Ù…Ù†Ø¹ Ø­Ø°Ù Ø§Ù„Ø­Ø³Ø§Ø¨Ø§Øª Ø§Ù„Ù†Ø¸Ø§Ù…ÙŠØ© Ø§Ù„Ø£Ø³Ø§Ø³ÙŠØ©
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
 
@@ -637,14 +645,14 @@ model Account {
 }
 
 enum JournalEntryType {
-  MANUAL // قيد تسوية يدوي
-  FEED_DISPENSE // قيد آلي: صرف علائق وتغذية للعنابر
-  MILK_SALE // قيد آلي: مبيعات وتوريد حليب
-  CATTLE_SALE // قيد آلي: بيع مواشي وتسمين
-  CALVING_CAPITALIZE // قيد آلي: رسملة ولادة عجل جديد (IAS 41)
-  MORTALITY_LOSS // قيد آلي: خسائر نفوق واستبعاد ماشية
-  OPENING_BALANCE // قيد رصيد افتتاحي
-  YEAR_END_CLOSING // قيد إقفال السنة المالية
+  MANUAL // Ù‚ÙŠØ¯ ØªØ³ÙˆÙŠØ© ÙŠØ¯ÙˆÙŠ
+  FEED_DISPENSE // Ù‚ÙŠØ¯ Ø¢Ù„ÙŠ: ØµØ±Ù Ø¹Ù„Ø§Ø¦Ù‚ ÙˆØªØºØ°ÙŠØ© Ù„Ù„Ø¹Ù†Ø§Ø¨Ø±
+  MILK_SALE // Ù‚ÙŠØ¯ Ø¢Ù„ÙŠ: Ù…Ø¨ÙŠØ¹Ø§Øª ÙˆØªÙˆØ±ÙŠØ¯ Ø­Ù„ÙŠØ¨
+  CATTLE_SALE // Ù‚ÙŠØ¯ Ø¢Ù„ÙŠ: Ø¨ÙŠØ¹ Ù…ÙˆØ§Ø´ÙŠ ÙˆØªØ³Ù…ÙŠÙ†
+  CALVING_CAPITALIZE // Ù‚ÙŠØ¯ Ø¢Ù„ÙŠ: Ø±Ø³Ù…Ù„Ø© ÙˆÙ„Ø§Ø¯Ø© Ø¹Ø¬Ù„ Ø¬Ø¯ÙŠØ¯ (IAS 41)
+  MORTALITY_LOSS // Ù‚ÙŠØ¯ Ø¢Ù„ÙŠ: Ø®Ø³Ø§Ø¦Ø± Ù†ÙÙˆÙ‚ ÙˆØ§Ø³ØªØ¨Ø¹Ø§Ø¯ Ù…Ø§Ø´ÙŠØ©
+  OPENING_BALANCE // Ù‚ÙŠØ¯ Ø±ØµÙŠØ¯ Ø§ÙØªØªØ§Ø­ÙŠ
+  YEAR_END_CLOSING // Ù‚ÙŠØ¯ Ø¥Ù‚ÙØ§Ù„ Ø§Ù„Ø³Ù†Ø© Ø§Ù„Ù…Ø§Ù„ÙŠØ©
 }
 
 enum JournalEntryStatus {
@@ -658,16 +666,16 @@ model JournalEntry {
   farmId         String
   fiscalYearId   String
   fiscalPeriodId String?
-  entryNumber    String // مثال: "JV-2026-0001"
+  entryNumber    String // Ù…Ø«Ø§Ù„: "JV-2026-0001"
   entryDate      DateTime           @db.Date
   type           JournalEntryType   @default(MANUAL)
   status         JournalEntryStatus @default(POSTED)
   description    String
-  referenceId    String? // ربط برقم الحلبة أو تشغيلة العلف أو رقم البقرة
+  referenceId    String? // Ø±Ø¨Ø· Ø¨Ø±Ù‚Ù… Ø§Ù„Ø­Ù„Ø¨Ø© Ø£Ùˆ ØªØ´ØºÙŠÙ„Ø© Ø§Ù„Ø¹Ù„Ù Ø£Ùˆ Ø±Ù‚Ù… Ø§Ù„Ø¨Ù‚Ø±Ø©
   totalDebit     Decimal            @db.Decimal(18, 3)
   totalCredit    Decimal            @db.Decimal(18, 3)
   postedAt       DateTime?          @default(now())
-  postedBy       String? // المستخدم الذي اعتمد القيد
+  postedBy       String? // Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù… Ø§Ù„Ø°ÙŠ Ø§Ø¹ØªÙ…Ø¯ Ø§Ù„Ù‚ÙŠØ¯
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @updatedAt
 
@@ -687,6 +695,7 @@ model JournalEntryLine {
   journalEntryId String
   accountId      String
   costCenterId   String?
+  animalId       String?
   debit          Decimal @default(0) @db.Decimal(18, 3)
   credit         Decimal @default(0) @db.Decimal(18, 3)
   memo           String?
@@ -694,7 +703,9 @@ model JournalEntryLine {
   journalEntry JournalEntry @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
   account      Account      @relation(fields: [accountId], references: [id], onDelete: Restrict)
   costCenter   CostCenter?  @relation(fields: [costCenterId], references: [id], onDelete: SetNull)
+  animal       Animal?     @relation(fields: [animalId], references: [id], onDelete: Restrict)
 
+  @@index([animalId])
   @@map("journal_entry_lines")
 }
 
@@ -714,7 +725,7 @@ model JournalSequence {
 }
 
 // ----------------------------------------------------
-// 8. المبيعات التجارية ونفوق الحيوانات (Commercial Sales & Mortality)
+// 8. Ø§Ù„Ù…Ø¨ÙŠØ¹Ø§Øª Ø§Ù„ØªØ¬Ø§Ø±ÙŠØ© ÙˆÙ†ÙÙˆÙ‚ Ø§Ù„Ø­ÙŠÙˆØ§Ù†Ø§Øª (Commercial Sales & Mortality)
 // ----------------------------------------------------
 
 enum SaleType {
@@ -744,18 +755,18 @@ model CommercialSale {
   buyerPhone    String?
   notes         String?
 
-  // تفاصيل بيع الحليب الخام
+  // ØªÙØ§ØµÙŠÙ„ Ø¨ÙŠØ¹ Ø§Ù„Ø­Ù„ÙŠØ¨ Ø§Ù„Ø®Ø§Ù…
   liters        Decimal?             @db.Decimal(12, 3)
   pricePerLiter Decimal?             @db.Decimal(10, 3)
 
-  // تفاصيل بيع الماشية الحية
+  // ØªÙØ§ØµÙŠÙ„ Ø¨ÙŠØ¹ Ø§Ù„Ù…Ø§Ø´ÙŠØ© Ø§Ù„Ø­ÙŠØ©
   animalId      String?
   pricingMethod AnimalPricingMethod?
   weightKg      Decimal?             @db.Decimal(10, 3)
   pricePerKg    Decimal?             @db.Decimal(10, 3)
   pricePerHead  Decimal?             @db.Decimal(15, 3)
 
-  // الإجماليات المالية والربط المحاسبي
+  // Ø§Ù„Ø¥Ø¬Ù…Ø§Ù„ÙŠØ§Øª Ø§Ù„Ù…Ø§Ù„ÙŠØ© ÙˆØ§Ù„Ø±Ø¨Ø· Ø§Ù„Ù…Ø­Ø§Ø³Ø¨ÙŠ
   totalAmount    Decimal       @db.Decimal(18, 3)
   journalEntryId String?
   createdById    String?

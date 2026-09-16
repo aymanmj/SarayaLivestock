@@ -15,6 +15,7 @@
 #define DefaultHttpsPort "18443"
 #define DefaultDbName    "saraya_livestock_prod"
 #define DefaultDbUser    "saraya"
+#define PostgresMajor    "16"
 #define DefaultAdminUser "admin"
 #define DefaultOrgName   "المؤسسة"
 #define DefaultFarmName  "المزرعة الرئيسية"
@@ -115,8 +116,12 @@ Source: "{#ScriptsDir}\setup-db.js"; DestDir: "{tmp}"; Flags: deleteafterinstall
 Source: "{#ScriptsDir}\run-migrations.ps1"; DestDir: "{tmp}"; Flags: deleteafterinstall
 Source: "{#ScriptsDir}\configure-firewall.ps1"; DestDir: "{tmp}"; Flags: deleteafterinstall
 Source: "{#ScriptsDir}\health-check.ps1"; DestDir: "{tmp}"; Flags: deleteafterinstall
-Source: "{#ScriptsDir}\pre-upgrade-backup.ps1"; DestDir: "{tmp}"; Flags: deleteafterinstall
-Source: "{#ScriptsDir}\rollback.ps1"; DestDir: "{tmp}"; Flags: deleteafterinstall
+Source: "{#ScriptsDir}\pre-upgrade-backup.ps1"; Flags: dontcopy
+Source: "{#ScriptsDir}\rollback.ps1"; DestDir: "{app}\tools"; Flags: ignoreversion
+Source: "{#ScriptsDir}\protected-storage.ps1"; Flags: dontcopy
+Source: "{#ScriptsDir}\secure-storage.ps1"; Flags: dontcopy
+Source: "{#ScriptsDir}\protected-storage.ps1"; DestDir: "{app}\tools"; Flags: ignoreversion
+Source: "{#ScriptsDir}\secure-storage.ps1"; DestDir: "{app}\tools"; Flags: ignoreversion
 Source: "{#ScriptsDir}\enroll-ca-cert.ps1"; DestDir: "{tmp}"; Flags: deleteafterinstall
 Source: "{#ScriptsDir}\uninstall-services.ps1"; DestDir: "{app}\tools"; Flags: ignoreversion
 
@@ -124,6 +129,7 @@ Source: "{#ScriptsDir}\uninstall-services.ps1"; DestDir: "{app}\tools"; Flags: i
 ; Directories — Data directories under {commonappdata}\SarayaLivestock
 ; =============================================================================
 [Dirs]
+Name: "{commonappdata}\SarayaLivestock"; Permissions: admins-full
 Name: "{commonappdata}\SarayaLivestock\config"; Permissions: admins-full
 Name: "{commonappdata}\SarayaLivestock\config\caddy"; Permissions: admins-full
 Name: "{commonappdata}\SarayaLivestock\data\postgresql"; Permissions: admins-full
@@ -334,6 +340,18 @@ begin
   end;
 end;
 
+procedure ScrubInitialAdminPassword(const ServerEnvPath, InstallDir: String);
+var
+  SafeEnvPath: String;
+  ExitCode: Integer;
+begin
+  SafeEnvPath := ServerEnvPath;
+  StringChangeEx(SafeEnvPath, '\', '\\', True);
+  Exec(InstallDir + '\node\node.exe',
+    '-e "const fs = require(''fs''); const p = ''' + SafeEnvPath + '''; if (fs.existsSync(p)) fs.writeFileSync(p, fs.readFileSync(p, ''utf8'').replace(/^INITIAL_ADMIN_PASSWORD=.*$/m, ''INITIAL_ADMIN_PASSWORD=''));"',
+    InstallDir + '\server', SW_HIDE, ewWaitUntilTerminated, ExitCode);
+end;
+
 // ---------------------------------------------------------------------------
 // Prerequisites check
 // ---------------------------------------------------------------------------
@@ -392,20 +410,45 @@ end;
 // This is required for repair/upgrade because PostgreSQL keeps DLLs locked.
 function PrepareToInstall(var NeedsRestart: Boolean): String;
 var
-  ServicesDir: String;
+  ServicesDir, DataDir: String;
+  ClusterMajor: AnsiString;
+  ExitCode: Integer;
 begin
   Result := '';
+  DataDir := ExpandConstant('{commonappdata}\SarayaLivestock');
   ServicesDir := ExpandConstant('{app}\services');
-
+  ExtractTemporaryFile('protected-storage.ps1');
+  ExtractTemporaryFile('secure-storage.ps1');
+  ExtractTemporaryFile('pre-upgrade-backup.ps1');
+  if not RunPowerShell(ExpandConstant('{tmp}\secure-storage.ps1'),
+       '-DataDir "' + DataDir + '"', ExitCode) or (ExitCode <> 0) then
+  begin
+    Result := 'تعذر التحقق من حماية الأسرار والنسخ الاحتياطية؛ لم يبدأ استبدال الملفات.';
+    Exit;
+  end;
+  if IsUpgrade and (BackupDir = '') then
+  begin
+    if not LoadStringFromFile(DataDir + '\data\postgresql\PG_VERSION', ClusterMajor) or
+       (Trim(String(ClusterMajor)) <> '{#PostgresMajor}') then
+    begin
+      Result := 'ترقية إصدار PostgreSQL الرئيسي تحتاج إجراء ترحيل مستقل؛ لم تُستبدل الملفات.';
+      Exit;
+    end;
+    BackupDir := DataDir + '\backups\upgrade-' + GetDateTimeString('yyyymmdd-hhnnss', '-', '-');
+    if not RunPowerShell(ExpandConstant('{tmp}\pre-upgrade-backup.ps1'),
+         '-InstallDir "' + ExpandConstant('{app}') + '" -DataDir "' + DataDir + '" -BackupDir "' + BackupDir + '"', ExitCode) or (ExitCode <> 0) then
+    begin
+      BackupDir := '';
+      Result := 'فشل التحقق من نسخة البرنامج والبيانات السابقة؛ أُوقفت الترقية قبل استبدال الملفات.';
+      Exit;
+    end;
+  end;
   if not StopServiceForFileUpdate('SarayaCaddy', ServicesDir + '\SarayaCaddy.exe') then
-    Result := 'تعذر إيقاف خدمة Caddy قبل تحديث الملفات.' + #13#10 +
-      'Could not stop the Caddy service before updating files.'
+    Result := 'تعذر إيقاف Caddy قبل تحديث الملفات.'
   else if not StopServiceForFileUpdate('SarayaAPI', ServicesDir + '\SarayaAPI.exe') then
-    Result := 'تعذر إيقاف خدمة API قبل تحديث الملفات.' + #13#10 +
-      'Could not stop the API service before updating files.'
+    Result := 'تعذر إيقاف API قبل تحديث الملفات.'
   else if not StopServiceForFileUpdate('SarayaPostgreSQL', ServicesDir + '\SarayaPostgreSQL.exe') then
-    Result := 'تعذر إيقاف خدمة PostgreSQL قبل تحديث الملفات.' + #13#10 +
-      'Could not stop the PostgreSQL service before updating files.';
+    Result := 'تعذر إيقاف PostgreSQL قبل تحديث الملفات.';
 end;
 
 // ---------------------------------------------------------------------------
@@ -531,34 +574,7 @@ begin
   ReplaceInFile(InstallDir + '\services\SarayaCaddy.xml', '{{HOSTNAME}}', '{#DefaultHostname}');
   ResultLog := ResultLog + '• تهيئة تعريفات الخدمات: تمت' + #13#10;
 
-  // STEP 1: Pre-upgrade backup
-  if IsUpgrade then
-  begin
-    WizardForm.StatusLabel.Caption := 'جاري إنشاء نسخة احتياطية...';
-    // PrepareToInstall stops PostgreSQL so its binaries can be replaced. Start
-    // it again here before pg_dump, then the service-registration step below
-    // will stop and replace it normally after the backup is verified.
-    if not Exec(PgWrapper, 'start', '', SW_HIDE, ewWaitUntilTerminated, ExitCode) or
-       (ExitCode <> 0) or (not WaitForPostgreSQL(InstallDir)) then
-    begin
-      SuppressibleMsgBox('تعذر تشغيل PostgreSQL لإنشاء النسخة الاحتياطية قبل الترقية.', mbError, MB_OK, IDOK);
-      ResultLog := ResultLog + 'X تعذر تشغيل PostgreSQL للنسخ الاحتياطي' + #13#10;
-      SetResultText(ResultLog);
-      Exit;
-    end;
-    BackupDir := DataDir + '\backups\upgrade-' + GetDateTimeString('yyyymmdd-hhnnss', '-', '-');
-    if RunPowerShell(TmpDir + '\pre-upgrade-backup.ps1',
-         '-InstallDir "' + InstallDir + '" -DataDir "' + DataDir + '"',
-         ExitCode) and (ExitCode = 0) then
-      ResultLog := ResultLog + '• النسخة الاحتياطية: تمت بنجاح' + #13#10
-    else
-    begin
-      SuppressibleMsgBox('فشل إنشاء النسخة الاحتياطية قبل الترقية.', mbError, MB_OK, IDOK);
-      ResultLog := ResultLog + 'X فشل إنشاء النسخة الاحتياطية' + #13#10;
-      SetResultText(ResultLog);
-      Exit;
-    end;
-  end;
+  // Complete snapshot verified before replacing files in PrepareToInstall.
 
   // STEP 2: Create server.env and generate cryptographically secure secrets
   WizardForm.StatusLabel.Caption := 'جاري إنشاء ملف الإعدادات...';
@@ -612,6 +628,11 @@ begin
     ResultLog := ResultLog + '• ملف الإعدادات: تم الحفاظ عليه (ترقية)' + #13#10;
   end;
 
+  // Explicitly harden permissions on server.env across all installation modes
+  Exec(ExpandConstant('{sys}\icacls.exe'),
+    '"' + ServerEnvPath + '" /inheritance:r /grant:r *S-1-5-32-544:F /grant:r *S-1-5-18:F /grant:r *S-1-5-20:R /C /Q',
+    '', SW_HIDE, ewWaitUntilTerminated, ExitCode);
+
   // STEP 4: Create Caddyfile
   CaddyfilePath := ConfigDir + '\Caddyfile';
   if (not (IsUpgrade or IsRepair)) or (not FileExists(CaddyfilePath)) then
@@ -658,23 +679,12 @@ begin
 
   // STEP 7: Register + start PostgreSQL service, then create database
   WizardForm.StatusLabel.Caption := 'جاري تسجيل وتشغيل خدمة PostgreSQL...';
-  // Lock down config directory containing secrets
-  Exec(ExpandConstant('{sys}\icacls.exe'),
-    '"' + ConfigDir + '" /inheritance:r /grant:r *S-1-5-32-544:(OI)(CI)F /grant:r *S-1-5-18:(OI)(CI)F /grant:r *S-1-5-20:(OI)(CI)RX /T /C /Q',
-    '', SW_HIDE, ewWaitUntilTerminated, ExitCode);
-  // PostgreSQL runs as NetworkService: executable tree is read-only; only DB/log paths are writable.
-  Exec(ExpandConstant('{sys}\icacls.exe'),
-    '"' + InstallDir + '\postgresql" /grant *S-1-5-20:(OI)(CI)RX /T /C /Q',
-    '', SW_HIDE, ewWaitUntilTerminated, ExitCode);
-  Exec(ExpandConstant('{sys}\icacls.exe'),
-    '"' + DataDir + '\data\postgresql" /grant *S-1-5-20:(OI)(CI)M /T /C /Q',
-    '', SW_HIDE, ewWaitUntilTerminated, ExitCode);
-  Exec(ExpandConstant('{sys}\icacls.exe'),
-    '"' + DataDir + '\logs\postgresql" /grant *S-1-5-20:(OI)(CI)M /T /C /Q',
-    '', SW_HIDE, ewWaitUntilTerminated, ExitCode);
-  Exec(ExpandConstant('{sys}\icacls.exe'),
-    '"' + DataDir + '\logs\services" /grant *S-1-5-20:(OI)(CI)M /T /C /Q',
-    '', SW_HIDE, ewWaitUntilTerminated, ExitCode);
+  if not RunPowerShell(TmpDir + '\secure-storage.ps1', '-DataDir "' + DataDir + '"', ExitCode) or (ExitCode <> 0) then
+  begin
+    ResultLog := ResultLog + 'X فشل التحقق من أذونات تخزين البيانات والأسرار' + #13#10;
+    SetResultText(ResultLog);
+    Exit;
+  end;
 
   // Remove a stale registration and wait until SCM confirms deletion.
   if not RemoveExistingService('SarayaPostgreSQL', PgWrapper,
@@ -751,8 +761,10 @@ begin
     else
       ResultLog := ResultLog + '! تعذر إنشاء حساب المدير (يمكن إعداده لاحقاً)' + #13#10;
     // Strip initial admin password from server.env post-provisioning
-    ReplaceInFile(ServerEnvPath, 'INITIAL_ADMIN_PASSWORD=' + AdminPage.Values[1], 'INITIAL_ADMIN_PASSWORD=');
   end;
+
+  // Unconditionally scrub INITIAL_ADMIN_PASSWORD across all modes
+  ScrubInitialAdminPassword(ServerEnvPath, InstallDir);
 
   // STEP 10: API service
   WizardForm.StatusLabel.Caption := 'جاري تسجيل وتشغيل خدمة API...';
@@ -818,6 +830,16 @@ begin
     ResultLog := ResultLog + '• جدار الحماية: تم تكوينه بنجاح (Port {#DefaultHttpPort}/{#DefaultHttpsPort})' + #13#10
   else
     ResultLog := ResultLog + '! جدار الحماية: (يمكن تكوينه يدوياً)' + #13#10;
+
+  // STEP 12b: Final Hardening of Storage and Secrets
+  WizardForm.StatusLabel.Caption := 'جاري تشديد أذونات تخزين البيانات والأسرار...';
+  if not RunPowerShell(TmpDir + '\secure-storage.ps1', '-DataDir "' + DataDir + '"', ExitCode) or (ExitCode <> 0) then
+  begin
+    ResultLog := ResultLog + 'X فشل التحقق النهائي من تشديد أذونات البيانات والأسرار' + #13#10;
+    SetResultText(ResultLog);
+    Exit;
+  end;
+  ResultLog := ResultLog + '• تشديد أذونات البيانات والنسخ الاحتياطية: تم بنجاح' + #13#10;
 
   // STEP 13: Health check
   WizardForm.StatusLabel.Caption := 'جاري التحقق من جاهزية النظام...';

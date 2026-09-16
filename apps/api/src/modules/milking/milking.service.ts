@@ -5,6 +5,8 @@ import { MilkQualityEngine } from '../../common/utils/milk-quality.util';
 import { appendDomainAudit, AuditActor } from '../../common/audit/domain-audit';
 import { IdempotencyContext } from '../../common/idempotency/idempotency-context';
 import { runIdempotentTransaction } from '../../common/idempotency/idempotency-transaction';
+import { AnimalStatus, Gender, Prisma } from '@prisma/client';
+import { calendarDate, addCalendarDays } from '../../common/utils/calendar-date';
 
 @Injectable()
 export class MilkingService {
@@ -24,25 +26,28 @@ export class MilkingService {
       });
       if (!animal) throw new NotFoundException('البقرة غير مسجلة (يرجى التحقق من رقم القرط أو الشريحة)');
 
-      const milkingDate = new Date(dto.logDate);
-      let isDiscarded = dto.isDiscarded || false;
-      let discardReason = dto.discardReason;
-      if (animal.withdrawalEndDate && milkingDate <= animal.withdrawalEndDate) {
-        isDiscarded = true;
-        discardReason = `🚨 حليب مهدر إجبارياً: البقرة تحت فترة تحريم دوائي تنتهي في (${animal.withdrawalEndDate.toISOString().split('T')[0]})`;
+      if (animal.gender === Gender.MALE) {
+        throw new BadRequestException('لا يمكن تسجيل حلب لحيوان ذكر');
+      }
+      if (animal.status && animal.status !== AnimalStatus.ACTIVE) {
+        throw new BadRequestException(`لا يمكن تسجيل حلب للحيوان لأن حالته (${animal.status}) غير نشطة`);
       }
 
+      const milkingDate = calendarDate(dto.logDate);
+      let isDiscarded = dto.isDiscarded || false;
+      let discardReason = dto.discardReason;
+      // The animal summary also includes meat withdrawal. Milk safety must use
+      // treatment-specific intervals, including their start date.
       if (tx.healthTreatment?.findMany) {
         const treatments = await tx.healthTreatment.findMany({
           where: {
             animalId: animal.id,
-            treatmentDate: { lte: milkingDate },
+            treatmentDate: { lt: addCalendarDays(milkingDate, 1) },
             milkWithdrawalDays: { gt: 0 },
           },
         });
         for (const t of treatments) {
-          const tEnd = new Date(t.treatmentDate);
-          tEnd.setDate(tEnd.getDate() + t.milkWithdrawalDays);
+          const tEnd = addCalendarDays(t.treatmentDate, t.milkWithdrawalDays);
           if (milkingDate <= tEnd) {
             isDiscarded = true;
             discardReason = `🚨 حليب مهدر إجبارياً: علاج بيطري (${t.drugName}) تحت فترة تحريم حليب حتى (${tEnd.toISOString().split('T')[0]})`;
@@ -55,7 +60,7 @@ export class MilkingService {
       const pastLogs = await tx.milkLog.findMany({
         where: {
           animalId: animal.id,
-          logDate: { gte: sevenDaysAgo },
+          logDate: { gte: sevenDaysAgo, lt: milkingDate },
         },
       });
 
@@ -71,7 +76,7 @@ export class MilkingService {
       const milkLog = await tx.milkLog.create({
         data: {
           animalId: animal.id,
-          logDate: new Date(dto.logDate),
+          logDate: milkingDate,
           shift: dto.shift,
           yieldLiters: dto.yieldLiters,
           fatPct: dto.fatPct,
@@ -94,7 +99,7 @@ export class MilkingService {
         safetyWarning: isDiscarded ? discardReason : null,
         healthAlert: hasAnomaly ? `⚠️ تنبيه بيطري: انخفاض مفاجئ في إدرار البقرة بنسبة ${dropPct}%` : null,
       };
-    });
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
   }
 
   async getDailyFarmSummary(farmId: string, dateStr?: string) {
@@ -123,11 +128,11 @@ export class MilkingService {
 
     return {
       date: requestedDate,
-      totalLiters: Number(totalLiters.toFixed(1)),
-      usableLiters: Number(usableLiters.toFixed(1)),
-      discardedLiters: Number(discardedLiters.toFixed(1)),
+      totalLiters: Number(totalLiters.toFixed(3)),
+      usableLiters: Number(usableLiters.toFixed(3)),
+      discardedLiters: Number(discardedLiters.toFixed(3)),
       cowsMilkedCount: new Set(logs.map(log => log.animalId)).size,
-      averagePerCow: logs.length > 0 ? (totalLiters / new Set(logs.map(log => log.animalId)).size).toFixed(2) : '0',
+      averagePerCow: logs.length > 0 ? (totalLiters / new Set(logs.map(log => log.animalId)).size).toFixed(3) : '0',
       logs,
     };
   }

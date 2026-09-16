@@ -29,6 +29,10 @@ export class CreateAccountDto {
 }
 
 export class JournalLineDto {
+  @IsOptional()
+  @IsUUID('4')
+  animalId?: string;
+
   @IsUUID('4')
   accountId: string;
 

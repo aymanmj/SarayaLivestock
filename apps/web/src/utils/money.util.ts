@@ -1,3 +1,4 @@
+// Synced from SarayaManager/packages/shared-utils/src. Keep API and web copies identical.
 // packages/shared-utils/src/money.ts
 // مكتبة الحسابات المالية الدقيقة - نسخة معممة متعددة العملات
 
@@ -7,7 +8,7 @@ import Decimal from 'decimal.js';
 // Preserve small intermediate rates and large totals; round only at explicit boundaries.
 const FinancialDecimal = Decimal.clone({
   precision: 40,
-  rounding: Decimal.ROUND_HALF_UP,
+  rounding: Decimal.ROUND_HALF_EVEN,
   minE: -9e15,
   maxE: 9e15,
 });
@@ -43,6 +44,12 @@ export const CURRENCIES: Record<string, CurrencyConfig> = {
   EUR: { code: 'EUR', nameAr: 'يورو', nameEn: 'Euro', symbol: '€', decimals: 2, subUnitNameAr: 'سنت', subUnitNameEn: 'Cent' },
 };
 
+/** Shared default for monetary amounts and measured quantities. */
+export const OFFICIAL_CURRENCY = Object.freeze({
+  ...CURRENCIES.LYD,
+  subUnit: CURRENCIES.LYD.subUnitNameAr,
+});
+
 /**
  * 💰 Money Utility Class
  * فئة مساعدة لإجراء العمليات الحسابية المالية بدقة عالية
@@ -65,7 +72,7 @@ export class Money {
   }
 
   static toFixed(value: MoneyValue, decimals = 3): string {
-    return moneyDecimal(value).toFixed(decimals, Decimal.ROUND_HALF_UP);
+    return moneyDecimal(value).toFixed(decimals, Decimal.ROUND_HALF_EVEN);
   }
 
   // ======================== العمليات الأساسية ========================
@@ -120,34 +127,34 @@ export class Money {
   // ======================== التقريب والتنسيق ========================
 
   /** تقريب حسب عدد خانات العملة */
-  static toCurrency(amount: MoneyValue, currencyCode: string = 'SDG'): number {
-    const decimals = CURRENCIES[currencyCode]?.decimals ?? 2;
-    return moneyDecimal(amount).toDecimalPlaces(decimals, Decimal.ROUND_HALF_UP).toNumber();
+  static toCurrency(amount: MoneyValue, currencyCode: string = OFFICIAL_CURRENCY.code): number {
+    const decimals = CURRENCIES[currencyCode]?.decimals ?? OFFICIAL_CURRENCY.decimals;
+    return moneyDecimal(amount).toDecimalPlaces(decimals, Decimal.ROUND_HALF_EVEN).toNumber();
   }
 
   /** تقريب لـ 2 خانات عشرية */
   static to2dp(amount: MoneyValue): number {
-    return moneyDecimal(amount).toDecimalPlaces(2, Decimal.ROUND_HALF_UP).toNumber();
+    return moneyDecimal(amount).toDecimalPlaces(2, Decimal.ROUND_HALF_EVEN).toNumber();
   }
 
   /** تقريب لـ 3 خانات عشرية */
   static to3dp(amount: MoneyValue): number {
-    return moneyDecimal(amount).toDecimalPlaces(3, Decimal.ROUND_HALF_UP).toNumber();
+    return moneyDecimal(amount).toDecimalPlaces(3, Decimal.ROUND_HALF_EVEN).toNumber();
   }
 
-  /** تقريب لعدد مخصص من الخانات */
+  /** تقريب لعدد مخصص من الخانات (الافتراضي 3 للدينار والوحدات الزراعية والمصرفية) */
   static round(amount: MoneyValue, decimals: number = 3): number {
-    return moneyDecimal(amount).toDecimalPlaces(decimals, Decimal.ROUND_HALF_UP).toNumber();
+    return moneyDecimal(amount).toDecimalPlaces(decimals, Decimal.ROUND_HALF_EVEN).toNumber();
   }
 
   /** تقريب لأعلى */
   static ceil(amount: MoneyValue, decimals: number = 3): number {
-    return moneyDecimal(amount).toDecimalPlaces(decimals, Decimal.ROUND_UP).toNumber();
+    return moneyDecimal(amount).toDecimalPlaces(decimals, Decimal.ROUND_CEIL).toNumber();
   }
 
   /** تقريب لأسفل */
   static floor(amount: MoneyValue, decimals: number = 3): number {
-    return moneyDecimal(amount).toDecimalPlaces(decimals, Decimal.ROUND_DOWN).toNumber();
+    return moneyDecimal(amount).toDecimalPlaces(decimals, Decimal.ROUND_FLOOR).toNumber();
   }
 
   // ======================== المقارنات ========================
@@ -204,8 +211,8 @@ export class Money {
   }
 
   /** إجمالي السطر */
-  static lineTotal(unitPrice: MoneyValue, quantity: MoneyValue, currencyCode: string = 'SDG'): number {
-    return Money.toCurrency(Money.mul(unitPrice, quantity), currencyCode);
+  static lineTotal(unitPrice: MoneyValue, quantity: MoneyValue, currencyCode: string = OFFICIAL_CURRENCY.code): number {
+    return Money.toCurrency(Money.multiply(unitPrice, quantity), currencyCode);
   }
 
   /** المعدل اليومي: monthlyAmount / 30 */
@@ -231,11 +238,33 @@ export class Money {
   }
 
   /** تنسيق المبلغ مع رمز العملة */
-  static format(amount: MoneyValue, currencyCode: string = 'SDG'): string {
+  static format(amount: MoneyValue, currencyCode: string = OFFICIAL_CURRENCY.code): string {
     const config = CURRENCIES[currencyCode];
-    const decimals = config?.decimals ?? 2;
+    const decimals = config?.decimals ?? OFFICIAL_CURRENCY.decimals;
     const symbol = config?.symbol ?? currencyCode;
     return `${Money.toFixed(amount, decimals)} ${symbol}`;
+  }
+
+  /** ضرب قيمتين وإعادة Decimal بدقة فائقة دون تحويل وسيط */
+  static multiply(a: MoneyValue, b: MoneyValue): Decimal {
+    return moneyDecimal(a).times(moneyDecimal(b));
+  }
+
+  /** قسمة قيمتين وإعادة Decimal بدقة فائقة مع حماية منع القسمة على صفر */
+  static divide(a: MoneyValue, b: MoneyValue): Decimal {
+    const divisor = moneyDecimal(b);
+    if (divisor.isZero()) throw new Error('Division by zero in Money calculation');
+    return moneyDecimal(a).div(divisor);
+  }
+
+  /** Exact three-place string for Prisma Decimal fields; never pass through number. */
+  static toDb(value: MoneyValue): string {
+    return Money.toFixed(value, OFFICIAL_CURRENCY.decimals);
+  }
+
+  /** تقريب المنتصف إلى الزوجي وإعادة Decimal للحفاظ على السلسلة الحسابية */
+  static roundDecimal(amount: MoneyValue, decimals: number = 3): Decimal {
+    return moneyDecimal(amount).toDecimalPlaces(decimals, Decimal.ROUND_HALF_EVEN);
   }
 
   /** تحويل Prisma Decimal إلى number */
@@ -244,12 +273,6 @@ export class Money {
   }
 
   /** إنشاء كائن Money للعمليات المتسلسلة */
-  static multiply(a: MoneyValue, b: MoneyValue): Decimal { return moneyDecimal(a).times(moneyDecimal(b)); }
-
-  static divide(a: MoneyValue, b: MoneyValue): Decimal { return moneyDecimal(a).div(moneyDecimal(b)); }
-
-  static roundDecimal(amount: MoneyValue, decimals: number = 3): Decimal { return moneyDecimal(amount).toDecimalPlaces(decimals, Decimal.ROUND_HALF_UP); }
-
   static from(value: MoneyValue): MoneyChain {
     return new MoneyChain(value);
   }
@@ -299,12 +322,24 @@ export class MoneyChain {
   }
 
   round(decimals: number = 3): MoneyChain {
-    this.value = this.value.toDecimalPlaces(decimals, Decimal.ROUND_HALF_UP);
+    this.value = this.value.toDecimalPlaces(decimals, Decimal.ROUND_HALF_EVEN);
     return this;
   }
 
+  roundDecimal(decimals: number = 3): Decimal {
+    return this.value.toDecimalPlaces(decimals, Decimal.ROUND_HALF_EVEN);
+  }
+
   toFixed(decimals = 3): string {
-    return this.value.toFixed(decimals, Decimal.ROUND_HALF_UP);
+    return this.value.toFixed(decimals, Decimal.ROUND_HALF_EVEN);
+  }
+
+  toDb(): string {
+    return Money.toDb(this.value);
+  }
+
+  decimal(): Decimal {
+    return this.value;
   }
 
   toNumber(): number {
@@ -312,80 +347,160 @@ export class MoneyChain {
   }
 
   to2dp(): number {
-    return this.value.toDecimalPlaces(2, Decimal.ROUND_HALF_UP).toNumber();
+    return this.value.toDecimalPlaces(2, Decimal.ROUND_HALF_EVEN).toNumber();
   }
 
   to3dp(): number {
-    return this.value.toDecimalPlaces(3, Decimal.ROUND_HALF_UP).toNumber();
+    return this.value.toDecimalPlaces(3, Decimal.ROUND_HALF_EVEN).toNumber();
   }
 
-  toCurrency(currencyCode: string = 'SDG'): number {
-    const decimals = CURRENCIES[currencyCode]?.decimals ?? 2;
-    return this.value.toDecimalPlaces(decimals, Decimal.ROUND_HALF_UP).toNumber();
+  toCurrency(currencyCode: string = OFFICIAL_CURRENCY.code): number {
+    return Money.toCurrency(this.value, currencyCode);
   }
 }
 
+// Shared parsing and display policy: LYD, three places, Latin digits.
 
 
+type NumericInput = MoneyValue | null | undefined;
 
-
-/**
- * مكتبة معالجة الحسابات المالية وتنسيق الأرقام والعملات (Saraya Livestock Money & Number Utility)
- * 
- * القواعد الأساسية:
- * 1. العملة الرسمية المعتمدة للمنظومة: الدينار الليبي (د.ل - LYD).
- * 2. اعتماد الأرقام العربية القياسية (0, 1, 2, 3...) حصراً في كامل النظام ومنع الأرقام الهندية (١, ٢, ٣...).
- * 3. دقة الحسابات المالية لـ 3 خانات عشرية (درهم) لتوافق المحاسبة المصرفية والزراعية.
+/** Accept a complete decimal, scientific notation, or a grouped LYD amount.
+ * Empty form fields retain their historical zero value; malformed input throws.
  */
+function inputDecimal(value: NumericInput) {
+  if (value == null) return Money.decimal(0);
+  if (typeof value !== 'string') return Money.decimal(value);
+  let text = value.trim();
+  if (!text) return Money.decimal(0);
+  text = text
+    .replace(/[٠-٩]/g, digit => String(digit.charCodeAt(0) - 0x660))
+    .replace(/[۰-۹]/g, digit => String(digit.charCodeAt(0) - 0x6f0))
+    .replace(/\u066b/g, '.')
+    .replace(/\u066c/g, ',')
+    .replace(/[\u061c\u200e\u200f]/g, '')
+    .replace(/\s*(?:د\.ل|LYD)$/i, '')
+    .trim();
 
-export const OFFICIAL_CURRENCY = {
-  code: 'LYD',
-  symbol: 'د.ل',
-  nameAr: 'دينار ليبي',
-  nameEn: 'Libyan Dinar',
-  decimals: 3,
-  subUnit: 'درهم',
-};
+  // Validate grouping before removing it: '1,25' must never turn into 125.
+  const decimal = /^[+-]?(?:(?:\d+|\d{1,3}(?:,\d{3})+)(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$/;
+  if (!decimal.test(text)) throw new RangeError('Invalid monetary input');
+  return Money.decimal(text.replace(/,/g, ''));
+}
 
-/**
- * تنسيق المبالغ المالية بالدينار الليبي مع الأرقام العربية القياسية (0-9)
+/** Format the integer as BigInt, then insert the exact rounded fraction.
+ * This avoids the precision loss of converting a financial string to number.
  */
-export function formatMoney(
-  amount: number | string | null | undefined,
-  includeSymbol: boolean = true,
-  decimals: number = 3
-): string {
-  const num = typeof amount === 'number' ? amount : parseFloat(String(amount || 0)) || 0;
-  
-  // استخدام التنسيق اللاتيني القياسي لضمان عدم ظهور الأرقام الهندية
-  const formatted = num.toLocaleString('en-US', {
+function formatExact(value: NumericInput, decimals: number, locale = 'en-US', currency?: string): string {
+  if (!Number.isInteger(decimals) || decimals < 0 || decimals > 20) {
+    throw new RangeError('Display decimals must be an integer between 0 and 20');
+  }
+  const rounded = Money.roundDecimal(inputDecimal(value), decimals);
+  const fixed = Money.toFixed(rounded.isZero() ? 0 : rounded, decimals);
+  const [integer, fraction] = fixed.split('.');
+  const whole = BigInt(integer);
+  const formatted = new Intl.NumberFormat(locale, {
+    numberingSystem: 'latn',
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
+    ...(currency ? { style: 'currency', currency } : {}),
   });
+  // BigInt has no negative zero; retain the sign of amounts between -1 and 0.
+  return formatted.formatToParts(whole === 0n && integer.startsWith('-') ? -0 : whole)
+    .map(part => part.type === 'fraction' ? fraction : part.value)
+    .join('');
+}
 
+/** LYD amount with Latin digits, grouped thousands and exact half-even rounding. */
+export function formatMoney(
+  amount: NumericInput,
+  includeSymbol: boolean = true,
+  decimals: number = OFFICIAL_CURRENCY.decimals,
+): string {
+  const formatted = formatExact(amount, decimals);
   return includeSymbol ? `${formatted} ${OFFICIAL_CURRENCY.symbol}` : formatted;
 }
 
-/**
- * تنسيق الأرقام والكميات القياسية مع الفواصل (مثل: 1,450 كجم أو 250 رأس)
- */
-export function formatNumber(
-  value: number | string | null | undefined,
-  decimals: number = 0
-): string {
-  const num = typeof value === 'number' ? value : parseFloat(String(value || 0)) || 0;
-  return num.toLocaleString('en-US', {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
-  });
+/** Pass 0 explicitly when displaying counts rather than measured quantities. */
+export function formatNumber(value: NumericInput, decimals: number = OFFICIAL_CURRENCY.decimals): string {
+  return formatExact(value, decimals);
 }
 
+/** Input is already a percentage (12.5 means 12.5%, not 1250%).
+ * Undefined ratios (e.g. 0 / 0 in empty reports) display as unavailable.
+ */
+export function formatPercent(value: NumericInput, decimals: number = OFFICIAL_CURRENCY.decimals): string {
+  if (typeof value === 'number' && !Number.isFinite(value)) return '-';
+  return `${Money.toFixed(inputDecimal(value), decimals)}%`;
+}
+
+/** Numeric compatibility boundary. Reject values a number cannot preserve.
+ * Use Money.decimal/plain decimal strings for exact calculations and storage.
+ */
+export function parseMoney(value: NumericInput): number {
+  const decimal = inputDecimal(value);
+  const result = decimal.toNumber();
+  if (!Number.isFinite(result) || !decimal.eq(String(result))) {
+    throw new RangeError('Monetary input cannot be represented safely as a number');
+  }
+  return result;
+}
+
+export class NumberUtils {
+  /** A locale string remains supported for callers of the original API. */
+  static formatNumber(value: NumericInput, decimalsOrLocale: number | string = OFFICIAL_CURRENCY.decimals): string {
+    return typeof decimalsOrLocale === 'string'
+      ? formatExact(value, OFFICIAL_CURRENCY.decimals, decimalsOrLocale)
+      : formatNumber(value, decimalsOrLocale);
+  }
+
+  static formatPercent(value: NumericInput, decimals: number = OFFICIAL_CURRENCY.decimals): string {
+    return formatPercent(value, decimals);
+  }
+
+  static formatCurrency(
+    value: NumericInput,
+    currency: string = OFFICIAL_CURRENCY.code,
+    locale: string = 'en-US',
+  ): string {
+    const amount = inputDecimal(value);
+    if (currency === OFFICIAL_CURRENCY.code) {
+      return `${formatExact(amount, OFFICIAL_CURRENCY.decimals, locale)} ${OFFICIAL_CURRENCY.symbol}`;
+    }
+    const decimals = CURRENCIES[currency]?.decimals ?? OFFICIAL_CURRENCY.decimals;
+    try {
+      return formatExact(amount, decimals, locale, currency);
+    } catch (error) {
+      if (!(error instanceof RangeError)) throw error;
+      return `${formatExact(amount, decimals)} ${currency}`;
+    }
+  }
+
+  static formatMoney(amount: NumericInput, includeSymbol: boolean = true, decimals: number = OFFICIAL_CURRENCY.decimals): string {
+    return formatMoney(amount, includeSymbol, decimals);
+  }
+
+  static parseMoney(value: NumericInput): number {
+    return parseMoney(value);
+  }
+
+  static clamp(value: number, min: number, max: number): number {
+    return Math.min(Math.max(value, min), max);
+  }
+
+  static isBetween(value: number, min: number, max: number): boolean {
+    return value >= min && value <= max;
+  }
+}
+
+// packages/shared-utils/src/date.ts
+// أدوات التاريخ المساعدة
+
 /**
- * تنسيق التواريخ بالأرقام العربية القياسية (YYYY-MM-DD)
+ * تنسيق التواريخ بالأرقام القياسية (YYYY-MM-DD)
  */
 export function formatDate(date: string | Date | null | undefined): string {
   if (!date) return '-';
-  const d = new Date(date);
+  const d = typeof date === 'string' ? new Date(date) : date;
   if (isNaN(d.getTime())) return '-';
 
   const year = d.getFullYear();
@@ -395,22 +510,181 @@ export function formatDate(date: string | Date | null | undefined): string {
   return `${year}-${month}-${day}`;
 }
 
-/**
- * تنسيق النسبة المئوية (%)
- */
-export function formatPercent(value: number | string | null | undefined, decimals: number = 1): string {
-  const num = typeof value === 'number' ? value : parseFloat(String(value || 0)) || 0;
-  return `${num.toFixed(decimals)}%`;
+/** تنسيق التاريخ بالعربية */
+export class DateUtils {
+  /** تنسيق التاريخ الميلادي */
+  static format(date: Date | string, options?: { showTime?: boolean }): string {
+    if (!date) return '';
+    const d = typeof date === 'string' ? new Date(date) : date;
+    if (options?.showTime === false) {
+      return d.toLocaleDateString('ar', { numberingSystem: 'latn' });
+    }
+    return d.toLocaleString('ar', { numberingSystem: 'latn' });
+  }
+
+  /** تنسيق التاريخ بصيغة YYYY-MM-DD */
+  static toISO(date: Date): string {
+    return date.toISOString().split('T')[0];
+  }
+
+  /** الفرق بين تاريخين بالأيام */
+  static diffDays(start: Date | string, end: Date | string): number {
+    const s = typeof start === 'string' ? new Date(start) : start;
+    const e = typeof end === 'string' ? new Date(end) : end;
+    const diff = e.getTime() - s.getTime();
+    return Math.ceil(diff / (1000 * 60 * 60 * 24));
+  }
+
+  /** هل التاريخ منتهي الصلاحية؟ */
+  static isExpired(date: Date | string): boolean {
+    const d = typeof date === 'string' ? new Date(date) : date;
+    return d < new Date();
+  }
+
+  /** هل سينتهي خلال عدد أيام محدد؟ */
+  static isExpiringSoon(date: Date | string, daysThreshold: number = 30): boolean {
+    const d = typeof date === 'string' ? new Date(date) : date;
+    const threshold = new Date();
+    threshold.setDate(threshold.getDate() + daysThreshold);
+    return d <= threshold && d >= new Date();
+  }
+
+  /** بداية الشهر */
+  static startOfMonth(date: Date = new Date()): Date {
+    return new Date(date.getFullYear(), date.getMonth(), 1);
+  }
+
+  /** نهاية الشهر */
+  static endOfMonth(date: Date = new Date()): Date {
+    return new Date(date.getFullYear(), date.getMonth() + 1, 0);
+  }
+
+  /** عدد أيام الشهر */
+  static daysInMonth(year: number, month: number): number {
+    return new Date(year, month, 0).getDate();
+  }
+
+  /** بداية السنة */
+  static startOfYear(year: number): Date {
+    return new Date(year, 0, 1);
+  }
+
+  /** نهاية السنة */
+  static endOfYear(year: number): Date {
+    return new Date(year, 11, 31);
+  }
+
+  /** أسماء الأشهر بالعربية */
+  static readonly MONTHS_AR = [
+    'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
+    'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر',
+  ];
+
+  /** أسماء أيام الأسبوع بالعربية */
+  static readonly DAYS_AR = [
+    'الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت',
+  ];
+
+  /** اسم الشهر بالعربية */
+  static monthName(month: number): string {
+    return DateUtils.MONTHS_AR[month - 1] || '';
+  }
 }
 
-/**
- * تحويل نص رقمي أو مدخل إلى رقم عائم آمن
- */
-export function parseMoney(value: string | number | null | undefined): number {
-  if (typeof value === 'number') return value;
-  if (!value) return 0;
-  const clean = String(value).replace(/[^0-9.-]+/g, '');
-  return parseFloat(clean) || 0;
+// packages/shared-utils/src/string.ts
+// أدوات النصوص المساعدة
+
+export class StringUtils {
+  /** توليد كود تلقائي مثل: EMP-00001 */
+  static generateCode(prefix: string, sequence: number, padLength: number = 5): string {
+    return `${prefix}-${String(sequence).padStart(padLength, '0')}`;
+  }
+
+  /** قص النص مع ... */
+  static truncate(text: string, maxLength: number = 50): string {
+    if (text.length <= maxLength) return text;
+    return text.slice(0, maxLength) + '...';
+  }
+
+  /** تحويل لـ slug (للروابط) */
+  static slugify(text: string): string {
+    return text
+      .toLowerCase()
+      .replace(/[^\w\s-]/g, '')
+      .replace(/[\s_]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  }
+
+  /** الاسم الكامل بالعربية */
+  static fullNameAr(firstName: string, lastName: string): string {
+    return `${firstName} ${lastName}`.trim();
+  }
+
+  /** الاسم الكامل بالإنجليزية */
+  static fullNameEn(firstName?: string, lastName?: string): string {
+    return [firstName, lastName].filter(Boolean).join(' ');
+  }
+
+  /** الأحرف الأولى من الاسم (للأفاتار) */
+  static initials(name: string): string {
+    return name
+      .split(' ')
+      .map((n) => n[0])
+      .slice(0, 2)
+      .join('')
+      .toUpperCase();
+  }
+
+  /** هل النص فارغ أو null؟ */
+  static isEmpty(value: string | null | undefined): boolean {
+    return !value || value.trim().length === 0;
+  }
 }
 
+// packages/shared-utils/src/validation.ts
+// أدوات التحقق من البيانات
 
+export class ValidationUtils {
+  /** التحقق من صحة البريد الإلكتروني */
+  static isValidEmail(email: string): boolean {
+    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return regex.test(email);
+  }
+
+  /** التحقق من صحة رقم الهاتف (دولي) */
+  static isValidPhone(phone: string): boolean {
+    const regex = /^\+?[1-9]\d{7,14}$/;
+    return regex.test(phone.replace(/[\s-()]/g, ''));
+  }
+
+  /** التحقق من رقم الهوية السودانية */
+  static isValidSudaneseId(id: string): boolean {
+    return /^\d{11}$/.test(id.replace(/[-\s]/g, ''));
+  }
+
+  /** التحقق من IBAN */
+  static isValidIBAN(iban: string): boolean {
+    const cleaned = iban.replace(/\s/g, '').toUpperCase();
+    return /^[A-Z]{2}\d{2}[A-Z0-9]{4,30}$/.test(cleaned);
+  }
+
+  /** التحقق من قوة كلمة المرور */
+  static passwordStrength(password: string): 'weak' | 'medium' | 'strong' {
+    if (password.length < 6) return 'weak';
+    const hasUpper = /[A-Z]/.test(password);
+    const hasLower = /[a-z]/.test(password);
+    const hasNumber = /\d/.test(password);
+    const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+    const score = [hasUpper, hasLower, hasNumber, hasSpecial].filter(Boolean).length;
+    if (password.length >= 8 && score >= 3) return 'strong';
+    if (password.length >= 6 && score >= 2) return 'medium';
+    return 'weak';
+  }
+
+  /** التحقق أن القيمة ليست فارغة */
+  static isRequired(value: unknown): boolean {
+    if (value === null || value === undefined) return false;
+    if (typeof value === 'string') return value.trim().length > 0;
+    return true;
+  }
+}

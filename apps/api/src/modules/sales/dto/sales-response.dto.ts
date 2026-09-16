@@ -1,7 +1,20 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { SaleType, PaymentMethod, AnimalPricingMethod } from '@prisma/client';
+import { SaleType, PaymentMethod, AnimalPricingMethod, MilkInventoryPolicy } from '@prisma/client';
 
 const decimalPattern = '^-?\\d+(?:\\.\\d{1,3})?$';
+
+export class AnimalBookValueResponseDto {
+  @ApiProperty({ format: 'uuid' }) animalId: string;
+  @ApiProperty({ type: String, pattern: decimalPattern }) bookValue: string;
+}
+
+export class MortalityAnimalSummaryDto {
+  @ApiProperty({ format: 'uuid' }) id: string;
+  @ApiProperty() tagNumber: string;
+  @ApiPropertyOptional({ nullable: true }) species?: string | null;
+  @ApiPropertyOptional({ nullable: true }) breed?: string | null;
+  @ApiPropertyOptional({ nullable: true }) gender?: string | null;
+}
 
 export class CommercialSaleResponseDto {
   @ApiProperty({ format: 'uuid' }) id: string;
@@ -43,6 +56,8 @@ export class AnimalMortalityResponseDto {
   @ApiPropertyOptional({ format: 'uuid', nullable: true }) journalEntryId?: string | null;
   @ApiPropertyOptional({ nullable: true }) recordedById?: string | null;
   @ApiProperty({ format: 'date-time' }) createdAt: string;
+  @ApiPropertyOptional({ type: () => MortalityAnimalSummaryDto, nullable: true })
+  animal?: MortalityAnimalSummaryDto | null;
 }
 
 export class SalesSummaryResponseDto {
@@ -53,4 +68,13 @@ export class SalesSummaryResponseDto {
   @ApiProperty({ type: Number }) totalAnimalsSold: number;
   @ApiProperty({ type: String, pattern: decimalPattern }) totalMortalityLossLyd: string;
   @ApiProperty({ type: Number }) totalDeceasedAnimals: number;
+  @ApiPropertyOptional({ enum: MilkInventoryPolicy, enumName: 'MilkInventoryPolicy' })
+  milkPolicy?: MilkInventoryPolicy;
+  @ApiProperty({ type: String, format: 'date', nullable: true }) milkPolicyEffectiveDate: string | null;
+}
+
+export class MilkPolicyResponseDto {
+  @ApiProperty({ enum: MilkInventoryPolicy, enumName: 'MilkInventoryPolicy' })
+  milkPolicy: MilkInventoryPolicy;
+  @ApiProperty({ type: String, format: 'date', nullable: true }) effectiveDate: string | null;
 }

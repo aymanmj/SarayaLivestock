@@ -1261,6 +1261,46 @@
         "tags": [
           "Barns"
         ]
+      },
+      "post": {
+        "operationId": "Barns_create",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "UUID v4 unique to this operational request and reused only for an identical retry",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateBarnDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BarnSummaryResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Barns"
+        ]
       }
     },
     "/api/v1/milking/log": {
@@ -1333,6 +1373,46 @@
         },
         "tags": [
           "Milking"
+        ]
+      }
+    },
+    "/api/v1/breeding/{id}/dry-off": {
+      "post": {
+        "operationId": "Breeding_recordDryOff",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "UUID v4 unique to this operational request and reused only for an identical retry",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnimalRecordResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Breeding"
         ]
       }
     },
@@ -2108,6 +2188,105 @@
         },
         "tags": [
           "system"
+        ]
+      }
+    },
+    "/api/v1/sales/milk-policy": {
+      "get": {
+        "operationId": "Sales_getMilkPolicy",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MilkPolicyResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "sales"
+        ]
+      },
+      "put": {
+        "operationId": "Sales_updateMilkPolicy",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "UUID v4 unique to this operational request and reused only for an identical retry",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMilkPolicyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MilkPolicyResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "sales"
+        ]
+      }
+    },
+    "/api/v1/sales/animals/{id}/book-value": {
+      "get": {
+        "operationId": "Sales_getAnimalBookValue",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "date",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnimalBookValueResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "sales"
         ]
       }
     },
@@ -3720,6 +3899,10 @@
       "JournalLineDto": {
         "type": "object",
         "properties": {
+          "animalId": {
+            "type": "string",
+            "format": "uuid"
+          },
           "accountId": {
             "type": "string",
             "format": "uuid"
@@ -5172,6 +5355,39 @@
           "_count"
         ]
       },
+      "CreateBarnDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "اسم الحظيرة أو العنبر",
+            "example": "حظيرة الأبقار الحلابة (A2)"
+          },
+          "sectorType": {
+            "enum": [
+              "DAIRY",
+              "FATTENING",
+              "BREEDING",
+              "CALVES",
+              "ISOLATION"
+            ],
+            "type": "string",
+            "description": "نوع القطاع",
+            "default": "DAIRY"
+          },
+          "capacity": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 10000,
+            "description": "الطاقة الاستيعابية للحظيرة",
+            "default": 50,
+            "example": 100
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
       "LogMilkDto": {
         "type": "object",
         "properties": {
@@ -5597,13 +5813,26 @@
             "format": "uuid"
           },
           "newborn": {
-            "$ref": "#/components/schemas/AnimalRecordResponseDto"
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AnimalRecordResponseDto"
+              }
+            ]
+          },
+          "newborns": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AnimalRecordResponseDto"
+            }
           }
         },
         "required": [
           "message",
           "motherId",
-          "newborn"
+          "newborn",
+          "newborns"
         ]
       },
       "BreedingTasksResponseDto": {
@@ -6974,6 +7203,66 @@
           "requiredMigration"
         ]
       },
+      "MilkInventoryPolicy": {
+        "type": "string",
+        "enum": [
+          "DAILY_RESET",
+          "CARRY_OVER"
+        ]
+      },
+      "MilkPolicyResponseDto": {
+        "type": "object",
+        "properties": {
+          "milkPolicy": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MilkInventoryPolicy"
+              }
+            ]
+          },
+          "effectiveDate": {
+            "type": "string",
+            "nullable": true,
+            "format": "date"
+          }
+        },
+        "required": [
+          "milkPolicy",
+          "effectiveDate"
+        ]
+      },
+      "UpdateMilkPolicyDto": {
+        "type": "object",
+        "properties": {
+          "milkPolicy": {
+            "type": "string",
+            "enum": [
+              "DAILY_RESET",
+              "CARRY_OVER"
+            ]
+          }
+        },
+        "required": [
+          "milkPolicy"
+        ]
+      },
+      "AnimalBookValueResponseDto": {
+        "type": "object",
+        "properties": {
+          "animalId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "bookValue": {
+            "type": "string",
+            "pattern": "^-?\\d+(?:\\.\\d{1,3})?$"
+          }
+        },
+        "required": [
+          "animalId",
+          "bookValue"
+        ]
+      },
       "RecordMilkSaleDto": {
         "type": "object",
         "properties": {
@@ -7244,6 +7533,34 @@
           "causeOfDeath"
         ]
       },
+      "MortalityAnimalSummaryDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tagNumber": {
+            "type": "string"
+          },
+          "species": {
+            "type": "string",
+            "nullable": true
+          },
+          "breed": {
+            "type": "string",
+            "nullable": true
+          },
+          "gender": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "tagNumber"
+        ]
+      },
       "AnimalMortalityResponseDto": {
         "type": "object",
         "properties": {
@@ -7294,6 +7611,15 @@
           "createdAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "animal": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MortalityAnimalSummaryDto"
+              }
+            ]
           }
         },
         "required": [
@@ -7336,6 +7662,18 @@
           },
           "totalDeceasedAnimals": {
             "type": "number"
+          },
+          "milkPolicy": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MilkInventoryPolicy"
+              }
+            ]
+          },
+          "milkPolicyEffectiveDate": {
+            "type": "string",
+            "nullable": true,
+            "format": "date"
           }
         },
         "required": [
@@ -7345,7 +7683,8 @@
           "totalMilkLiters",
           "totalAnimalsSold",
           "totalMortalityLossLyd",
-          "totalDeceasedAnimals"
+          "totalDeceasedAnimals",
+          "milkPolicyEffectiveDate"
         ]
       }
     }

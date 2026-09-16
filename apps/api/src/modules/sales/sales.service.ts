@@ -11,6 +11,7 @@ import {
   Purpose,
   SaleType,
   Species,
+  MilkInventoryPolicy,
 } from '@prisma/client';
 import { RecordMilkSaleDto, RecordAnimalSaleDto, RecordMortalityDto } from './dto/sales.dto';
 import { Decimal } from 'decimal.js';
@@ -18,12 +19,21 @@ import { Money } from '../../common/utils/money.util';
 import { appendDomainAudit, AuditActor } from '../../common/audit/domain-audit';
 import { IdempotencyContext } from '../../common/idempotency/idempotency-context';
 import { runIdempotentTransaction } from '../../common/idempotency/idempotency-transaction';
+import { resolveOpenFiscalPeriod } from '../../common/accounting/fiscal-period';
+import { animalBookValue } from '../../common/accounting/animal-book-value';
+import { calendarDate } from '../../common/utils/calendar-date';
+import { assertMilkAvailable } from './milk-inventory';
 
 @Injectable()
 export class SalesService {
   private readonly logger = new Logger(SalesService.name);
 
   constructor(private readonly prisma: PrismaService) {}
+
+  async getAnimalBookValue(animalId: string, farmId: string, date?: string) {
+    const value = await animalBookValue(this.prisma, farmId, animalId, calendarDate(date || new Date()));
+    return { animalId, bookValue: new Decimal(value.total).toFixed(3) };
+  }
 
   /**
    * تسجيل عملية بيع حليب خام مع إنشاء القيد المحاسبي المزدوج آلياً
@@ -34,13 +44,20 @@ export class SalesService {
     actor?: AuditActor,
     idempotency?: IdempotencyContext,
   ) {
-    const totalAmount = Money.round(new Decimal(dto.liters).times(dto.pricePerLiter).toNumber());
+    const totalAmount = Money.round(Money.multiply(dto.liters, dto.pricePerLiter));
     if (totalAmount <= 0) {
       throw new BadRequestException('إجمالي فاتورة الحليب يجب أن يكون أكبر من صفر');
     }
 
     return runIdempotentTransaction(this.prisma, actor, idempotency, async tx => {
-      const { fiscalYear, fiscalPeriod } = await this.resolveOpenFiscalPeriod(tx, farmId);
+      const saleDate = calendarDate(dto.saleDate || new Date());
+      const { fiscalYear, fiscalPeriod } = await resolveOpenFiscalPeriod(tx, farmId, saleDate);
+
+      const farm = await tx.farm.findUnique({
+        where: { id: farmId }, select: { milkPolicy: true, milkPolicyEffectiveDate: true },
+      });
+      if (!farm) throw new NotFoundException('المزرعة غير موجودة');
+      await assertMilkAvailable(tx, farmId, saleDate, dto.liters, farm.milkPolicy, farm.milkPolicyEffectiveDate);
 
       // تحديد حساب القبض
       const debitAccountCode = this.resolveDebitAccountCode(dto.paymentMethod);
@@ -58,7 +75,6 @@ export class SalesService {
       });
 
       // إنشاء رقم الفاتورة ورقم القيد
-      const saleDate = dto.saleDate ? new Date(dto.saleDate) : new Date();
       const invoiceNumber = await this.nextInvoiceNumber(tx, farmId, 'MILK');
       const entryNumber = await this.nextJournalNumber(tx, farmId, fiscalYear.id, fiscalYear.yearName, 'SLM');
 
@@ -171,15 +187,22 @@ export class SalesService {
         if (!dto.weightKg || dto.weightKg <= 0 || !dto.pricePerKg || dto.pricePerKg <= 0) {
           throw new BadRequestException('يجب إدخال الوزن القائم بالكيلوجرام وسعر الكيلو عند التسعير بالوزن');
         }
-        totalAmount = Money.round(new Decimal(dto.weightKg).times(dto.pricePerKg).toNumber());
+        totalAmount = Money.round(Money.multiply(dto.weightKg, dto.pricePerKg));
       } else {
         if (!dto.pricePerHead || dto.pricePerHead <= 0) {
           throw new BadRequestException('يجب إدخال سعر الرأس عند التسعير المقطوع');
         }
-        totalAmount = Money.round(new Decimal(dto.pricePerHead).toNumber());
+        totalAmount = Money.round(dto.pricePerHead);
       }
 
-      const { fiscalYear, fiscalPeriod } = await this.resolveOpenFiscalPeriod(tx, farmId);
+      const saleDate = calendarDate(dto.saleDate || new Date());
+      const { fiscalYear, fiscalPeriod } = await resolveOpenFiscalPeriod(tx, farmId, saleDate);
+      const valuation = await animalBookValue(tx, farmId, animal.id, saleDate);
+      const costAccount = await tx.account.upsert({
+        where: { farmId_code: { farmId, code: '5106' } },
+        update: {},
+        create: { farmId, code: '5106', name: 'القيمة الدفترية للماشية المباعة', category: 'EXPENSE', isSystemLocked: true },
+      });
 
       const debitAccountCode = this.resolveDebitAccountCode(dto.paymentMethod);
       const accDebit = await tx.account.findUnique({ where: { farmId_code: { farmId, code: debitAccountCode } } });
@@ -194,7 +217,6 @@ export class SalesService {
         select: { id: true },
       });
 
-      const saleDate = dto.saleDate ? new Date(dto.saleDate) : new Date();
       const invoiceNumber = await this.nextInvoiceNumber(tx, farmId, 'ANIMAL');
       const entryNumber = await this.nextJournalNumber(tx, farmId, fiscalYear.id, fiscalYear.yearName, 'SLA');
 
@@ -210,8 +232,8 @@ export class SalesService {
           status: JournalEntryStatus.POSTED,
           description: `فاتورة بيع ماشية حية رقم (${invoiceNumber}) - رقم القرط: ${animal.tagNumber} - العميل: ${dto.buyerName} بمبلغ ${totalAmount} د.ل`,
           referenceId: `ANIMAL_SALE:${animal.id}`,
-          totalDebit: totalAmount,
-          totalCredit: totalAmount,
+          totalDebit: Money.add(totalAmount, valuation.total),
+          totalCredit: Money.add(totalAmount, valuation.total),
           postedAt: new Date(),
           postedBy: actor?.id ?? 'system',
           lines: {
@@ -230,6 +252,8 @@ export class SalesService {
                 credit: totalAmount,
                 memo: `إيراد بيع ماشية حية (${animal.breed || animal.species}) - قرط ${animal.tagNumber}`,
               },
+              ...(valuation.total > 0 ? [{ accountId: costAccount.id, debit: valuation.total, credit: 0, memo: 'استبعاد القيمة الدفترية عند البيع' }] : []),
+              ...valuation.assets.map(asset => ({ accountId: asset.accountId, animalId: animal.id, debit: 0, credit: asset.value, memo: 'استبعاد أصل الحيوان المباع' })),
             ],
           },
         },
@@ -246,6 +270,10 @@ export class SalesService {
       });
 
       // تحديث حالة الحيوان إلى مباع
+      if (valuation.total > 0) await tx.account.update({ where: { id: costAccount.id }, data: { currentBalance: { increment: valuation.total } } });
+      for (const asset of valuation.assets) {
+        await tx.account.update({ where: { id: asset.accountId }, data: { currentBalance: { decrement: asset.value } } });
+      }
       await tx.animal.update({
         where: { id: animal.id },
         data: { status: AnimalStatus.SOLD },
@@ -310,27 +338,11 @@ export class SalesService {
         throw new BadRequestException(`لا يمكن تسجيل نفوق لحيوان تم بيعه بالفعل`);
       }
 
-      // تحديد القيمة الدفترية للأصل البيولوجي (IAS 41 Book Value)
-      let bookValue = 0;
-      if (animal.purchasePrice && Number(animal.purchasePrice) > 0) {
-        bookValue = Number(animal.purchasePrice);
-      } else if (dto.estimatedBookValue && dto.estimatedBookValue > 0) {
-        bookValue = dto.estimatedBookValue;
-      } else {
-        // قيمة افتراضية تقديرية للأصل البيولوجي حسب نوع الماشية بالدينار الليبي
-        switch (animal.species) {
-          case Species.CATTLE:
-            bookValue = 1500;
-            break;
-          case Species.SHEEP:
-            bookValue = 400;
-            break;
-          case Species.GOAT:
-            bookValue = 300;
-            break;
-          default:
-            bookValue = 500;
-        }
+      const deathDate = calendarDate(dto.deathDate);
+      const valuation = await animalBookValue(tx, farmId, animal.id, deathDate);
+      const bookValue = valuation.total;
+      if (dto.estimatedBookValue != null && dto.estimatedBookValue !== bookValue) {
+        throw new BadRequestException('القيمة المقدرة لا تطابق دفتر الأصل؛ سجّل تسوية القيمة قبل النفوق');
       }
 
       const salvageValue = dto.salvageValue && dto.salvageValue > 0 ? dto.salvageValue : 0;
@@ -338,28 +350,17 @@ export class SalesService {
         throw new BadRequestException(`قيمة الاسترداد (${salvageValue} د.ل) لا يمكن أن تتجاوز القيمة الدفترية للحيوان (${bookValue} د.ل)`);
       }
 
-      const netLoss = Money.round(new Decimal(bookValue).minus(salvageValue).toNumber());
+      const netLoss = Money.round(Money.decimal(bookValue).minus(salvageValue));
 
-      const { fiscalYear, fiscalPeriod } = await this.resolveOpenFiscalPeriod(tx, farmId);
-
-      // تحديد حساب الأصل البيولوجي الدائن
-      let assetAccountCode = '1202'; // قطيع التسمين واللحم
-      if (animal.species === Species.CATTLE && animal.purpose === Purpose.DAIRY) {
-        assetAccountCode = '1201'; // قطيع الألبان الحلاب
-      }
-      if (animal.currentLifeStage === 'CALF') {
-        assetAccountCode = '1203'; // العجول والمواليد الرضيعة
-      }
+      const { fiscalYear, fiscalPeriod } = await resolveOpenFiscalPeriod(tx, farmId, deathDate);
 
       const accMortalityLoss = await tx.account.findUnique({ where: { farmId_code: { farmId, code: '5105' } } }); // خسائر نفوق واستبعاد الماشية
-      const accBioAsset = await tx.account.findUnique({ where: { farmId_code: { farmId, code: assetAccountCode } } });
       const accCash = salvageValue > 0 ? await tx.account.findUnique({ where: { farmId_code: { farmId, code: '1101' } } }) : null;
 
-      if (!accMortalityLoss || !accBioAsset || (salvageValue > 0 && !accCash)) {
+      if (!accMortalityLoss || (salvageValue > 0 && !accCash)) {
         throw new BadRequestException('حسابات شجرة الحسابات المرتبطة بالأصول البيولوجية وخسائر النفوق غير متوفرة');
       }
 
-      const deathDate = new Date(dto.deathDate);
       const entryNumber = await this.nextJournalNumber(tx, farmId, fiscalYear.id, fiscalYear.yearName, 'MORT');
 
       // تجهيز أسطر القيد المحاسبي المزدوج
@@ -386,15 +387,16 @@ export class SalesService {
       }
 
       // سطر دائن: استبعاد الأصل البيولوجي بالقيمة الدفترية الكاملة
-      journalLines.push({
-        accountId: accBioAsset.id,
+      for (const asset of valuation.assets) journalLines.push({
+        accountId: asset.accountId,
+        animalId: animal.id,
         debit: 0,
-        credit: bookValue,
+        credit: asset.value,
         memo: `استبعاد الأصل البيولوجي بسبب النفوق - ${animal.tagNumber}`,
       });
 
       // إنشاء القيد المحاسبي المتوازن تماماً
-      const journalEntry = await tx.journalEntry.create({
+      const journalEntry = bookValue > 0 ? await tx.journalEntry.create({
         data: {
           farmId,
           fiscalYearId: fiscalYear.id,
@@ -413,7 +415,7 @@ export class SalesService {
             create: journalLines,
           },
         },
-      });
+      }) : null;
 
       // تحديث أرصدة الحسابات
       if (netLoss > 0) {
@@ -428,9 +430,9 @@ export class SalesService {
           data: { currentBalance: { increment: salvageValue } },
         });
       }
-      await tx.account.update({
-        where: { id: accBioAsset.id },
-        data: { currentBalance: { increment: -bookValue } },
+      for (const asset of valuation.assets) await tx.account.update({
+        where: { id: asset.accountId },
+        data: { currentBalance: { decrement: asset.value } },
       });
 
       // تحديث حالة الحيوان إلى نافق
@@ -450,8 +452,19 @@ export class SalesService {
           bookValue,
           netLoss,
           notes: dto.notes,
-          journalEntryId: journalEntry.id,
+          journalEntryId: journalEntry?.id,
           recordedById: actor?.id,
+        },
+        include: {
+          animal: {
+            select: {
+              id: true,
+              tagNumber: true,
+              species: true,
+              breed: true,
+              gender: true,
+            },
+          },
         },
       });
 
@@ -538,13 +551,45 @@ export class SalesService {
     return this.serializeCommercialSale(sale);
   }
 
+  async getMilkPolicy(farmId: string) {
+    const farm = await this.prisma.farm.findUnique({
+      where: { id: farmId },
+      select: { milkPolicy: true, milkPolicyEffectiveDate: true },
+    });
+    if (!farm) throw new NotFoundException('المزرعة غير موجودة');
+    return { milkPolicy: farm.milkPolicy, effectiveDate: farm.milkPolicyEffectiveDate?.toISOString().slice(0, 10) ?? null };
+  }
+
+  async updateMilkPolicy(farmId: string, policy: MilkInventoryPolicy, actor?: AuditActor, idempotency?: IdempotencyContext) {
+    return runIdempotentTransaction(this.prisma, actor, idempotency, async tx => {
+      const farm = await tx.farm.findUnique({ where: { id: farmId } });
+      if (!farm) throw new NotFoundException('المزرعة غير موجودة');
+      if (farm.milkPolicy === policy) return {
+        milkPolicy: policy, effectiveDate: farm.milkPolicyEffectiveDate?.toISOString().slice(0, 10) ?? null,
+      };
+      const effectiveDate = calendarDate(new Date(Date.now()));
+      // A sale already posted on/after the boundary must not change meaning.
+      const postedSale = await tx.commercialSale.findFirst({
+        where: { farmId, saleType: 'MILK', saleDate: { gte: effectiveDate } }, select: { id: true },
+      });
+      if (postedSale) throw new BadRequestException('توجد مبيعات حليب اليوم أو بعده؛ غيّر السياسة في يوم جديد قبل أول عملية بيع');
+      await tx.farm.update({ where: { id: farmId }, data: { milkPolicy: policy, milkPolicyEffectiveDate: effectiveDate } });
+      if (actor) await appendDomainAudit(tx, actor, {
+        action: 'farm.milkPolicy.updated', entityType: 'farm', entityId: farmId, farmId,
+        metadata: { previousPolicy: farm.milkPolicy, milkPolicy: policy, effectiveDate: effectiveDate.toISOString() },
+      });
+      return { milkPolicy: policy, effectiveDate: effectiveDate.toISOString().slice(0, 10) };
+    }, this.serializableOptions());
+  }
+
   /**
    * ملخص مؤشرات المبيعات والنفوق التراكمية
    */
   async getSalesSummary(farmId: string) {
-    const [sales, mortalities] = await Promise.all([
+    const [sales, mortalities, farm] = await Promise.all([
       this.prisma.commercialSale.findMany({ where: { farmId } }),
       this.prisma.animalMortality.findMany({ where: { farmId } }),
+      this.prisma.farm.findUnique({ where: { id: farmId }, select: { milkPolicy: true, milkPolicyEffectiveDate: true } }),
     ]);
 
     let totalSalesLyd = new Decimal(0);
@@ -578,6 +623,8 @@ export class SalesService {
       totalAnimalsSold,
       totalMortalityLossLyd: totalMortalityLossLyd.toFixed(3),
       totalDeceasedAnimals: mortalities.length,
+      milkPolicy: farm?.milkPolicy,
+      milkPolicyEffectiveDate: farm?.milkPolicyEffectiveDate?.toISOString().slice(0, 10) ?? null,
     };
   }
 
@@ -603,21 +650,6 @@ export class SalesService {
       case PaymentMethod.ON_ACCOUNT: return 'آجل / ذمم مدينة';
       default: return 'نقداً';
     }
-  }
-
-  private async resolveOpenFiscalPeriod(tx: Prisma.TransactionClient, farmId: string) {
-    const fiscalYear = await tx.fiscalYear.findFirst({
-      where: { farmId, status: FiscalStatus.OPEN, isCurrent: true },
-      include: {
-        periods: { where: { status: FiscalStatus.OPEN }, orderBy: { periodNumber: 'asc' }, take: 1 },
-      },
-    });
-
-    if (!fiscalYear || fiscalYear.periods.length === 0) {
-      throw new BadRequestException('لا توجد سنة أو فترة مالية مفتوحة لتسجيل القيود المحاسبية');
-    }
-
-    return { fiscalYear, fiscalPeriod: fiscalYear.periods[0] };
   }
 
   private async nextInvoiceNumber(tx: Prisma.TransactionClient, farmId: string, prefix: string): Promise<string> {
@@ -684,16 +716,21 @@ export class SalesService {
       journalEntryId: mort.journalEntryId ?? null,
       recordedById: mort.recordedById ?? null,
       createdAt: mort.createdAt instanceof Date ? mort.createdAt.toISOString() : String(mort.createdAt),
-      animal: mort.animal ?? undefined,
+      animal: mort.animal ? {
+        id: mort.animal.id,
+        tagNumber: mort.animal.tagNumber,
+        species: mort.animal.species ?? null,
+        breed: mort.animal.breed ?? null,
+        gender: mort.animal.gender ?? null,
+      } : null,
       journalEntry: mort.journalEntry ?? undefined,
     };
   }
 
-  private serializableOptions(): { isolationLevel: Prisma.TransactionIsolationLevel; maxWait: number; timeout: number } {
+  private serializableOptions() {
     return {
       isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
-      maxWait: 5000,
-      timeout: 10000,
+      timeoutMs: 10000,
     };
   }
 }

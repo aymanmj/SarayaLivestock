@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Heart, Baby, Eye, Sparkles, CheckCircle2, Clock, Plus, ArrowLeftRight, RefreshCw, X } from 'lucide-react';
-import { recordPdResult, recordCalving, getBreedingTasks } from '../api/client';
+import { recordPdResult, recordCalving, getBreedingTasks, recordDryOff } from '../api/client';
 import { AddInseminationModal } from '../components/AddInseminationModal';
 
 interface PDTask {
@@ -14,6 +14,7 @@ interface PDTask {
 
 interface DryOffTask {
   id: string;
+  animalId?: string;
   tag: string;
   name: string;
   expectedCalving: string;
@@ -80,6 +81,7 @@ export const BreedingCalendar: React.FC = () => {
         if (res.pendingDryOffs && Array.isArray(res.pendingDryOffs)) {
           setDryTasks(res.pendingDryOffs.map(r => ({
             id: r.id,
+            animalId: r.animal?.id,
             tag: r.animal?.tagNumber || 'غير محدد',
             name: r.animal?.name || 'بقرة عشار',
             expectedCalving: r.expectedCalvingDate ? String(r.expectedCalvingDate).slice(0, 10) : '',
@@ -98,8 +100,8 @@ export const BreedingCalendar: React.FC = () => {
           })));
         }
       }
-    } catch (e: any) {
-      setFeedback(e.message || 'تعذر تحميل مهام التناسل من الخادم');
+    } catch (e: unknown) {
+      setFeedback(e instanceof Error ? e.message : 'تعذر تحميل مهام التناسل من الخادم');
     } finally {
       setLoading(false);
     }
@@ -112,8 +114,8 @@ export const BreedingCalendar: React.FC = () => {
   const handlePdConfirm = async (taskId: string, tag: string, result: 'PREGNANT' | 'OPEN') => {
     try {
       await recordPdResult(taskId, result);
-    } catch (error: any) {
-      setFeedback(error.message || 'تعذر حفظ نتيجة فحص الحمل');
+    } catch (error: unknown) {
+      setFeedback(error instanceof Error ? error.message : 'تعذر حفظ نتيجة فحص الحمل');
       return;
     }
 
@@ -125,8 +127,19 @@ export const BreedingCalendar: React.FC = () => {
     );
   };
 
-  const handleDryOffConfirm = (taskId: string, tag: string) => {
-    setFeedback(`تعذر تسجيل تجفيف البقرة #${tag}: هذه العملية تحتاج مساراً خادمياً معتمداً قبل تفعيلها.`);
+  const handleDryOffConfirm = async (taskId: string, tag: string) => {
+    const task = dryTasks.find(t => t.id === taskId);
+    if (!task?.animalId) {
+      setFeedback(`تعذر تحديد معرف البقرة #${tag} لإتمام التجفيف`);
+      return;
+    }
+    try {
+      await recordDryOff(taskId);
+      setDryTasks(prev => prev.filter(t => t.id !== taskId));
+      setFeedback(`✓ تم تأكيد تجفيف البقرة #${tag} بنجاح ونقلها إلى مرحلة التجفيف (DRY)`);
+    } catch (e: unknown) {
+      setFeedback(e instanceof Error ? e.message : `تعذر تسجيل تجفيف البقرة #${tag}`);
+    }
   };
 
   const openCalvingModal = (taskId: string, tag: string) => {
@@ -174,8 +187,8 @@ export const BreedingCalendar: React.FC = () => {
         : `🎉 مبارك! تم تسجيل ولادة البقرة #${calvingModal.tag} وإضافة المولود الجديد #${calvingModal.tagNumber} إلى سجل القطيع.`;
       setFeedback(successMsg);
       setCalvingModal(null);
-    } catch (error: any) {
-      setFeedback(error.message || 'تعذر تسجيل الولادة');
+    } catch (error: unknown) {
+      setFeedback(error instanceof Error ? error.message : 'تعذر تسجيل الولادة');
       setCalvingModal(prev => prev ? { ...prev, submitting: false } : null);
     }
   };

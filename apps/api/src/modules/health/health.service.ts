@@ -1,9 +1,11 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { CreateTreatmentDto } from './dto/create-treatment.dto';
 import { appendDomainAudit, AuditActor } from '../../common/audit/domain-audit';
 import { IdempotencyContext } from '../../common/idempotency/idempotency-context';
 import { runIdempotentTransaction } from '../../common/idempotency/idempotency-transaction';
+import { Prisma } from '@prisma/client';
+import { calendarDate, addCalendarDays } from '../../common/utils/calendar-date';
 
 @Injectable()
 export class HealthService {
@@ -28,12 +30,15 @@ export class HealthService {
       });
       if (!animal) throw new NotFoundException('الحيوان غير مسجل (يرجى التحقق من رقم القرط)');
 
+      if (animal.status === 'DECEASED' || animal.status === 'SOLD') {
+        throw new BadRequestException(`لا يمكن تسجيل علاج طبي لحيوان حالته (${animal.status})`);
+      }
+
       const treatmentDate = dto.treatmentDate ? new Date(dto.treatmentDate) : new Date();
       const maxWithdrawalDays = Math.max(dto.milkWithdrawalDays || 0, dto.meatWithdrawalDays || 0);
       let withdrawalEndDate: Date | null = null;
       if (maxWithdrawalDays > 0) {
-        withdrawalEndDate = new Date(treatmentDate);
-        withdrawalEndDate.setDate(withdrawalEndDate.getDate() + maxWithdrawalDays);
+        withdrawalEndDate = addCalendarDays(treatmentDate, maxWithdrawalDays);
       }
       const effectiveAnimalWithdrawalEnd = withdrawalEndDate && animal.withdrawalEndDate
         ? new Date(Math.max(withdrawalEndDate.getTime(), animal.withdrawalEndDate.getTime()))
@@ -69,13 +74,12 @@ export class HealthService {
         });
       }
 
-      if (dto.milkWithdrawalDays && dto.milkWithdrawalDays > 0 && tx.milkLog?.updateMany) {
-        const milkEnd = new Date(treatmentDate);
-        milkEnd.setDate(milkEnd.getDate() + dto.milkWithdrawalDays);
+      if (dto.milkWithdrawalDays && dto.milkWithdrawalDays > 0) {
+        const milkEnd = addCalendarDays(treatmentDate, dto.milkWithdrawalDays);
         await tx.milkLog.updateMany({
           where: {
             animalId: animal.id,
-            logDate: { gte: treatmentDate, lte: milkEnd },
+            logDate: { gte: calendarDate(treatmentDate), lte: milkEnd },
             isDiscarded: false,
           },
           data: {
@@ -99,10 +103,10 @@ export class HealthService {
       return {
         treatment: createdTreatment,
         warningMessage: withdrawalEndDate
-          ? `⚠️ تم تفعيل قفل الأمان الصحي! يمنع بيع حليب أو لحم الحيوان حتى تاريخ: ${withdrawalEndDate.toISOString().split('T')[0]}`
+          ? `⚠️ تم تسجيل مدد التحريم: الحليب ${dto.milkWithdrawalDays || 0} يوم، واللحم ${dto.meatWithdrawalDays || 0} يوم من تاريخ العلاج؛ تُقيّم كل مدة بصورة مستقلة.`
           : 'تم تسجيل العلاج بنجاح (لا توجد فترة تحريم).',
       };
-    });
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
   }
 
   async getActiveQuarantineList(farmId: string) {

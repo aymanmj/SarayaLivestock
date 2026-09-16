@@ -375,7 +375,7 @@ export class AccountingService implements OnModuleInit {
 
     if (!totalDebit.equals(totalCredit)) {
       throw new BadRequestException(
-        `القيد غير متوازن! إجمالي المدين (${totalDebit.toFixed(2)}) لا يساوي إجمالي الدائن (${totalCredit.toFixed(2)})`
+        `القيد غير متوازن! إجمالي المدين (${totalDebit.toFixed(3)}) لا يساوي إجمالي الدائن (${totalCredit.toFixed(3)})`
       );
     }
 
@@ -423,6 +423,11 @@ export class AccountingService implements OnModuleInit {
       }
 
       const entryNumber = await this.nextEntryNumber(tx, farmId, fiscalYear.id, fiscalYear.yearName);
+      for (const line of dto.lines.filter(line => line.animalId)) {
+        const animal = await tx.animal.findFirst({ where: { id: line.animalId, farmId, status: { notIn: ['SOLD', 'DECEASED'] } } });
+        const account = await tx.account.findFirst({ where: { id: line.accountId, farmId, code: { in: ['1201', '1202', '1203'] } } });
+        if (!animal || !account) throw new BadRequestException('ربط الحيوان يتطلب حيواناً غير مستبعد وحساب أصل بيولوجي من المزرعة نفسها');
+      }
       const entry = await tx.journalEntry.create({
         data: {
           farmId,
@@ -442,6 +447,7 @@ export class AccountingService implements OnModuleInit {
             create: dto.lines.map((l) => ({
               accountId: l.accountId,
               costCenterId: l.costCenterId,
+              animalId: l.animalId,
               debit: l.debit || 0,
               credit: l.credit || 0,
               memo: l.memo,
@@ -1041,7 +1047,7 @@ export class AccountingService implements OnModuleInit {
    * تسجيل قيد آلي لمبيعات / إنتاج الحليب اليومي (Raw Milk Sales)
    */
   async recordMilkSalesJournalEntry(farmId: string, liters: number, pricePerLiter = 3.5, memo = 'مبيعات حليب يومية') {
-    const total = Number((liters * pricePerLiter).toFixed(2));
+    const total = Number((liters * pricePerLiter).toFixed(3));
     if (total <= 0) return null;
 
     const accCash = await this.prisma.account.findUnique({ where: { farmId_code: { farmId, code: '1101' } } });

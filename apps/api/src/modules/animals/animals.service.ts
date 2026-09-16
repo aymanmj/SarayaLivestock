@@ -107,6 +107,7 @@ export class AnimalsService {
   }
 
   async updateLifeStage(id: string, stage: LifeStage, farmId: string, actor?: AuditActor, idempotency?: IdempotencyContext) {
+    if (stage === LifeStage.DRY) throw new ConflictException('سجّل التجفيف من مهمة الحمل الجارية');
     return runIdempotentTransaction(this.prisma, actor, idempotency, async tx => {
       const animal = await tx.animal.findFirst({ where: { id, farmId } });
       if (!animal) throw new NotFoundException('لم يتم العثور على سجل الحيوان');
@@ -153,6 +154,9 @@ export class AnimalsService {
     return runIdempotentTransaction(this.prisma, actor, idempotency, async tx => {
       const animal = await tx.animal.findFirst({ where: { id, farmId } });
       if (!animal) throw new NotFoundException('لم يتم العثور على سجل الحيوان');
+      if (status === AnimalStatus.SOLD || status === AnimalStatus.DECEASED || animal.status === AnimalStatus.SOLD || animal.status === AnimalStatus.DECEASED) {
+        throw new ConflictException('البيع والنفوق حالات نهائية تُدار من العمليات التجارية والمالية المخصصة');
+      }
       const updated = await tx.animal.update({
         where: { id },
         data: { status },
@@ -165,7 +169,7 @@ export class AnimalsService {
         metadata: { previousStatus: animal.status, newStatus: status, notes },
       });
       return updated;
-    });
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
   }
 
   private async assertRelatedEntitiesBelongToFarm(

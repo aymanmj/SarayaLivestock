@@ -1,0 +1,21 @@
+{
+  "commit": "57b1995",
+  "baseline": "e6fa768",
+  "date": "2026-09-14",
+  "verdict": "NO_GO",
+  "productSourceModifiedByReview": false,
+  "apiUnit": { "passed": 111, "skipped": 9, "failed": 0 },
+  "selectedPostgresIntegration": { "passed": 8, "failed": 1, "failure": "milk withdrawal uses meat withdrawal end date" },
+  "contracts": { "passed": true, "operations": 68, "typedResponses": 68, "idempotentWrites": 23 },
+  "webTypecheck": "passed",
+  "webBuild": "passed_with_chunk_size_warning",
+  "desktopBuild": "passed",
+  "prismaValidate": "passed",
+  "existingDatabaseReadOnlyInspection": { "postgresMajor": 17, "appliedMigrations": 6, "pendingMigrations": 0, "reportedDataIssues": 0 },
+  "isolatedSalesProbes": {
+    "saleOutsideFirstOpenPeriod": "rejected: PostgreSQL 23514, journal date is outside its fiscal period",
+    "animalSale": { "capitalizedValue": 1000, "saleAmount": 1200, "remainingAssetBalance": 1000, "reportedNetProfit": 1200, "expectedFixtureNetProfit": 200 },
+    "databaseCleanup": "confirmed"
+  },
+  "notPerformed": ["production data mutation", "fresh installer and upgrade recovery exercise", "hardware acceptance", "load and endurance tests", "new dependency vulnerability audit", "concurrent calving PostgreSQL reproduction"]
+}

@@ -10,6 +10,24 @@ describe('SalesService - Double Entry Sales & Mortality Calculation (IAS 41)', (
   beforeEach(() => {
     tx = {
       fiscalYear: {
+        findMany: jest.fn().mockResolvedValue([
+          {
+            id: 'fy-2026',
+            yearName: '2026',
+            status: FiscalStatus.OPEN,
+            startDate: new Date('2026-01-01'),
+            endDate: new Date('2026-12-31'),
+            periods: [
+              {
+                id: 'fp-1',
+                status: FiscalStatus.OPEN,
+                startDate: new Date('2026-01-01'),
+                endDate: new Date('2026-12-31'),
+                periodNumber: 1,
+              },
+            ],
+          },
+        ]),
         findFirst: jest.fn().mockResolvedValue({
           id: 'fy-2026',
           yearName: '2026',
@@ -22,6 +40,9 @@ describe('SalesService - Double Entry Sales & Mortality Calculation (IAS 41)', (
         findUnique: jest.fn().mockImplementation(({ where }: any) => {
           const code = where.farmId_code.code;
           return Promise.resolve({ id: `acc-${code}`, code, currentBalance: 0 });
+        }),
+        upsert: jest.fn().mockImplementation(({ create }: any) => {
+          return Promise.resolve({ id: `acc-${create.code}`, ...create, currentBalance: 0 });
         }),
         update: jest.fn().mockResolvedValue({}),
       },
@@ -36,11 +57,50 @@ describe('SalesService - Double Entry Sales & Mortality Calculation (IAS 41)', (
           return Promise.resolve({ id: 'je-1', ...data });
         }),
       },
+      journalEntryLine: {
+        findMany: jest.fn().mockImplementation(({ where }: any) => {
+          if (where?.animalId === 'cow-1') {
+            return Promise.resolve([
+              {
+                accountId: 'acc-1201',
+                animalId: 'cow-1',
+                debit: 6000,
+                credit: 0,
+                journalEntry: { entryDate: new Date('2026-01-01') },
+              },
+            ]);
+          }
+          if (where?.animalId === 'sheep-1') {
+            return Promise.resolve([
+              {
+                accountId: 'acc-1202',
+                animalId: 'sheep-1',
+                debit: 400,
+                credit: 0,
+                journalEntry: { entryDate: new Date('2026-01-01') },
+              },
+            ]);
+          }
+          if (where?.animalId === 'animal-1') {
+            return Promise.resolve([
+              {
+                accountId: 'acc-1202',
+                animalId: 'animal-1',
+                debit: 5000,
+                credit: 0,
+                journalEntry: { entryDate: new Date('2026-01-01') },
+              },
+            ]);
+          }
+          return Promise.resolve([]);
+        }),
+      },
       commercialSale: {
         count: jest.fn().mockResolvedValue(5),
         create: jest.fn().mockImplementation(({ data }: any) => {
           return Promise.resolve({ id: 'sale-1', ...data });
         }),
+        aggregate: jest.fn().mockResolvedValue({ _sum: { liters: 50 } }),
       },
       animal: {
         findFirst: jest.fn(),
@@ -50,6 +110,15 @@ describe('SalesService - Double Entry Sales & Mortality Calculation (IAS 41)', (
         create: jest.fn().mockImplementation(({ data }: any) => {
           return Promise.resolve({ id: 'mort-1', ...data });
         }),
+      },
+      farm: {
+        findUnique: jest.fn().mockResolvedValue({ milkPolicy: 'DAILY_RESET' }),
+      },
+      milkLog: {
+        aggregate: jest.fn().mockResolvedValue({ _sum: { yieldLiters: 1000 } }),
+      },
+      bulkTankLog: {
+        aggregate: jest.fn().mockResolvedValue({ _sum: { calfFeedingLiters: 0, wastedLiters: 0 } }),
       },
     };
 
@@ -160,16 +229,20 @@ describe('SalesService - Double Entry Sales & Mortality Calculation (IAS 41)', (
         data: { status: AnimalStatus.SOLD },
       });
 
-      // التحقق من القيد المحاسبي (مدين البنك 1102 / دائن إيراد الماشية 4102)
+      // التحقق من القيد المحاسبي المزدوج المتوازن:
+      // مدين البنك 1102 بمبلغ 9900 / دائن إيراد الماشية 4102 بمبلغ 9900
+      // مدين تكلفة الأصل المباع 5106 بمبلغ 5000 / دائن أصل الماشية 1202 بمبلغ 5000
       expect(tx.journalEntry.create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
-            totalDebit: 9900,
-            totalCredit: 9900,
+            totalDebit: 14900,
+            totalCredit: 14900,
             lines: {
               create: expect.arrayContaining([
                 expect.objectContaining({ accountId: 'acc-1102', debit: 9900, credit: 0 }),
                 expect.objectContaining({ accountId: 'acc-4102', debit: 0, credit: 9900 }),
+                expect.objectContaining({ accountId: 'acc-5106', debit: 5000, credit: 0 }),
+                expect.objectContaining({ accountId: 'acc-1202', debit: 0, credit: 5000, animalId: 'animal-1' }),
               ]),
             },
           }),

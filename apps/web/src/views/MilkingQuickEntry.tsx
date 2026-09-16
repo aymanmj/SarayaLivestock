@@ -45,6 +45,7 @@ interface RecentMilkLog {
   yieldLiters: number;
   shift: MilkingShift;
   time: string;
+  logDate: string;
   isDiscarded: boolean;
   discardReason: string | null | undefined;
   value: number;
@@ -109,6 +110,7 @@ export const MilkingQuickEntry: React.FC = () => {
         yieldLiters: Number(log.yieldLiters),
         shift: log.shift,
         time: new Date(log.logDate).toLocaleTimeString('ar-LY', { hour: '2-digit', minute: '2-digit' }),
+        logDate: String(log.logDate),
         isDiscarded: log.isDiscarded,
         discardReason: log.discardReason,
         value: log.isDiscarded ? 0 : Money.mul(log.yieldLiters as any, milkSellingPricePerLiter),
@@ -204,21 +206,21 @@ export const MilkingQuickEntry: React.FC = () => {
       ? lastSavedLog
       : null;
 
-    if (!targetLog && (!currentYield || Number(currentYield) <= 0)) {
-      setFeedback('يرجى حفظ الحلبة أولاً قبل طباعة إذن الاستلام المالي');
+    if (!targetLog) {
+      setFeedback('يرجى حفظ الحلبة أولاً قبل طباعة إذن الاستلام المالي؛ لا يمكن طباعة إيصال لحلبة غير مسجلة');
       return;
     }
 
-    const yieldToPrint = targetLog ? String(targetLog.yieldLiters) : currentYield;
-    const isDiscardedToPrint = targetLog ? targetLog.isDiscarded : isDiscarded;
+    const yieldToPrint = String(targetLog.yieldLiters);
+    const isDiscardedToPrint = targetLog.isDiscarded;
     const valueToPrint = isDiscardedToPrint ? 0 : Money.mul(yieldToPrint, milkSellingPricePerLiter);
 
     const receiptData = {
       cowTag: selectedCow.tagNumber,
       cowName: selectedCow.name,
       yieldLiters: yieldToPrint,
-      shift,
-      date: formatDate(new Date().toISOString()),
+      shift: targetLog.shift,
+      date: formatDate(targetLog.logDate),
       isDiscarded: isDiscardedToPrint,
       financialValue: valueToPrint,
     };
@@ -317,6 +319,7 @@ export const MilkingQuickEntry: React.FC = () => {
         yieldLiters: savedYield,
         shift: savedLog.shift,
         time: new Date(savedLog.createdAt).toLocaleTimeString('ar-LY', { hour: '2-digit', minute: '2-digit' }),
+        logDate: String(savedLog.logDate),
         isDiscarded: savedLog.isDiscarded,
         discardReason: savedLog.discardReason,
         value: savedLog.isDiscarded ? 0 : Money.mul(savedYield, milkSellingPricePerLiter),
@@ -652,7 +655,7 @@ export const MilkingQuickEntry: React.FC = () => {
                 <strong className="text-emerald-700 dark:text-emerald-400 font-bold">{formatNumber(usableTodayLiters)} لتر</strong>
               </div>
               <div className="flex justify-between text-slate-500 dark:text-slate-400 pt-1.5 border-t border-slate-200 dark:border-slate-800">
-                <span>إجمالي الإيراد المقيد:</span>
+                <span>إجمالي القيمة التقديرية للإنتاج:</span>
                 <strong className="text-emerald-700 dark:text-emerald-400 font-black">{formatMoney(totalFinancialValue)}</strong>
               </div>
             </div>

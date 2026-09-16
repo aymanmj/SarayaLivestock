@@ -1,6 +1,6 @@
-import { Controller, Get, Post, Body, Param, Query, ParseUUIDPipe } from '@nestjs/common';
+import { Controller, Get, Post, Put, Body, Param, Query, ParseUUIDPipe } from '@nestjs/common';
 import { SalesService } from './sales.service';
-import { RecordMilkSaleDto, RecordAnimalSaleDto, RecordMortalityDto, SalesQueryDto } from './dto/sales.dto';
+import { RecordMilkSaleDto, RecordAnimalSaleDto, RecordMortalityDto, SalesQueryDto, UpdateMilkPolicyDto } from './dto/sales.dto';
 import { UserRole } from '@prisma/client';
 import { Roles } from '../auth/roles.decorator';
 import { CurrentUser } from '../auth/current-user.decorator';
@@ -12,12 +12,41 @@ import {
   CommercialSaleResponseDto,
   AnimalMortalityResponseDto,
   SalesSummaryResponseDto,
+  AnimalBookValueResponseDto,
+  MilkPolicyResponseDto,
 } from './dto/sales-response.dto';
 
 @ApiTags('sales')
 @Controller('sales')
 export class SalesController {
   constructor(private readonly salesService: SalesService) {}
+
+  @Get('milk-policy')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.FARM_MANAGER, UserRole.ACCOUNTANT, UserRole.VETERINARIAN)
+  @ApiOkResponse({ type: MilkPolicyResponseDto })
+  getMilkPolicy(@CurrentUser() user: AuthenticatedUser) {
+    return this.salesService.getMilkPolicy(requireFarmId(user));
+  }
+
+  @Put('milk-policy')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.FARM_MANAGER)
+  @DomainAudited()
+  @IdempotencyRequired()
+  @ApiOkResponse({ type: MilkPolicyResponseDto })
+  updateMilkPolicy(
+    @Body() dto: UpdateMilkPolicyDto,
+    @CurrentUser() user: AuthenticatedUser,
+    @CurrentIdempotency() idempotency: IdempotencyContext,
+  ) {
+    return this.salesService.updateMilkPolicy(requireFarmId(user), dto.milkPolicy, user, idempotency);
+  }
+
+  @Get('animals/:id/book-value')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.FARM_MANAGER, UserRole.ACCOUNTANT, UserRole.VETERINARIAN)
+  @ApiOkResponse({ type: AnimalBookValueResponseDto })
+  getAnimalBookValue(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: AuthenticatedUser, @Query('date') date?: string) {
+    return this.salesService.getAnimalBookValue(id, requireFarmId(user), date);
+  }
 
   @Post('milk')
   @Roles(UserRole.SUPER_ADMIN, UserRole.FARM_MANAGER, UserRole.ACCOUNTANT)

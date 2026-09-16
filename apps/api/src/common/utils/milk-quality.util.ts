@@ -21,11 +21,11 @@ export class MilkQualityEngine {
   } {
     if (past7DaysAverage <= 0) return { hasAnomaly: false, dropPercentage: 0 };
     
-    const drop = new Decimal(todayYield)
+    const drop = Money.decimal(todayYield)
       .minus(past7DaysAverage)
       .div(past7DaysAverage)
       .mul(100)
-      .toDecimalPlaces(2, Decimal.ROUND_HALF_UP)
+      .toDecimalPlaces(2, Decimal.ROUND_HALF_EVEN)
       .toNumber();
 
     return {
@@ -42,24 +42,24 @@ export class MilkQualityEngine {
     actualProteinPct: number,
     config: MilkPriceAdjustmentConfig
   ): number {
-    let price = new Decimal(config.basePricePerLiter);
+    let price = Money.decimal(config.basePricePerLiter);
 
     // تعديل الدهن
     if (actualFatPct) {
-      const fatDiff = new Decimal(actualFatPct).minus(config.baseFatPct);
+      const fatDiff = Money.decimal(actualFatPct).minus(config.baseFatPct);
       price = price.plus(fatDiff.mul(10).mul(config.fatBonusPerPoint));
     }
 
     // تعديل البروتين
     if (actualProteinPct) {
-      const proteinDiff = new Decimal(actualProteinPct).minus(config.baseProteinPct);
+      const proteinDiff = Money.decimal(actualProteinPct).minus(config.baseProteinPct);
       price = price.plus(proteinDiff.mul(10).mul(config.proteinBonusPerPoint));
     }
 
     // عدم السماح بسعر سلبي
-    if (price.lt(0)) price = new Decimal(0);
+    if (price.lt(0)) price = Money.decimal(0);
 
-    return price.toDecimalPlaces(3, Decimal.ROUND_HALF_UP).toNumber();
+    return price.toDecimalPlaces(3, Decimal.ROUND_HALF_EVEN).toNumber();
   }
 
   /**
@@ -67,6 +67,6 @@ export class MilkQualityEngine {
    */
   static calculateCostPerLiter(totalCosts: MoneyValue, totalSoldLiters: number): number {
     if (totalSoldLiters <= 0) return 0;
-    return Money.divide(totalCosts, totalSoldLiters).toDecimalPlaces(3, Decimal.ROUND_HALF_UP).toNumber();
+    return Money.divide(totalCosts, totalSoldLiters).toDecimalPlaces(3, Decimal.ROUND_HALF_EVEN).toNumber();
   }
 }

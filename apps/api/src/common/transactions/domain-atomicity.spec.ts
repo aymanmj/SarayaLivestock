@@ -18,6 +18,7 @@ describe('Atomic domain workflows', () => {
         findFirst: jest.fn().mockResolvedValue({ id: 'animal-a', withdrawalEndDate: null }),
         updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       },
+      milkLog: { updateMany: jest.fn().mockResolvedValue({ count: 0 }) },
       auditEvent: { create: jest.fn().mockResolvedValue({ id: 'audit-a' }) },
     };
     const prisma = {
@@ -47,6 +48,7 @@ describe('Atomic domain workflows', () => {
         findFirst: jest.fn().mockResolvedValue({ id: 'animal-a', withdrawalEndDate: null }),
         updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       },
+      milkLog: { updateMany: jest.fn().mockResolvedValue({ count: 0 }) },
       auditEvent: { create: jest.fn().mockRejectedValue(new Error('audit unavailable')) },
     };
     const prisma = {
@@ -70,6 +72,15 @@ describe('Atomic domain workflows', () => {
       milkLog: {
         findMany: jest.fn().mockResolvedValue([]),
         create: jest.fn().mockImplementation(({ data }: any) => Promise.resolve({ id: 'milk-a', ...data })),
+      },
+      healthTreatment: {
+        findMany: jest.fn().mockResolvedValue([
+          {
+            drugName: 'أوكسي تتراسيكلين',
+            treatmentDate: new Date('2026-08-26'),
+            milkWithdrawalDays: 5,
+          },
+        ]),
       },
       auditEvent: { create: jest.fn().mockResolvedValue({ id: 'audit-a' }) },
     };
