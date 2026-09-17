@@ -1,4 +1,4 @@
-﻿{
+{
   "name": "saraya-livestock",
   "version": "1.0.0",
   "private": true,
@@ -32,7 +32,7 @@
   },
   "devDependencies": {
     "prettier": "^3.5.0",
-    "typescript": "^5.8.0"
+    "typescript": "^7.0.2"
   },
   "engines": {
     "node": ">=20.0.0",
