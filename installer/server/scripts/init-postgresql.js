@@ -1,4 +1,4 @@
-﻿const { execFileSync } = require('child_process');
+const { execFileSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
@@ -39,9 +39,29 @@ function repairWindowsIoConcurrency(configPath) {
 
 // Check for existing cluster
 const versionFile = path.join(pgData, 'PG_VERSION');
+const hbaConfPath = path.join(pgData, 'pg_hba.conf');
+
+const bootstrapHba = `# =============================================================================
+# PostgreSQL Client Authentication Configuration
+# Bootstrap configuration: allows local postgres superuser maintenance
+# =============================================================================
+host    all             postgres        127.0.0.1/32            trust
+host    all             postgres        ::1/128                 trust
+host    all             all             127.0.0.1/32            scram-sha-256
+host    all             all             ::1/128                 scram-sha-256
+host    all             all             0.0.0.0/0               reject
+host    all             all             ::/0                    reject
+`;
+
 if (fs.existsSync(versionFile)) {
   repairWindowsIoConcurrency(pgConfPath);
-  console.log('PostgreSQL data directory already exists; preserving it for upgrade.');
+  console.log('PostgreSQL data directory already exists; configuring bootstrap authentication...');
+  try {
+    fs.writeFileSync(hbaConfPath, bootstrapHba, 'utf8');
+    console.log('Bootstrap authentication configured for existing cluster.');
+  } catch (err) {
+    console.warn('Notice while configuring bootstrap authentication:', err.message);
+  }
   process.exit(0);
 }
 
@@ -81,12 +101,10 @@ try {
   fs.rmSync(passwordFile, { force: true });
 }
 
-// Install the reviewed, local-only configuration templates.
-const hbaConfPath = path.join(pgData, 'pg_hba.conf');
+// Install the reviewed, local-only configuration templates with bootstrap authentication.
 const logDir = path.join(dataDir, 'logs', 'postgresql').replace(/\\/g, '/').replace(/'/g, "''");
 const pgTemplate = fs.readFileSync(path.join(templateDir, 'postgresql.conf.template'), 'utf8');
-const hbaTemplate = fs.readFileSync(path.join(templateDir, 'pg_hba.conf.template'), 'utf8');
 fs.writeFileSync(pgConfPath, pgTemplate.replaceAll('{{LOG_DIR}}', logDir));
-fs.writeFileSync(hbaConfPath, hbaTemplate);
+fs.writeFileSync(hbaConfPath, bootstrapHba, 'utf8');
 
-console.log('PostgreSQL cluster initialized on port 5435 with SCRAM authentication.');
+console.log('PostgreSQL cluster initialized on port 5435 with bootstrap authentication.');

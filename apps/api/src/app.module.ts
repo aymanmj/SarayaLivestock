@@ -26,6 +26,8 @@ import { AuditController } from './common/audit/audit.controller';
 import { validateRuntimeConfig } from './config/runtime-config';
 import { SystemModule } from './system/system.module';
 import { SalesModule } from './modules/sales/sales.module';
+import { FarmsModule } from './modules/farms/farms.module';
+import { HrModule } from './modules/hr/hr.module';
 
 @Module({
   imports: [
@@ -52,6 +54,8 @@ import { SalesModule } from './modules/sales/sales.module';
     NutritionModule,
     SystemModule,
     SalesModule,
+    FarmsModule,
+    HrModule,
   ],
   controllers: [AuditController],
   providers: [

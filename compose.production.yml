@@ -21,6 +21,14 @@ services:
     security_opt:
       - no-new-privileges:true
     shm_size: 256mb
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
     stop_grace_period: 60s
 
   api:
@@ -73,6 +81,14 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
     stop_grace_period: 30s
 
   caddy:
@@ -111,6 +127,14 @@ services:
       - ALL
     cap_add:
       - NET_BIND_SERVICE
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
     stop_grace_period: 30s
 
   db-ops:

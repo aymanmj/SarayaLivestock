@@ -16,6 +16,11 @@ export interface User {
   email?: string;
   role: UserRole;
   farmId?: string;
+  farm?: {
+    id: string;
+    name: string;
+    location: string | null;
+  };
 }
 
 interface AuthContextType {
@@ -59,6 +64,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           email: profile.email ?? undefined,
           role: profile.role,
           farmId: profile.farmId ?? undefined,
+          farm: (profile as any).farm ?? undefined,
         };
         setUser(restoredUser);
       } catch {
@@ -88,6 +94,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         email: data.user.email ?? undefined,
         role: data.user.role,
         farmId: data.user.farmId ?? undefined,
+        farm: (data.user as any).farm ?? undefined,
       };
 
       setUser(loggedUser);

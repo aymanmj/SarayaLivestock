@@ -1,8 +1,8 @@
-{
+﻿{
   "name": "saraya-livestock",
   "version": "1.0.0",
   "private": true,
-  "description": "منظومة سرايا لإدارة مزارع الماشية والألبان والتسمين - Saraya Livestock & Dairy Farm ERP",
+  "description": "منظومة السرايا لإدارة مزارع الماشية والألبان والتسمين - Saraya Livestock & Dairy Farm ERP",
   "author": "Saraya Team",
   "license": "UNLICENSED",
   "scripts": {

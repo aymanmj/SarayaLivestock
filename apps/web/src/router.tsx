@@ -1,3 +1,4 @@
+import React from 'react';
 import { createRouter, createRoute, createRootRoute } from '@tanstack/react-router';
 import { AppLayout } from './AppLayout';
 import { ExecutiveDashboard } from './views/ExecutiveDashboard';
@@ -11,6 +12,9 @@ import { FinancialReports } from './views/FinancialReports';
 import { UsersManagement } from './views/UsersManagement';
 import { AboutSystem } from './views/AboutSystem';
 import { CommercialSales } from './views/CommercialSales';
+import { SettingsView } from './views/SettingsView';
+import { HrEmployeesView } from './views/HrEmployeesView';
+import { HrPayrollView } from './views/HrPayrollView';
 
 // Root Route (Layout)
 export const rootRoute = createRootRoute({
@@ -78,6 +82,12 @@ const usersRoute = createRoute({
   component: UsersManagement,
 });
 
+const settingsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/settings',
+  component: SettingsView,
+});
+
 const aboutRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/about',
@@ -89,6 +99,29 @@ const salesRoute = createRoute({
   path: '/sales',
   component: CommercialSales,
 });
+
+const employeesRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/employees',
+  component: HrEmployeesView,
+});
+
+const payrollRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/payroll',
+  component: HrPayrollView,
+});
+
+// 404 Not Found Component
+const NotFoundView: React.FC = () => (
+  <div dir="rtl" className="min-h-[60vh] flex flex-col items-center justify-center p-8 space-y-4 text-center">
+    <div className="text-6xl font-black text-slate-300 dark:text-slate-700">404</div>
+    <h2 className="text-xl font-extrabold text-slate-900 dark:text-white">الصفحة غير موجودة</h2>
+    <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm">
+      الرابط الذي تحاول الوصول إليه غير صالح أو أن الصفحة قد تم نقلها.
+    </p>
+  </div>
+);
 
 // Route Tree
 const routeTree = rootRoute.addChildren([
@@ -102,12 +135,18 @@ const routeTree = rootRoute.addChildren([
   salesRoute,
   accountingRoute,
   financialRoute,
+  employeesRoute,
+  payrollRoute,
   usersRoute,
+  settingsRoute,
   aboutRoute,
 ]);
 
 // Router Instance
-export const router = createRouter({ routeTree });
+export const router = createRouter({
+  routeTree,
+  defaultNotFoundComponent: NotFoundView,
+});
 
 // Register Router types
 declare module '@tanstack/react-router' {

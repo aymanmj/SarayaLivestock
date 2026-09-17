@@ -11,6 +11,11 @@ try {
     Write-Output 'Protected storage permissions verified.'
     exit 0
 } catch {
-    Write-Error "Storage hardening failed; installation must not continue. $($_.Exception.Message)" -ErrorAction Continue
+    $err = "Storage hardening failed; installation must not continue. $($_.Exception.Message)"
+    Write-Error $err -ErrorAction Continue
+    try {
+        $logPath = Join-Path $env:TEMP 'saraya-storage-error.log'
+        Set-Content -LiteralPath $logPath -Value "$err`n$($_.ScriptStackTrace)" -Force
+    } catch {}
     exit 1
 }

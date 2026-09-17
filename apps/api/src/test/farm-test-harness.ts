@@ -120,38 +120,29 @@ export function matchesFilter(item: any, where: any, state?: FarmState): boolean
     if (filter && typeof filter === 'object' && !(filter instanceof Date)) {
       if ('equals' in filter && val !== filter.equals) return false;
       if ('not' in filter && val === filter.not) return false;
-      if ('in' in filter && (!Array.isArray(filter.in) || !filter.in.includes(val))) return false;
-      if ('notIn' in filter && Array.isArray(filter.notIn) && filter.notIn.includes(val)) return false;
+      const f = filter as any;
+      if ('equals' in f && val !== f.equals) return false;
+      if ('not' in f && val === f.not) return false;
+      if ('in' in f && (!Array.isArray(f.in) || !f.in.includes(val))) return false;
+      if ('notIn' in f && Array.isArray(f.notIn) && f.notIn.includes(val)) return false;
 
       const toTime = (v: any) => (v instanceof Date ? v.getTime() : typeof v === 'string' && !isNaN(Date.parse(v)) ? new Date(v).getTime() : null);
       const valTime = toTime(val);
 
-      if ('gt' in filter) {
-        const filterTime = toTime(filter.gt);
+      if ('gt' in f) {
+        const filterTime = toTime(f.gt);
         if (valTime !== null && filterTime !== null) {
           if (!(valTime > filterTime)) return false;
-        } else if (!(val > filter.gt)) return false;
+        }
       }
-      if ('gte' in filter) {
-        const filterTime = toTime(filter.gte);
-        if (valTime !== null && filterTime !== null) {
-          if (!(valTime >= filterTime)) return false;
-        } else if (!(val >= filter.gte)) return false;
-      }
-      if ('lt' in filter) {
-        const filterTime = toTime(filter.lt);
-        if (valTime !== null && filterTime !== null) {
-          if (!(valTime < filterTime)) return false;
-        } else if (!(val < filter.lt)) return false;
-      }
-      if ('lte' in filter) {
-        const filterTime = toTime(filter.lte);
+      if ('lte' in f) {
+        const filterTime = toTime(f.lte);
         if (valTime !== null && filterTime !== null) {
           if (!(valTime <= filterTime)) return false;
-        } else if (!(val <= filter.lte)) return false;
+        } else if (!(val <= f.lte)) return false;
       }
-      if ('contains' in filter) {
-        if (!String(val || '').toLowerCase().includes(String(filter.contains).toLowerCase())) return false;
+      if ('contains' in f) {
+        if (!String(val || '').toLowerCase().includes(String(f.contains).toLowerCase())) return false;
       }
       if ('startsWith' in filter) {
         if (!String(val || '').startsWith(String(filter.startsWith))) return false;

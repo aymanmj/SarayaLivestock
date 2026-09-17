@@ -1,6 +1,6 @@
 ﻿# =============================================================================
 # Saraya Livestock — Client Configuration Utility
-# أداة تهيئة اتصال محطة العميل بخادم منظومة سرايا للماشية
+# أداة تهيئة اتصال محطة العميل بخادم منظومة السرايا للماشية
 # =============================================================================
 # Usage:
 #   .\configure-client.ps1 -Hostname "saraya.local:18443" -StationId "STATION-01" -FarmBranch "المزرعة الرئيسية"
@@ -9,7 +9,7 @@
 
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory = $true, HelpMessage = "عنوان خادم سرايا (FQDN أو IP)")]
+    [Parameter(Mandatory = $true, HelpMessage = "عنوان خادم السرايا (FQDN أو IP)")]
     [ValidateNotNullOrEmpty()]
     [string]$Hostname,
 
@@ -132,7 +132,7 @@ public class TrustAll {
 # ---------------------------------------------------------------------------
 Write-Host ""
 Write-Host "=============================================" -ForegroundColor Cyan
-Write-Host " أداة تهيئة محطة سرايا للماشية" -ForegroundColor Cyan
+Write-Host " أداة تهيئة محطة السرايا للماشية" -ForegroundColor Cyan
 Write-Host " Saraya Livestock Client Configuration" -ForegroundColor Cyan
 Write-Host "=============================================" -ForegroundColor Cyan
 

@@ -2,7 +2,7 @@
   "name": "saraya-livestock-desktop",
   "version": "1.0.0",
   "private": true,
-  "description": "منظومة سرايا لإدارة مزارع الماشية والألبان والتسمين - Saraya Livestock ERP Desktop Station",
+  "description": "منظومة السرايا لإدارة مزارع الماشية والألبان والتسمين - Saraya Livestock ERP Desktop Station",
   "main": "dist/main.js",
   "author": "Saraya Solutions",
   "scripts": {
@@ -15,11 +15,12 @@
   },
   "build": {
     "appId": "com.saraya.livestock",
-    "productName": "سرايا لإدارة الماشية والألبان",
+    "productName": "السرايا لإدارة الماشية والألبان",
     "directories": {
       "output": "dist-electron"
     },
     "asar": true,
+    "asarUnpack": ["**/*.node", "**/serialport/**", "**/node-thermal-printer/**"],
     "artifactName": "SarayaLivestock-Client-${version}-${arch}-Setup.${ext}",
     "files": [
       "dist/**/*",
@@ -35,8 +36,8 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "سرايا لإدارة الماشية والألبان",
-      "uninstallDisplayName": "سرايا لإدارة الماشية والألبان",
+      "shortcutName": "السرايا لإدارة الماشية والألبان",
+      "uninstallDisplayName": "السرايا لإدارة الماشية والألبان",
       "language": "1025",
       "deleteAppDataOnUninstall": false
     }

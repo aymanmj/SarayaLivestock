@@ -1,7 +1,7 @@
 <service>
   <id>SarayaAPI</id>
   <name>Saraya Livestock - API Server</name>
-  <description>خادم الواجهات البرمجية NestJS لمنظومة سرايا لإدارة مزارع الماشية والألبان</description>
+  <description>Central API and Backend Service for Saraya Livestock Management System</description>
   <executable>{{INSTALL_DIR}}\node\node.exe</executable>
   <arguments>-r dotenv/config "{{INSTALL_DIR}}\server\dist\main.js"</arguments>
   <workingdirectory>{{INSTALL_DIR}}\server</workingdirectory>

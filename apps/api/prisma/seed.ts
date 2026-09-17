@@ -1,4 +1,4 @@
-import { PrismaClient, Species, Gender, Purpose, AnimalStatus, LifeStage, SectorType, UserRole, MilkingShift, InseminationType, PregnancyResult, CostCenterType, TransactionType } from '@prisma/client';
+﻿import { PrismaClient, Species, Gender, Purpose, AnimalStatus, LifeStage, SectorType, UserRole, MilkingShift, InseminationType, PregnancyResult, CostCenterType, TransactionType } from '@prisma/client';
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
 import * as bcrypt from 'bcrypt';
@@ -28,7 +28,7 @@ async function main() {
   // 1. إنشاء المؤسسة (Organization)
   const org = await prisma.organization.create({
     data: {
-      name: 'مجموعة سرايا للاستثمار والإنتاج الزراعي والحيواني',
+      name: 'مجموعة السرايا للاستثمار والإنتاج الزراعي والحيواني',
       taxNumber: '300987654300003',
       phone: '+966500000000',
     },

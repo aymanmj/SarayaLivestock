@@ -50,6 +50,39 @@ export class UsersService {
     return user;
   }
 
+  async updateUser(id: string, orgId: string, data: { fullName: string; username: string; email?: string }, actor: AuditActor) {
+    return this.prisma.$transaction(async tx => {
+      const user = await this.assertUserInOrganization(tx, id, orgId);
+
+      const existingUsername = await tx.user.findFirst({
+        where: { username: data.username, orgId, id: { not: id } },
+      });
+      if (existingUsername) throw new BadRequestException('اسم المستخدم مسجل مسبقاً');
+
+      const updated = await tx.user.update({
+        where: { id },
+        data: {
+          fullName: data.fullName,
+          username: data.username,
+          email: data.email || null,
+        },
+      });
+
+      await appendDomainAudit(tx, actor, {
+        action: 'user.updated',
+        entityType: 'user',
+        entityId: id,
+        metadata: { oldUsername: user.username, newUsername: updated.username },
+      });
+
+      return {
+        id: updated.id,
+        username: updated.username,
+        fullName: updated.fullName,
+      };
+    });
+  }
+
   async updateRole(id: string, role: UserRole, orgId: string, actor: AuditActor) {
     return this.prisma.$transaction(async tx => {
       const user = await this.assertUserInOrganization(tx, id, orgId);

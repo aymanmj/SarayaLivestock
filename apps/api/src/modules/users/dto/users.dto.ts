@@ -12,3 +12,18 @@ export class ResetPasswordDto {
   @MaxLength(200)
   password: string;
 }
+
+export class UpdateUserDto {
+  @IsString()
+  @MaxLength(100)
+  fullName: string;
+
+  @IsString()
+  @MinLength(3)
+  @MaxLength(50)
+  username: string;
+
+  @IsString()
+  @MaxLength(255)
+  email?: string;
+}

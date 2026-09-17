@@ -16,18 +16,30 @@ export class LicenseCryptoService {
   }
 
   private loadPublicKey(): void {
-        let pubKeyPath = path.join(__dirname, 'saraya-license-public.pem');
-    if (!fs.existsSync(pubKeyPath)) {
-      pubKeyPath = path.join(process.cwd(), 'src/modules/license/saraya-license-public.pem');
-    }
-    if (!fs.existsSync(pubKeyPath)) {
-      pubKeyPath = path.join(process.cwd(), 'apps/api/src/modules/license/saraya-license-public.pem');
-    }
-    try {
-      if (fs.existsSync(pubKeyPath)) {
-        this.publicKeyCache = fs.readFileSync(pubKeyPath, 'utf8');
+    // المسار الأساسي: من مجلد dist/ بعد بناء NestJS (nest-cli.json يشمل *.pem في الأصول)
+    const primaryPath = path.join(__dirname, 'saraya-license-public.pem');
+    // المسار البديل: مجلد المصادر أثناء التطوير المحلي فقط
+    const devFallbackPath = path.join(process.cwd(), 'src', 'modules', 'license', 'saraya-license-public.pem');
+
+    const candidates = [primaryPath, devFallbackPath];
+
+    for (const candidate of candidates) {
+      try {
+        if (fs.existsSync(candidate)) {
+          this.publicKeyCache = fs.readFileSync(candidate, 'utf8');
+          this.logger.log(`🔑 تم تحميل المفتاح العام للترخيص من: ${candidate}`);
+          return;
+        }
+      } catch (err: any) {
+        this.logger.warn(`⚠️ فشل قراءة مفتاح الترخيص من ${candidate}: ${err.message}`);
       }
-    } catch {}
+    }
+
+    this.logger.error(
+      `❌ تعذر العثور على المفتاح العام للترخيص (saraya-license-public.pem). ` +
+      `المسارات المفحوصة: ${candidates.join(', ')}. ` +
+      `نظام التراخيص سيرفض جميع مفاتيح التفعيل.`
+    );
   }
 
   /**

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { 
   Building2, 
   User, 
@@ -51,7 +51,7 @@ export const AboutSystem: React.FC = () => {
                 </span>
               </div>
               <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-white mt-2 tracking-tight">
-                سرايا لإدارة الماشية والألبان والإنتاج الحيواني
+                السرايا لإدارة الماشية والألبان والإنتاج الحيواني
               </h1>
               <p className="text-xs text-slate-700 dark:text-slate-300 mt-1 max-w-2xl leading-relaxed">
                 المنظومة السحابية والمكتبية المتكاملة لإدارة مزارع الأبقار والأغنام والماعز، محالب الحلب الآلي، دورات التناسل، ومصانع الأعلاف وفق أعلى المعايير الدولية.

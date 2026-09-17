@@ -1,0 +1,7 @@
+{
+  "probe": "old-password login races with completed password reset",
+  "storage": "in-memory fake Prisma; no database operations",
+  "passwordChanged": true,
+  "oldPasswordLoginSucceeded": true,
+  "sessionStillAccepted": true
+}

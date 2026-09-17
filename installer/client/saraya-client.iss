@@ -1,13 +1,13 @@
-; =============================================================================
+﻿; =============================================================================
 ; Saraya Livestock Client Installer — Inno Setup 6 Script
-; مثبت واجهة العميل لمنظومة سرايا لإدارة مزارع الماشية والألبان والتسمين
+; مثبت واجهة العميل لمنظومة السرايا لإدارة مزارع الماشية والألبان والتسمين
 ; =============================================================================
 ; Build:  iscc.exe "installer\client\saraya-client.iss"
 ; Output: dist-installer\SarayaLivestock-Client-<ver>-x64-Setup.exe
 ; =============================================================================
 
 #define MyAppName          "Saraya Livestock Client"
-#define MyAppNameAr        "سرايا لإدارة الماشية والألبان — واجهة العميل"
+#define MyAppNameAr        "السرايا لإدارة الماشية والألبان — واجهة العميل"
 #define MyAppVersion       "1.0.0"
 #define MyAppPublisher     "Saraya Solutions"
 #define MyAppURL           "https://saraya-livestock.com"
@@ -61,7 +61,7 @@ Name: "arabic"; MessagesFile: "compiler:Languages\Arabic.isl"
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Messages]
-arabic.BeveledLabel=منظومة سرايا لإدارة مزارع الماشية والألبان والتسمين — واجهة العميل
+arabic.BeveledLabel=منظومة السرايا لإدارة مزارع الماشية والألبان والتسمين — واجهة العميل
 
 ; =============================================================================
 ; Files Section
@@ -90,7 +90,7 @@ Name: "{commonappdata}\SarayaLivestock"; Flags: uninsneveruninstall; Check: IsAd
 [Icons]
 ; Desktop shortcut
 Name: "{autodesktop}\{#MyAppNameAr}"; Filename: "{app}\{#MyAppExeName}"; \
-  Comment: "تشغيل منظومة سرايا لإدارة مزارع الماشية والألبان والتسمين"
+  Comment: "تشغيل منظومة السرايا لإدارة مزارع الماشية والألبان والتسمين"
 
 ; Start menu group
 Name: "{group}\{#MyAppNameAr}"; Filename: "{app}\{#MyAppExeName}"
@@ -104,7 +104,7 @@ Name: "{group}\إلغاء تثبيت واجهة العميل"; Filename: "{unins
 ; =============================================================================
 [Run]
 Filename: "{app}\{#MyAppExeName}"; \
-  Description: "تشغيل منظومة سرايا لإدارة الماشية الآن (Launch Application)"; \
+  Description: "تشغيل منظومة السرايا لإدارة الماشية الآن (Launch Application)"; \
   Flags: nowait postinstall skipifsilent
 
 ; =============================================================================
@@ -314,7 +314,7 @@ begin
   ServerPage := CreateInputQueryPage(wpSelectDir,
     'إعدادات الاتصال بالخادم',
     'Server Connection Settings',
-    'أدخل عنوان خادم سرايا وبيانات المحطة لتهيئة واجهة العميل:' + #13#10 +
+    'أدخل عنوان خادم السرايا وبيانات المحطة لتهيئة واجهة العميل:' + #13#10 +
     'Enter the Saraya server address and station details:');
   ServerPage.Add('عنوان الخادم والمنفذ — Server Hostname/IP and Port:', False);
   ServerPage.Add('معرّف المحطة — Station ID:', False);
@@ -502,7 +502,7 @@ begin
   ResultLog := ResultLog + '  • معرّف المحطة : ' + StationId + #13#10;
   ResultLog := ResultLog + '  • اسم الفرع    : ' + FarmBranch + #13#10#13#10;
   ResultLog := ResultLog + 'رابط الوصول للخادم: https://' + Hostname + #13#10#13#10;
-  ResultLog := ResultLog + 'ملاحظة: تأكد من أن خادم سرايا مُثَبَّت ومُشَغَّل على ' + Hostname + #13#10;
+  ResultLog := ResultLog + 'ملاحظة: تأكد من أن خادم السرايا مُثَبَّت ومُشَغَّل على ' + Hostname + #13#10;
   ResultLog := ResultLog + 'وأن شهادة CA مُسجَّلة على هذا الجهاز للاتصال الآمن.' + #13#10;
   ResultLog := ResultLog + 'Note: Ensure the Saraya server is installed and running on ' + Hostname + #13#10;
 
@@ -516,7 +516,7 @@ function InitializeUninstall(): Boolean;
 begin
   Result := True;
   if SuppressibleMsgBox(
-       'سيتم إزالة واجهة العميل لمنظومة سرايا للماشية.' + #13#10 +
+       'سيتم إزالة واجهة العميل لمنظومة السرايا للماشية.' + #13#10 +
        'ملف إعدادات الاتصال (client.json) سيبقى محفوظاً.' + #13#10#13#10 +
        'هل تريد المتابعة؟' + #13#10 +
        'The Saraya Livestock client will be removed.' + #13#10 +

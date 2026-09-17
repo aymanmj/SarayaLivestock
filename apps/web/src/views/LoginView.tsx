@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { 
   Building2, 
   Lock, 
@@ -77,7 +77,7 @@ export const LoginView: React.FC = () => {
             <Building2 className="w-8 h-8" />
           </div>
           <div>
-            <h1 className="text-xl font-extrabold text-slate-900 dark:text-white tracking-tight">سرايا للإنتاج الحيواني</h1>
+            <h1 className="text-xl font-extrabold text-slate-900 dark:text-white tracking-tight">السرايا للإنتاج الحيواني</h1>
             <p className="text-xs text-emerald-700 dark:text-emerald-400 font-bold uppercase tracking-wider">Saraya Livestock & Dairy ERP</p>
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400">سجل الدخول للوصول إلى محطات القطيع والمحالب والتقارير</p>

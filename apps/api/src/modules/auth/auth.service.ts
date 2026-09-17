@@ -41,7 +41,7 @@ export class AuthService implements OnModuleInit {
 
       const org = await this.prisma.organization.findFirst();
       const farm = await this.prisma.farm.findFirst();
-      const orgId = org ? org.id : (await this.prisma.organization.create({ data: { name: 'مزارع سرايا للإنتاج الحيواني' } })).id;
+      const orgId = org ? org.id : (await this.prisma.organization.create({ data: { name: 'السرايا للإنتاج الحيواني' } })).id;
       const farmId = farm ? farm.id : (await this.prisma.farm.create({ data: { name: 'المزرعة الرئيسية', orgId } })).id;
 
       const demoPassword = process.env.DEMO_USER_PASSWORD;
@@ -340,6 +340,15 @@ export class AuthService implements OnModuleInit {
         email: true,
         role: true,
         farmId: true,
+        farm: {
+          select: {
+            id: true,
+            name: true,
+            location: true,
+            managerName: true,
+            phone: true,
+          }
+        },
         isActive: true,
         createdAt: true,
       },

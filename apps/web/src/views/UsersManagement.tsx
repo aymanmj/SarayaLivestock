@@ -137,6 +137,40 @@ export const UsersManagement: React.FC = () => {
     }
   };
 
+  const [editingUserId, setEditingUserId] = useState<string | null>(null);
+  const [editUsername, setEditUsername] = useState('');
+  const [editFullName, setEditFullName] = useState('');
+  const [editEmail, setEditEmail] = useState('');
+
+  const openEditModal = (u: SystemUser) => {
+    setEditingUserId(u.id);
+    setEditUsername(u.username);
+    setEditFullName(u.fullName);
+    setEditEmail(u.email || '');
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingUserId || !editUsername || !editFullName) return;
+
+    try {
+      const updated = unwrapGenerated(await generatedApiClient.PATCH('/api/v1/users/{id}', {
+        params: { path: { id: editingUserId } },
+        body: {
+          username: editUsername,
+          fullName: editFullName,
+          email: editEmail || undefined,
+        },
+      }), 'تعديل بيانات المستخدم');
+      
+      setUsers(prev => prev.map(u => u.id === editingUserId ? { ...u, ...updated } : u));
+      setFeedback(`✓ تم تحديث بيانات (${editFullName}) بنجاح.`);
+      setEditingUserId(null);
+    } catch (error: any) {
+      setFeedback(error.message || 'تعذر تعديل المستخدم');
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -272,6 +306,66 @@ export const UsersManagement: React.FC = () => {
         </div>
       )}
 
+      {/* Edit User Modal */}
+      {editingUserId && (
+        <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-emerald-500/40 shadow-2xl animate-in fade-in duration-200">
+          <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+            <Shield className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
+            تعديل بيانات المستخدم
+          </h3>
+
+          <form onSubmit={handleEditSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+            <div>
+              <label className="block text-slate-500 dark:text-slate-400 mb-1 font-semibold">اسم المستخدم (Username)</label>
+              <input
+                type="text"
+                value={editUsername}
+                onChange={e => setEditUsername(e.target.value)}
+                className="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl p-2.5 text-white focus:border-emerald-500 focus:outline-none"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-slate-500 dark:text-slate-400 mb-1 font-semibold">الاسم ثلاثي</label>
+              <input
+                type="text"
+                value={editFullName}
+                onChange={e => setEditFullName(e.target.value)}
+                className="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl p-2.5 text-white focus:border-emerald-500 focus:outline-none"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-slate-500 dark:text-slate-400 mb-1 font-semibold">البريد الإلكتروني</label>
+              <input
+                type="email"
+                value={editEmail}
+                onChange={e => setEditEmail(e.target.value)}
+                className="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl p-2.5 text-white focus:border-emerald-500 focus:outline-none"
+              />
+            </div>
+
+            <div className="md:col-span-3 flex justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setEditingUserId(null)}
+                className="px-6 py-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 rounded-xl font-bold transition"
+              >
+                إلغاء
+              </button>
+              <button
+                type="submit"
+                className="px-6 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold shadow-lg shadow-emerald-600/20 transition"
+              >
+                حفظ التعديلات
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
       {/* Users Table */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-xl">
         <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
@@ -337,7 +431,13 @@ export const UsersManagement: React.FC = () => {
                     )}
                   </td>
 
-                  <td className="py-3 px-4 text-left">
+                  <td className="py-3 px-4 text-left flex items-center justify-end gap-2">
+                    <button
+                      onClick={() => openEditModal(u)}
+                      className="px-3 py-1 rounded-lg text-[11px] font-bold transition border bg-indigo-100 dark:bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 border-indigo-500/30"
+                    >
+                      تعديل
+                    </button>
                     <button
                       onClick={() => handleToggleStatus(u.id, u.isActive)}
                       className={`px-3 py-1 rounded-lg text-[11px] font-bold transition border ${

@@ -14,23 +14,29 @@ function required(name: string): string {
 
 async function main() {
   const databaseUrl = required('DATABASE_URL');
-  const username = required('INITIAL_ADMIN_USERNAME');
-  const password = required('INITIAL_ADMIN_PASSWORD');
-  const fullName = required('INITIAL_ADMIN_FULL_NAME');
-  const organizationName = required('INITIAL_ORG_NAME');
-  const farmName = required('INITIAL_FARM_NAME');
-
-  if (password.length < 12) {
-    throw new Error('INITIAL_ADMIN_PASSWORD must contain at least 12 characters');
-  }
-
   const pool = new Pool({ connectionString: databaseUrl });
   const prisma = new PrismaClient({ adapter: new PrismaPg(pool) });
 
   try {
     const existingUsers = await prisma.user.count();
     if (existingUsers > 0) {
-      throw new Error('Provisioning refused because at least one user already exists');
+      console.log('Administrator account already exists; skipping provisioning.');
+      return;
+    }
+
+    const username = process.env.INITIAL_ADMIN_USERNAME?.trim();
+    const password = process.env.INITIAL_ADMIN_PASSWORD?.trim();
+    const fullName = process.env.INITIAL_ADMIN_FULL_NAME?.trim() || 'مدير النظام';
+    const organizationName = process.env.INITIAL_ORG_NAME?.trim() || 'مزارع السرايا للإنتاج الحيواني';
+    const farmName = process.env.INITIAL_FARM_NAME?.trim() || 'المزرعة الرئيسية';
+
+    if (!username || !password) {
+      console.log('No initial admin credentials specified; skipping provisioning.');
+      return;
+    }
+
+    if (password.length < 12) {
+      throw new Error('INITIAL_ADMIN_PASSWORD must contain at least 12 characters');
     }
 
     const passwordHash = await bcrypt.hash(password, 12);

@@ -1,6 +1,7 @@
 import { app, BrowserWindow, ipcMain, Menu, safeStorage } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
+import { autoUpdater } from 'electron-updater';
 
 // فرض اتجاه الواجهة والقوائم من اليمين إلى اليسار (RTL) باللغة العربية
 app.commandLine.appendSwitch('force-ui-direction', 'rtl');
@@ -61,7 +62,7 @@ function createWindow() {
     height: 900,
     minWidth: 1024,
     minHeight: 700,
-    title: 'منظومة سرايا لإدارة مزارع الماشية والألبان والتسمين - Saraya Livestock ERP',
+    title: 'منظومة السرايا لإدارة مزارع الماشية والألبان والتسمين - Saraya Livestock ERP',
     backgroundColor: '#020617',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -78,6 +79,38 @@ function createWindow() {
       mainWindow.maximize();
       mainWindow.show();
     }
+  });
+
+  // ---------------------------------------------------------------------------
+  // أمان: سياسة أمان المحتوى (CSP) لحماية تطبيق سطح المكتب
+  // ---------------------------------------------------------------------------
+  mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
+    callback({
+      responseHeaders: {
+        ...details.responseHeaders,
+        'Content-Security-Policy': [
+          "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://localhost:* https://*.saraya.local https://*.saraya.ly; img-src 'self' data:; font-src 'self' data:;",
+        ],
+      },
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // أمان: منع التنقل إلى روابط خارجية أو فتح نوافذ غير مصرح بها
+  // ---------------------------------------------------------------------------
+  mainWindow.webContents.on('will-navigate', (event, navigationUrl) => {
+    const parsedUrl = new URL(navigationUrl);
+    const allowed = ['localhost', '127.0.0.1', 'saraya.local'];
+    const isAllowed = parsedUrl.protocol === 'file:' || allowed.some(h => parsedUrl.hostname.endsWith(h));
+    if (!isAllowed) {
+      event.preventDefault();
+      console.warn(`[Security] Blocked navigation to: ${navigationUrl}`);
+    }
+  });
+
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    console.warn(`[Security] Blocked popup window to: ${url}`);
+    return { action: 'deny' };
   });
 
   // محاولة الاتصال بسيرفر Vite (http://localhost:3050) أولاً مع الرجوع التلقائي لملفات web/dist
@@ -136,12 +169,12 @@ function createWindow() {
       label: 'مساعدة',
       submenu: [
         {
-          label: 'حول منظومة سرايا للماشية',
+          label: 'حول منظومة السرايا للماشية',
           click: () => {
             const { dialog } = require('electron');
             dialog.showMessageBox({
-              title: 'منظومة سرايا لإدارة مزارع الماشية',
-              message: 'Saraya Livestock & Dairy Farm ERP\nالإصدار: 1.0.0 Desktop Station\nحقوق التطوير محفوظة لمجموعة سرايا © 2026',
+              title: 'منظومة السرايا لإدارة مزارع الماشية',
+              message: 'Saraya Livestock & Dairy Farm ERP\nالإصدار: 1.0.0 Desktop Station\nحقوق التطوير محفوظة لمجموعة السرايا © 2026',
               type: 'info',
             });
           },
@@ -226,7 +259,7 @@ ipcMain.handle('print-receipt', async (event, receiptData) => {
     }
 
     printer.alignCenter();
-    printer.println('--- منظومة سرايا لإدارة الماشية ---');
+    printer.println('--- منظومة السرايا لإدارة الماشية ---');
     printer.println(receiptData.title || 'إيصال استلام');
     printer.drawLine();
     
@@ -284,7 +317,49 @@ ipcMain.handle('session:clear-refresh-token', async () => {
   return true;
 });
 
-app.whenReady().then(createWindow);
+// ---------------------------------------------------------------------------
+// التحديث التلقائي: فحص التحديثات عند بدء التشغيل (Electron Auto-Updater)
+// ---------------------------------------------------------------------------
+function initAutoUpdater() {
+  if (!isProductionRuntime()) return;
+
+  autoUpdater.autoDownload = true;
+  autoUpdater.autoInstallOnAppQuit = true;
+
+  autoUpdater.on('update-available', (info) => {
+    console.log(`[AutoUpdate] تحديث جديد متاح: v${info.version}`);
+    if (mainWindow) {
+      mainWindow.webContents.executeJavaScript(
+        `window.dispatchEvent(new CustomEvent('saraya:update-available', { detail: { version: '${info.version}' } }))`
+      );
+    }
+  });
+
+  autoUpdater.on('update-downloaded', (info) => {
+    console.log(`[AutoUpdate] تم تنزيل التحديث v${info.version}، سيُثبت عند إغلاق التطبيق.`);
+    const { dialog } = require('electron');
+    dialog.showMessageBox({
+      type: 'info',
+      title: 'تحديث جاهز للتثبيت',
+      message: `تم تنزيل تحديث جديد (الإصدار ${info.version}). سيتم تثبيته تلقائياً عند إعادة تشغيل التطبيق.`,
+      buttons: ['إعادة التشغيل الآن', 'لاحقاً'],
+      defaultId: 0,
+    }).then(({ response }) => {
+      if (response === 0) autoUpdater.quitAndInstall();
+    });
+  });
+
+  autoUpdater.on('error', (err) => {
+    console.error('[AutoUpdate] خطأ في التحديث التلقائي:', err.message);
+  });
+
+  autoUpdater.checkForUpdatesAndNotify();
+}
+
+app.whenReady().then(() => {
+  createWindow();
+  initAutoUpdater();
+});
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {

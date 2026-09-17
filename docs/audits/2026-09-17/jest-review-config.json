@@ -1,0 +1,18 @@
+{
+  "moduleFileExtensions": [
+    "js",
+    "json",
+    "ts"
+  ],
+  "rootDir": "E:/SarayaLivestock/apps/api/src",
+  "cacheDirectory": "<rootDir>/../.jest-cache",
+  "testRegex": ".*\\.spec\\.ts$",
+  "transform": {
+    "^.+\\.(t|j)s$": "E:/SarayaLivestock/apps/api/node_modules/ts-jest/dist/index.js"
+  },
+  "collectCoverageFrom": [
+    "**/*.(t|j)s"
+  ],
+  "coverageDirectory": "../coverage",
+  "testEnvironment": "node"
+}

@@ -346,6 +346,44 @@
         "tags": [
           "Users"
         ]
+      },
+      "patch": {
+        "operationId": "Users_updateUser",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserMutationResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Users"
+        ]
       }
     },
     "/api/v1/users/{id}/role": {
@@ -2532,10 +2570,406 @@
           "sales"
         ]
       }
+    },
+    "/api/v1/farms/{id}": {
+      "patch": {
+        "operationId": "Farms_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateFarmDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "تم تحديث بيانات المزرعة بنجاح"
+          }
+        },
+        "tags": [
+          "Farms"
+        ]
+      }
+    },
+    "/api/v1/hr/employees": {
+      "post": {
+        "operationId": "Employees_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateEmployeeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "تم إضافة الموظف بنجاح"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "HR - Employees"
+        ]
+      },
+      "get": {
+        "operationId": "Employees_findAll",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "قائمة الموظفين"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "HR - Employees"
+        ]
+      }
+    },
+    "/api/v1/hr/employees/{id}": {
+      "get": {
+        "operationId": "Employees_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "بيانات الموظف"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "HR - Employees"
+        ]
+      },
+      "patch": {
+        "operationId": "Employees_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateEmployeeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "تم تحديث بيانات الموظف"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "HR - Employees"
+        ]
+      },
+      "delete": {
+        "operationId": "Employees_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "تم حذف الموظف"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "HR - Employees"
+        ]
+      }
+    },
+    "/api/v1/hr/payroll/generate": {
+      "post": {
+        "operationId": "Payroll_generatePayroll",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GeneratePayrollPeriodDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "تم إنشاء كشوف الرواتب بنجاح"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "HR - Payroll"
+        ]
+      }
+    },
+    "/api/v1/hr/payroll/{id}/approve": {
+      "post": {
+        "operationId": "Payroll_approvePayroll",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "تم اعتماد كشوف الرواتب"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "HR - Payroll"
+        ]
+      }
+    },
+    "/api/v1/hr/payroll/{id}": {
+      "delete": {
+        "operationId": "Payroll_deleteDraft",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "تم حذف مسودة الرواتب"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "HR - Payroll"
+        ]
+      }
+    },
+    "/api/v1/hr/payroll/{id}/pay": {
+      "post": {
+        "operationId": "Payroll_payPayroll",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProcessPayrollPaymentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "تم صرف الرواتب"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "HR - Payroll"
+        ]
+      }
+    },
+    "/api/v1/hr/payroll/periods": {
+      "get": {
+        "operationId": "Payroll_findAllPeriods",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "قائمة فترات الرواتب"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "HR - Payroll"
+        ]
+      }
+    },
+    "/api/v1/hr/payroll/periods/{id}/slips": {
+      "get": {
+        "operationId": "Payroll_findSlips",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "تفاصيل القسائم لفترة الراتب"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "HR - Payroll"
+        ]
+      }
+    },
+    "/api/v1/hr/advances/{employeeId}": {
+      "post": {
+        "operationId": "Advances_requestAdvance",
+        "parameters": [
+          {
+            "name": "employeeId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestAdvanceDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "تم صرف السلفة بنجاح"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "HR - Advances"
+        ]
+      }
+    },
+    "/api/v1/hr/advances": {
+      "get": {
+        "operationId": "Advances_findAllAdvances",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "قائمة السلف"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "HR - Advances"
+        ]
+      }
     }
   },
   "info": {
-    "title": "منظومة سرايا لإدارة مزارع الماشية والألبان والتسمين - SarayaLivestock API",
+    "title": "منظومة السرايا لإدارة مزارع الماشية والألبان والتسمين - SarayaLivestock API",
     "description": "واجهات برمجة التطبيقات المتكاملة لإدارة القطيع، التناسل، الحلب، التسمين، التغذية، والمالية",
     "version": "1.0",
     "contact": {}
@@ -3162,23 +3596,26 @@
           "farm"
         ]
       },
-      "UpdateUserRoleDto": {
+      "UpdateUserDto": {
         "type": "object",
         "properties": {
-          "role": {
+          "fullName": {
             "type": "string",
-            "enum": [
-              "SUPER_ADMIN",
-              "FARM_MANAGER",
-              "VETERINARIAN",
-              "MILKER",
-              "ACCOUNTANT",
-              "WORKER"
-            ]
+            "maxLength": 100
+          },
+          "username": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 50
+          },
+          "email": {
+            "type": "string",
+            "maxLength": 255
           }
         },
         "required": [
-          "role"
+          "fullName",
+          "username"
         ]
       },
       "UserMutationResponseDto": {
@@ -3211,6 +3648,25 @@
           "fullName",
           "role",
           "isActive"
+        ]
+      },
+      "UpdateUserRoleDto": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "SUPER_ADMIN",
+              "FARM_MANAGER",
+              "VETERINARIAN",
+              "MILKER",
+              "ACCOUNTANT",
+              "WORKER"
+            ]
+          }
+        },
+        "required": [
+          "role"
         ]
       },
       "ResetPasswordDto": {
@@ -7685,6 +8141,221 @@
           "totalMortalityLossLyd",
           "totalDeceasedAnimals",
           "milkPolicyEffectiveDate"
+        ]
+      },
+      "UpdateFarmDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "اسم المنشأة / المزرعة"
+          },
+          "location": {
+            "type": "string",
+            "maxLength": 200,
+            "description": "الموقع / العنوان"
+          },
+          "managerName": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "اسم المدير"
+          },
+          "phone": {
+            "type": "string",
+            "maxLength": 50,
+            "description": "رقم الهاتف"
+          }
+        }
+      },
+      "CreateEmployeeDto": {
+        "type": "object",
+        "properties": {
+          "employeeCode": {
+            "type": "string",
+            "maxLength": 50,
+            "description": "الرقم الوظيفي أو رمز البصمة"
+          },
+          "firstName": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "الاسم الأول"
+          },
+          "lastName": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "اسم العائلة"
+          },
+          "jobTitle": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "المسمى الوظيفي"
+          },
+          "nationalId": {
+            "type": "string",
+            "maxLength": 50,
+            "description": "الرقم القومي / الهوية"
+          },
+          "phone": {
+            "type": "string",
+            "maxLength": 50,
+            "description": "رقم الهاتف"
+          },
+          "hireDate": {
+            "type": "string",
+            "description": "تاريخ التعيين"
+          },
+          "baseSalary": {
+            "type": "number",
+            "minimum": 0,
+            "description": "الراتب الأساسي"
+          },
+          "status": {
+            "enum": [
+              "ACTIVE",
+              "ON_LEAVE",
+              "TERMINATED",
+              "SUSPENDED"
+            ],
+            "type": "string",
+            "default": "ACTIVE"
+          },
+          "bankAccount": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "رقم الحساب البنكي"
+          },
+          "notes": {
+            "type": "string",
+            "description": "ملاحظات"
+          }
+        },
+        "required": [
+          "employeeCode",
+          "firstName",
+          "lastName",
+          "jobTitle",
+          "hireDate",
+          "baseSalary"
+        ]
+      },
+      "UpdateEmployeeDto": {
+        "type": "object",
+        "properties": {
+          "employeeCode": {
+            "type": "string",
+            "maxLength": 50,
+            "description": "الرقم الوظيفي أو رمز البصمة"
+          },
+          "firstName": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "الاسم الأول"
+          },
+          "lastName": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "اسم العائلة"
+          },
+          "jobTitle": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "المسمى الوظيفي"
+          },
+          "nationalId": {
+            "type": "string",
+            "maxLength": 50,
+            "description": "الرقم القومي / الهوية"
+          },
+          "phone": {
+            "type": "string",
+            "maxLength": 50,
+            "description": "رقم الهاتف"
+          },
+          "baseSalary": {
+            "type": "number",
+            "minimum": 0,
+            "description": "الراتب الأساسي"
+          },
+          "status": {
+            "enum": [
+              "ACTIVE",
+              "ON_LEAVE",
+              "TERMINATED",
+              "SUSPENDED"
+            ],
+            "type": "string"
+          },
+          "bankAccount": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "رقم الحساب البنكي"
+          },
+          "notes": {
+            "type": "string",
+            "description": "ملاحظات"
+          }
+        }
+      },
+      "GeneratePayrollPeriodDto": {
+        "type": "object",
+        "properties": {
+          "startDate": {
+            "type": "string",
+            "description": "تاريخ بداية الفترة"
+          },
+          "endDate": {
+            "type": "string",
+            "description": "تاريخ نهاية الفترة"
+          },
+          "monthName": {
+            "type": "string",
+            "description": "اسم شهر الراتب"
+          }
+        },
+        "required": [
+          "startDate",
+          "endDate",
+          "monthName"
+        ]
+      },
+      "ProcessPayrollPaymentDto": {
+        "type": "object",
+        "properties": {
+          "paymentAccountId": {
+            "type": "string",
+            "description": "رقم حساب الدفع (النقدية أو البنك)"
+          }
+        },
+        "required": [
+          "paymentAccountId"
+        ]
+      },
+      "RequestAdvanceDto": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "number",
+            "minimum": 1,
+            "description": "مبلغ السلفة"
+          },
+          "requestDate": {
+            "type": "string",
+            "description": "تاريخ الطلب"
+          },
+          "reason": {
+            "type": "string",
+            "description": "سبب السلفة"
+          },
+          "paymentAccountId": {
+            "type": "string",
+            "description": "رقم الحساب للصرف (نقدية/بنك)"
+          }
+        },
+        "required": [
+          "amount",
+          "requestDate",
+          "paymentAccountId"
         ]
       }
     }

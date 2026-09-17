@@ -3,7 +3,7 @@ import { DocumentBuilder, OpenAPIObject, SwaggerModule } from '@nestjs/swagger';
 
 export function createOpenApiDocument(app: INestApplication): OpenAPIObject {
   const config = new DocumentBuilder()
-    .setTitle('منظومة سرايا لإدارة مزارع الماشية والألبان والتسمين - SarayaLivestock API')
+    .setTitle('منظومة السرايا لإدارة مزارع الماشية والألبان والتسمين - SarayaLivestock API')
     .setDescription('واجهات برمجة التطبيقات المتكاملة لإدارة القطيع، التناسل، الحلب، التسمين، التغذية، والمالية')
     .setVersion('1.0')
     .addBearerAuth({

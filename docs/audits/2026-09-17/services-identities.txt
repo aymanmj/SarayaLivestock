@@ -1,0 +1,24 @@
+[SC] QueryServiceConfig SUCCESS
+
+SERVICE_NAME: SarayaAPI
+        TYPE               : 10  WIN32_OWN_PROCESS 
+        START_TYPE         : 2   AUTO_START
+        ERROR_CONTROL      : 1   NORMAL
+        BINARY_PATH_NAME   : "E:\Program Files\Saraya Livestock Server\services\SarayaAPI.exe"
+        LOAD_ORDER_GROUP   : 
+        TAG                : 0
+        DISPLAY_NAME       : Saraya Livestock - API Server
+        DEPENDENCIES       : SarayaPostgreSQL
+        SERVICE_START_NAME : LocalSystem
+[SC] QueryServiceConfig SUCCESS
+
+SERVICE_NAME: SarayaCaddy
+        TYPE               : 10  WIN32_OWN_PROCESS 
+        START_TYPE         : 2   AUTO_START
+        ERROR_CONTROL      : 1   NORMAL
+        BINARY_PATH_NAME   : "E:\Program Files\Saraya Livestock Server\services\SarayaCaddy.exe"
+        LOAD_ORDER_GROUP   : 
+        TAG                : 0
+        DISPLAY_NAME       : Saraya Livestock - Caddy Web Server
+        DEPENDENCIES       : SarayaAPI
+        SERVICE_START_NAME : LocalSystem

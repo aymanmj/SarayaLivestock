@@ -1,0 +1,10 @@
+[
+  {
+    "Path": "E:\\SarayaLivestock\\dist-installer\\SarayaLivestock-Server-1.0.0-x64-Setup-v11.exe",
+    "Hash": "119D2CFF0E2476A452D4550A630ECD44FB90A593C178338B8ECD5E231DFDD39C"
+  },
+  {
+    "Path": "E:\\SarayaLivestock\\dist-installer\\SarayaLivestock-Client-1.0.0-x64-Setup.exe",
+    "Hash": "09D864B078CB5AD13811F1E4904A4D2EFF8717DB9E1128AF2FFE303219493421"
+  }
+]

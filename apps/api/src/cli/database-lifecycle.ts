@@ -382,8 +382,42 @@ async function migrateSafeCommand(connectionString: string, manifestFile?: strin
   }
   const beforePath = resolve(defaultBackupDir, `pre-migration-${sanitizeFilename(target.database)}-${safeTimestamp()}.json`);
   await writeJsonExclusive(beforePath, before);
-  const prismaCli = resolve(apiRoot, 'node_modules/prisma/build/index.js');
-  await runTool(process.execPath, [prismaCli, 'migrate', 'deploy'], { ...process.env, DATABASE_URL: connectionString }, apiRoot);
+  
+  if (beforeInspection.pendingMigrations.length > 0) {
+    const psql = process.env.PG_RESTORE_PATH 
+      ? resolve(dirname(process.env.PG_RESTORE_PATH), 'psql' + (process.platform === 'win32' ? '.exe' : '')) 
+      : 'psql';
+      
+    if (!beforeInspection.hasMigrationTable) {
+      await runTool(psql, ['-v', 'ON_ERROR_STOP=1', ...connectionArgs(target), '-c', `
+        CREATE TABLE IF NOT EXISTS "_prisma_migrations" (
+          "id" VARCHAR(36) PRIMARY KEY,
+          "checksum" VARCHAR(64) NOT NULL,
+          "finished_at" TIMESTAMPTZ,
+          "migration_name" VARCHAR(255) NOT NULL,
+          "logs" TEXT,
+          "rolled_back_at" TIMESTAMPTZ,
+          "started_at" TIMESTAMPTZ NOT NULL DEFAULT now(),
+          "applied_steps_count" INTEGER NOT NULL DEFAULT 0
+        );
+      `], targetEnvironment(target));
+    }
+
+    for (const migrationName of beforeInspection.pendingMigrations) {
+      const migrationPath = resolve(apiRoot, 'prisma/migrations', migrationName, 'migration.sql');
+      console.log(`Applying migration manually via psql: ${migrationName}`);
+      await runTool(psql, ['--single-transaction', '-v', 'ON_ERROR_STOP=1', ...connectionArgs(target), '-f', migrationPath], targetEnvironment(target));
+      
+      const checksum = createHash('sha256').update(await readFile(migrationPath)).digest('hex');
+      const migrationId = randomBytes(18).toString('hex');
+      
+      await runTool(psql, ['-v', 'ON_ERROR_STOP=1', ...connectionArgs(target), '-c', `
+        INSERT INTO "_prisma_migrations" ("id", "checksum", "finished_at", "migration_name", "started_at", "applied_steps_count")
+        VALUES ('${migrationId}', '${checksum}', now(), '${migrationName}', now(), 1);
+      `], targetEnvironment(target));
+    }
+  }
+
   const afterInspection = await inspectDatabase(connectionString);
   assertManagedMigrationState(afterInspection.state, afterInspection.unknownMigrations, afterInspection.failedMigrations);
   if (afterInspection.pendingMigrations.length) {

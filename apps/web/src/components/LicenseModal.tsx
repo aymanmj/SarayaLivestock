@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { 
   X, 
   KeyRound, 
@@ -85,7 +85,7 @@ export const LicenseModal: React.FC<Props> = ({ isOpen, onClose }) => {
 
   const hwid = licenseInfo?.hardwareId || 'غير متاح';
   const whatsappMessage = encodeURIComponent(
-    `السلام عليكم ورحمة الله وبركاته،\nأود تفعيل ترخيص منظومة سرايا لإدارة الماشية والألبان لجهاز بالبصمة العتادية:\n${hwid}\n\nشركة السرايا للتقنية.`
+    `السلام عليكم ورحمة الله وبركاته،\nأود تفعيل ترخيص منظومة السرايا لإدارة الماشية والألبان لجهاز بالبصمة العتادية:\n${hwid}\n\nشركة السرايا للتقنية.`
   );
 
   return (

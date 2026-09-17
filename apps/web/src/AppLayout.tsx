@@ -19,7 +19,9 @@ import {
   Globe,
   Sun,
   Moon,
-  ShoppingBag
+  ShoppingBag,
+  Users,
+  BadgeDollarSign
 } from 'lucide-react';
 
 import { useAuth } from './context/AuthContext';
@@ -81,8 +83,17 @@ export const AppLayout: React.FC = () => {
     ...(role === 'SUPER_ADMIN' || ['FARM_MANAGER', 'ACCOUNTANT', 'VETERINARIAN'].includes(role)
       ? [{ id: 'financial', label: t('nav.financial'), icon: PieChart, badge: 'تحليلي' }]
       : []),
-    ...(role === 'SUPER_ADMIN'
+    ...(role === 'SUPER_ADMIN' || role === 'FARM_MANAGER'
+      ? [{ id: 'employees', label: 'شؤون الموظفين', icon: Users, badge: 'HR' }]
+      : []),
+    ...(role === 'SUPER_ADMIN' || ['FARM_MANAGER', 'ACCOUNTANT'].includes(role)
+      ? [{ id: 'payroll', label: 'الرواتب والأجور', icon: BadgeDollarSign, badge: 'مسيرات' }]
+      : []),
+    ...(role === 'SUPER_ADMIN' || role === 'FARM_MANAGER'
       ? [{ id: 'users', label: t('nav.users'), icon: Shield, badge: 'RBAC' }]
+      : []),
+    ...(role === 'SUPER_ADMIN' || role === 'FARM_MANAGER'
+      ? [{ id: 'settings', label: 'الإعدادات العامة', icon: Building2, badge: 'المزرعة' }]
       : []),
     { id: 'about', label: t('nav.about'), icon: Info, badge: 'السرايا' },
   ];
@@ -99,7 +110,7 @@ export const AppLayout: React.FC = () => {
                 <Building2 className="w-6 h-6" />
               </div>
               <div>
-                <h1 className="font-extrabold text-sm text-slate-900 dark:text-white tracking-tight">سرايا للإنتاج الحيواني</h1>
+                <h1 className="font-extrabold text-sm text-slate-900 dark:text-white tracking-tight">السرايا للإنتاج الحيواني</h1>
                 <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-bold uppercase tracking-wider block">Livestock & Dairy ERP</span>
               </div>
             </div>
@@ -168,8 +179,12 @@ export const AppLayout: React.FC = () => {
         <header className="relative z-50 h-16 bg-white/60 dark:bg-slate-900/60 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800/80 px-6 flex items-center justify-between shrink-0">
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-xs text-emerald-700 dark:text-emerald-400 font-bold bg-emerald-100 dark:bg-emerald-500/10 px-2.5 py-0.5 rounded-lg border border-emerald-300 dark:border-emerald-500/20">الفرع الرئيسي</span>
-              <h2 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">مزرعة سرايا النموذجية (محطة الحلب والتسمين)</h2>
+              <span className="text-xs text-emerald-700 dark:text-emerald-400 font-bold bg-emerald-100 dark:bg-emerald-500/10 px-2.5 py-0.5 rounded-lg border border-emerald-300 dark:border-emerald-500/20">
+                {user?.farm?.location || 'الفرع الرئيسي'}
+              </span>
+              <h2 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
+                {user?.farm?.name || 'السرايا للإنتاج الحيواني'}
+              </h2>
             </div>
           </div>
 

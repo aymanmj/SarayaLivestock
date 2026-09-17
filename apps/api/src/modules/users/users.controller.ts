@@ -2,7 +2,7 @@ import { Controller, Get, Patch, Param, Body, ParseUUIDPipe } from '@nestjs/comm
 import { UsersService } from './users.service';
 import { UserRole } from '@prisma/client';
 import { Roles } from '../auth/roles.decorator';
-import { ResetPasswordDto, UpdateUserRoleDto } from './dto/users.dto';
+import { ResetPasswordDto, UpdateUserRoleDto, UpdateUserDto } from './dto/users.dto';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { AuthenticatedUser } from '../auth/authenticated-user';
 import { DomainAudited } from '../../common/audit/domain-audited.decorator';
@@ -28,6 +28,13 @@ export class UsersController {
   @ApiOkResponse({ type: UserAdministrationResponseDto })
   findOne(@Param('id', new ParseUUIDPipe({ version: '4' })) id: string, @CurrentUser() currentUser: AuthenticatedUser) {
     return this.usersService.findOne(id, currentUser.orgId);
+  }
+
+  @Patch(':id')
+  @DomainAudited()
+  @ApiOkResponse({ type: UserMutationResponseDto })
+  updateUser(@Param('id', new ParseUUIDPipe({ version: '4' })) id: string, @Body() dto: UpdateUserDto, @CurrentUser() currentUser: AuthenticatedUser) {
+    return this.usersService.updateUser(id, currentUser.orgId, dto, currentUser);
   }
 
   @Patch(':id/role')

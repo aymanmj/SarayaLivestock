@@ -19,7 +19,7 @@ function New-StorageAcl([bool]$IsDirectory, [switch]$ServiceRead, [switch]$Servi
     $acl = if ($IsDirectory) { New-Object Security.AccessControl.DirectorySecurity } else { New-Object Security.AccessControl.FileSecurity }
     $acl.SetAccessRuleProtection($true, $false)
     $inheritance = if ($IsDirectory) { [Security.AccessControl.InheritanceFlags]'ContainerInherit, ObjectInherit' } else { [Security.AccessControl.InheritanceFlags]::None }
-    $rights = @{'S-1-5-32-544' = 'FullControl'; 'S-1-5-18' = 'FullControl'}
+    $rights = [ordered]@{ 'S-1-5-18' = 'FullControl'; 'S-1-5-32-544' = 'FullControl' }
     if ($ServiceRead -or $ServiceModify) { $rights['S-1-5-20'] = if ($ServiceModify) { 'Modify' } else { 'ReadAndExecute' } }
     foreach ($sid in $rights.Keys) {
         $identity = New-Object Security.Principal.SecurityIdentifier($sid)
@@ -32,34 +32,62 @@ function New-StorageAcl([bool]$IsDirectory, [switch]$ServiceRead, [switch]$Servi
 function Protect-Storage([string]$Path, [switch]$ServiceRead, [switch]$ServiceModify, [switch]$FarmLayout) {
     $resolved = Assert-OrdinaryPath $Path
     if (-not (Test-Path -LiteralPath $resolved)) { New-Item -ItemType Directory -Path $resolved | Out-Null }
-    $items = @((Get-Item -LiteralPath $resolved -Force)) + @(Get-ChildItem -LiteralPath $resolved -Recurse -Force)
-    foreach ($item in $items) {
-        if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) { throw "Reparse point in protected storage" }
-        
-        $read = [bool]$ServiceRead
-        $modify = [bool]$ServiceModify
-        if ($FarmLayout) {
-            $relative = $item.FullName.Substring($resolved.TrimEnd('\').Length).TrimStart('\')
-            $read = $relative -match '^config(\\|$)'
-            $modify = $relative -match '^(data\\postgresql|data\\caddy|logs)(\\|$)'
-        }
-        $desired = New-StorageAcl -IsDirectory $item.PSIsContainer -ServiceRead:$read -ServiceModify:$modify
-        Set-Acl -LiteralPath $item.FullName -AclObject $desired -ErrorAction Stop
+    [Console]::WriteLine("SARAYA_PROGRESS|acl|0|1")
+    
+    $icacls = Join-Path $env:windir 'System32\icacls.exe'
+    
+    & $icacls $resolved /grant:r "*S-1-5-32-544:(OI)(CI)F" "*S-1-5-18:(OI)(CI)F" /Q | Out-Null
+    & $icacls $resolved /inheritance:r /Q | Out-Null
+    & $icacls $resolved /remove:g "*S-1-1-0" "*S-1-5-11" "*S-1-5-32-545" /Q | Out-Null
+    
+    if ($ServiceModify) {
+        & $icacls $resolved /grant:r "*S-1-5-20:(OI)(CI)F" /Q | Out-Null
+    } elseif ($ServiceRead) {
+        & $icacls $resolved /grant:r "*S-1-5-20:(OI)(CI)RX" /Q | Out-Null
+    }
+    
+    if ($FarmLayout) {
+        $c = Join-Path $resolved 'config'
+        $d = Join-Path $resolved 'data'
+        $l = Join-Path $resolved 'logs'
+        if (Test-Path $c) { & $icacls $c /grant:r "*S-1-5-20:(OI)(CI)RX" /Q | Out-Null }
+        if (Test-Path $d) { & $icacls $d /grant:r "*S-1-5-20:(OI)(CI)F" /Q | Out-Null }
+        if (Test-Path $l) { & $icacls $l /grant:r "*S-1-5-20:(OI)(CI)F" /Q | Out-Null }
+    }
+    
+    [Console]::WriteLine("SARAYA_PROGRESS|acl|1|1")
+}
 
-        # Verification: check with Get-Acl that only allowed SIDs exist and no unexpected access (e.g. Users) is allowed
-        $actual = Get-Acl -LiteralPath $item.FullName
-        $allowed = @('S-1-5-32-544', 'S-1-5-18')
-        if ($read -or $modify) { $allowed += 'S-1-5-20' }
-        foreach ($rule in $actual.Access) {
-            $sid = $rule.IdentityReference.Translate([Security.Principal.SecurityIdentifier]).Value
-            if ($rule.AccessControlType -eq 'Allow' -and $sid -notin $allowed) {
-                throw "Unexpected access rule on $($item.FullName): SID $sid ($($rule.IdentityReference.Value))"
-            }
-        }
-        # Verify exact rights and protection too, not just absence of extra SIDs.
-        $section = [Security.AccessControl.AccessControlSections]::Access
-        if ($actual.GetSecurityDescriptorSddlForm($section) -ne $desired.GetSecurityDescriptorSddlForm($section)) {
-            throw "Storage permissions did not match the required DACL: $($item.FullName)"
+function Get-SnapshotHash([string]$Path) {
+    $stream = [IO.File]::OpenRead($Path)
+    $sha = [Security.Cryptography.SHA256]::Create()
+    try { return [BitConverter]::ToString($sha.ComputeHash($stream)).Replace('-', '') }
+    finally { $sha.Dispose(); $stream.Dispose() }
+}
+
+function Copy-VerifiedDirectory([string]$Source, [string]$Destination, [string]$InventoryRoot, [string]$Stage) {
+    $sourceRoot = Assert-OrdinaryPath $Source
+    $destinationRoot = Assert-OrdinaryPath $Destination
+    $items = @(Get-ChildItem -LiteralPath $sourceRoot -Recurse -Force)
+    if ($items | Where-Object { $_.Attributes -band [IO.FileAttributes]::ReparsePoint }) { throw 'Snapshot source contains reparse points' }
+    $files = @($items | Where-Object { -not $_.PSIsContainer })
+    [Console]::WriteLine("SARAYA_PROGRESS|$Stage|0|$($files.Count)")
+    [IO.Directory]::CreateDirectory($destinationRoot) | Out-Null
+    foreach ($directory in $items | Where-Object { $_.PSIsContainer }) {
+        $relative = $directory.FullName.Substring($sourceRoot.Length).TrimStart('\')
+        [IO.Directory]::CreateDirectory((Join-Path $destinationRoot $relative)) | Out-Null
+    }
+    $processed = 0
+    foreach ($file in $files) {
+        $relative = $file.FullName.Substring($sourceRoot.Length).TrimStart('\')
+        $target = Join-Path $destinationRoot $relative
+        [IO.File]::Copy($file.FullName, $target, $false)
+        $hash = Get-SnapshotHash $file.FullName
+        if ((Get-SnapshotHash $target) -ne $hash) { throw 'Snapshot checksum mismatch' }
+        @{ path = $file.FullName.Substring($InventoryRoot.Length).TrimStart('\'); sha256 = $hash }
+        $processed++
+        if ($processed % 50 -eq 0 -or $processed -eq $files.Count) {
+            [Console]::WriteLine("SARAYA_PROGRESS|$Stage|$processed|$($files.Count)")
         }
     }
 }

@@ -464,6 +464,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/farms/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["Farms_update"];
+        trace?: never;
+    };
     "/api/v1/fattening/performance": {
         parameters: {
             query?: never;
@@ -522,6 +538,166 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["Health_recordTreatment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/hr/advances": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["Advances_findAllAdvances"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/hr/advances/{employeeId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["Advances_requestAdvance"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/hr/employees": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["Employees_findAll"];
+        put?: never;
+        post: operations["Employees_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/hr/employees/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["Employees_findOne"];
+        put?: never;
+        post?: never;
+        delete: operations["Employees_remove"];
+        options?: never;
+        head?: never;
+        patch: operations["Employees_update"];
+        trace?: never;
+    };
+    "/api/v1/hr/payroll/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["Payroll_deleteDraft"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/hr/payroll/{id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["Payroll_approvePayroll"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/hr/payroll/{id}/pay": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["Payroll_payPayroll"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/hr/payroll/generate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["Payroll_generatePayroll"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/hr/payroll/periods": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["Payroll_findAllPeriods"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/hr/payroll/periods/{id}/slips": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["Payroll_findSlips"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1017,7 +1193,7 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        patch: operations["Users_updateUser"];
         trace?: never;
     };
     "/api/v1/users/{id}/reset-password": {
@@ -1525,6 +1701,33 @@ export interface components {
              */
             sectorType?: "DAIRY" | "FATTENING" | "BREEDING" | "CALVES" | "ISOLATION";
         };
+        CreateEmployeeDto: {
+            /** @description رقم الحساب البنكي */
+            bankAccount?: string;
+            /** @description الراتب الأساسي */
+            baseSalary: number;
+            /** @description الرقم الوظيفي أو رمز البصمة */
+            employeeCode: string;
+            /** @description الاسم الأول */
+            firstName: string;
+            /** @description تاريخ التعيين */
+            hireDate: string;
+            /** @description المسمى الوظيفي */
+            jobTitle: string;
+            /** @description اسم العائلة */
+            lastName: string;
+            /** @description الرقم القومي / الهوية */
+            nationalId?: string;
+            /** @description ملاحظات */
+            notes?: string;
+            /** @description رقم الهاتف */
+            phone?: string;
+            /**
+             * @default ACTIVE
+             * @enum {string}
+             */
+            status?: "ACTIVE" | "ON_LEAVE" | "TERMINATED" | "SUSPENDED";
+        };
         CreateFeedFormulaDto: {
             description?: string;
             items: components["schemas"]["FeedFormulaItemDto"][];
@@ -1822,6 +2025,14 @@ export interface components {
         };
         /** @enum {string} */
         Gender: "FEMALE" | "MALE";
+        GeneratePayrollPeriodDto: {
+            /** @description تاريخ نهاية الفترة */
+            endDate: string;
+            /** @description اسم شهر الراتب */
+            monthName: string;
+            /** @description تاريخ بداية الفترة */
+            startDate: string;
+        };
         HardwareIdResponseDto: {
             hardwareId: string;
         };
@@ -2076,6 +2287,10 @@ export interface components {
         PaymentMethod: "CASH" | "BANK" | "ON_ACCOUNT";
         /** @enum {string} */
         PregnancyResult: "PENDING" | "PREGNANT" | "OPEN";
+        ProcessPayrollPaymentDto: {
+            /** @description رقم حساب الدفع (النقدية أو البنك) */
+            paymentAccountId: string;
+        };
         /** @enum {string} */
         Purpose: "DAIRY" | "BEEF" | "DUAL" | "BREEDING";
         QuarantinedAnimalResponseDto: {
@@ -2255,6 +2470,16 @@ export interface components {
             role?: "SUPER_ADMIN" | "FARM_MANAGER" | "VETERINARIAN" | "MILKER" | "ACCOUNTANT" | "WORKER";
             username: string;
         };
+        RequestAdvanceDto: {
+            /** @description مبلغ السلفة */
+            amount: number;
+            /** @description رقم الحساب للصرف (نقدية/بنك) */
+            paymentAccountId: string;
+            /** @description سبب السلفة */
+            reason?: string;
+            /** @description تاريخ الطلب */
+            requestDate: string;
+        };
         ResetPasswordDto: {
             password: string;
         };
@@ -2352,6 +2577,38 @@ export interface components {
             /** @enum {string} */
             status: "ACTIVE" | "SOLD" | "CULLED" | "DECEASED" | "QUARANTINED";
         };
+        UpdateEmployeeDto: {
+            /** @description رقم الحساب البنكي */
+            bankAccount?: string;
+            /** @description الراتب الأساسي */
+            baseSalary?: number;
+            /** @description الرقم الوظيفي أو رمز البصمة */
+            employeeCode?: string;
+            /** @description الاسم الأول */
+            firstName?: string;
+            /** @description المسمى الوظيفي */
+            jobTitle?: string;
+            /** @description اسم العائلة */
+            lastName?: string;
+            /** @description الرقم القومي / الهوية */
+            nationalId?: string;
+            /** @description ملاحظات */
+            notes?: string;
+            /** @description رقم الهاتف */
+            phone?: string;
+            /** @enum {string} */
+            status?: "ACTIVE" | "ON_LEAVE" | "TERMINATED" | "SUSPENDED";
+        };
+        UpdateFarmDto: {
+            /** @description الموقع / العنوان */
+            location?: string;
+            /** @description اسم المدير */
+            managerName?: string;
+            /** @description اسم المنشأة / المزرعة */
+            name?: string;
+            /** @description رقم الهاتف */
+            phone?: string;
+        };
         UpdateFeedStockDto: {
             addedKg: number;
             costPerUnit?: number;
@@ -2359,6 +2616,11 @@ export interface components {
         UpdateMilkPolicyDto: {
             /** @enum {string} */
             milkPolicy: "DAILY_RESET" | "CARRY_OVER";
+        };
+        UpdateUserDto: {
+            email?: string;
+            fullName: string;
+            username: string;
         };
         UpdateUserRoleDto: {
             /** @enum {string} */
@@ -3165,6 +3427,30 @@ export interface operations {
             };
         };
     };
+    Farms_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateFarmDto"];
+            };
+        };
+        responses: {
+            /** @description تم تحديث بيانات المزرعة بنجاح */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     Fattening_getPerformance: {
         parameters: {
             query?: never;
@@ -3246,6 +3532,276 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["RecordTreatmentResponseDto"];
                 };
+            };
+        };
+    };
+    Advances_findAllAdvances: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description قائمة السلف */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Advances_requestAdvance: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                employeeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RequestAdvanceDto"];
+            };
+        };
+        responses: {
+            /** @description تم صرف السلفة بنجاح */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Employees_findAll: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description قائمة الموظفين */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Employees_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateEmployeeDto"];
+            };
+        };
+        responses: {
+            /** @description تم إضافة الموظف بنجاح */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Employees_findOne: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description بيانات الموظف */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Employees_remove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description تم حذف الموظف */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Employees_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateEmployeeDto"];
+            };
+        };
+        responses: {
+            /** @description تم تحديث بيانات الموظف */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Payroll_deleteDraft: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description تم حذف مسودة الرواتب */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Payroll_approvePayroll: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description تم اعتماد كشوف الرواتب */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Payroll_payPayroll: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProcessPayrollPaymentDto"];
+            };
+        };
+        responses: {
+            /** @description تم صرف الرواتب */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Payroll_generatePayroll: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GeneratePayrollPeriodDto"];
+            };
+        };
+        responses: {
+            /** @description تم إنشاء كشوف الرواتب بنجاح */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Payroll_findAllPeriods: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description قائمة فترات الرواتب */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Payroll_findSlips: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description تفاصيل القسائم لفترة الراتب */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -3945,6 +4501,31 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UserAdministrationResponseDto"];
+                };
+            };
+        };
+    };
+    Users_updateUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateUserDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserMutationResponseDto"];
                 };
             };
         };

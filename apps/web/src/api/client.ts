@@ -429,6 +429,13 @@ export async function getMilkingDailySummary(
 // ----------------------------------------------------
 // 4. التناسل والولادات (Breeding & Calving)
 // ----------------------------------------------------
+export const updateFarm = async (id: string, data: components['schemas']['UpdateFarmDto']) => {
+  return unwrapGenerated(await generatedApiClient.PATCH('/api/v1/farms/{id}', {
+    params: { path: { id } },
+    body: data,
+  }), 'تحديث بيانات المزرعة');
+};
+
 export interface InseminatePayload {
   animalId: string;
   inseminationDate: string;

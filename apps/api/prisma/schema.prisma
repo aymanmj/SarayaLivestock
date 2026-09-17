@@ -44,22 +44,24 @@ model Farm {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  organization     Organization      @relation(fields: [orgId], references: [id], onDelete: Cascade)
-  barns            Barn[]
-  animals          Animal[]
-  bulkTanks        BulkTankLog[]
-  feedStock        FeedIngredient[]
-  feedFormulas     FeedFormula[]
-  costCenters      CostCenter[]
-  users            User[]
-  fiscalYears      FiscalYear[]
-  accounts         Account[]
-  journalEntries   JournalEntry[]
-  journalSequences JournalSequence[]
-  commercialSales   CommercialSale[]
-  animalMortalities AnimalMortality[]
-  milkPolicy        MilkInventoryPolicy @default(DAILY_RESET)
-  milkPolicyEffectiveDate DateTime? @db.Date
+  organization            Organization        @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  barns                   Barn[]
+  animals                 Animal[]
+  bulkTanks               BulkTankLog[]
+  feedStock               FeedIngredient[]
+  feedFormulas            FeedFormula[]
+  costCenters             CostCenter[]
+  users                   User[]
+  fiscalYears             FiscalYear[]
+  accounts                Account[]
+  journalEntries          JournalEntry[]
+  journalSequences        JournalSequence[]
+  commercialSales         CommercialSale[]
+  animalMortalities       AnimalMortality[]
+  milkPolicy              MilkInventoryPolicy @default(DAILY_RESET)
+  milkPolicyEffectiveDate DateTime?           @db.Date
+  employees               Employee[]
+  payrollPeriods          PayrollPeriod[]
 
   @@map("farms")
 }
@@ -120,9 +122,10 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
-  farm         Farm?        @relation(fields: [farmId], references: [id], onDelete: SetNull)
+  organization Organization  @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  farm         Farm?         @relation(fields: [farmId], references: [id], onDelete: SetNull)
   sessions     UserSession[]
+  employee     Employee?
 
   @@map("users")
 }
@@ -286,8 +289,8 @@ model Animal {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  farm             Farm              @relation(fields: [farmId], references: [id], onDelete: Cascade)
-  barn             Barn?             @relation(fields: [barnId], references: [id], onDelete: SetNull)
+  farm             Farm               @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  barn             Barn?              @relation(fields: [barnId], references: [id], onDelete: SetNull)
   milkLogs         MilkLog[]
   weightLogs       WeightLog[]
   breedingRecords  BreedingRecord[]
@@ -606,8 +609,9 @@ model FiscalPeriod {
   closedAt     DateTime?
   createdAt    DateTime     @default(now())
 
-  fiscalYear     FiscalYear     @relation(fields: [fiscalYearId], references: [id], onDelete: Cascade)
+  fiscalYear     FiscalYear      @relation(fields: [fiscalYearId], references: [id], onDelete: Cascade)
   journalEntries JournalEntry[]
+  payrollPeriods PayrollPeriod[]
 
   @@unique([fiscalYearId, periodNumber])
   @@map("fiscal_periods")
@@ -679,12 +683,14 @@ model JournalEntry {
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @updatedAt
 
-  farm         Farm               @relation(fields: [farmId], references: [id], onDelete: Cascade)
-  fiscalYear   FiscalYear         @relation(fields: [fiscalYearId], references: [id], onDelete: Cascade)
-  fiscalPeriod FiscalPeriod?      @relation(fields: [fiscalPeriodId], references: [id], onDelete: SetNull)
-  lines        JournalEntryLine[]
+  farm              Farm               @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  fiscalYear        FiscalYear         @relation(fields: [fiscalYearId], references: [id], onDelete: Cascade)
+  fiscalPeriod      FiscalPeriod?      @relation(fields: [fiscalPeriodId], references: [id], onDelete: SetNull)
+  lines             JournalEntryLine[]
   commercialSales   CommercialSale[]
   animalMortalities AnimalMortality[]
+  payrollPeriods    PayrollPeriod[]
+  employeeAdvances  EmployeeAdvance[]
 
   @@unique([farmId, entryNumber])
   @@map("journal_entries")
@@ -703,7 +709,7 @@ model JournalEntryLine {
   journalEntry JournalEntry @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
   account      Account      @relation(fields: [accountId], references: [id], onDelete: Restrict)
   costCenter   CostCenter?  @relation(fields: [costCenterId], references: [id], onDelete: SetNull)
-  animal       Animal?     @relation(fields: [animalId], references: [id], onDelete: Restrict)
+  animal       Animal?      @relation(fields: [animalId], references: [id], onDelete: Restrict)
 
   @@index([animalId])
   @@map("journal_entry_lines")
@@ -745,19 +751,19 @@ enum AnimalPricingMethod {
 }
 
 model CommercialSale {
-  id            String               @id @default(uuid())
+  id            String        @id @default(uuid())
   farmId        String
   invoiceNumber String
-  saleDate      DateTime             @default(now())
+  saleDate      DateTime      @default(now())
   saleType      SaleType
-  paymentMethod PaymentMethod        @default(CASH)
+  paymentMethod PaymentMethod @default(CASH)
   buyerName     String
   buyerPhone    String?
   notes         String?
 
   // ØªÙØ§ØµÙŠÙ„ Ø¨ÙŠØ¹ Ø§Ù„Ø­Ù„ÙŠØ¨ Ø§Ù„Ø®Ø§Ù…
-  liters        Decimal?             @db.Decimal(12, 3)
-  pricePerLiter Decimal?             @db.Decimal(10, 3)
+  liters        Decimal? @db.Decimal(12, 3)
+  pricePerLiter Decimal? @db.Decimal(10, 3)
 
   // ØªÙØ§ØµÙŠÙ„ Ø¨ÙŠØ¹ Ø§Ù„Ù…Ø§Ø´ÙŠØ© Ø§Ù„Ø­ÙŠØ©
   animalId      String?
@@ -767,11 +773,11 @@ model CommercialSale {
   pricePerHead  Decimal?             @db.Decimal(15, 3)
 
   // Ø§Ù„Ø¥Ø¬Ù…Ø§Ù„ÙŠØ§Øª Ø§Ù„Ù…Ø§Ù„ÙŠØ© ÙˆØ§Ù„Ø±Ø¨Ø· Ø§Ù„Ù…Ø­Ø§Ø³Ø¨ÙŠ
-  totalAmount    Decimal       @db.Decimal(18, 3)
+  totalAmount    Decimal  @db.Decimal(18, 3)
   journalEntryId String?
   createdById    String?
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   farm         Farm          @relation(fields: [farmId], references: [id], onDelete: Cascade)
   animal       Animal?       @relation(fields: [animalId], references: [id], onDelete: SetNull)
@@ -803,4 +809,106 @@ model AnimalMortality {
 
   @@index([farmId, deathDate])
   @@map("animal_mortalities")
+}
+
+// ----------------------------------------------------
+// 12. الموارد البشرية والمرتبات (HR & Payroll)
+// ----------------------------------------------------
+
+enum EmployeeStatus {
+  ACTIVE
+  ON_LEAVE
+  TERMINATED
+  SUSPENDED
+}
+
+model Employee {
+  id           String         @id @default(uuid())
+  farmId       String
+  userId       String?        @unique // إذا كان الموظف لديه حساب في النظام
+  employeeCode String // رقم وظيفي / بصمة
+  firstName    String
+  lastName     String
+  jobTitle     String
+  nationalId   String?
+  phone        String?
+  hireDate     DateTime       @db.Date
+  baseSalary   Decimal        @db.Decimal(12, 3)
+  status       EmployeeStatus @default(ACTIVE)
+  bankAccount  String?
+  notes        String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  farm         Farm              @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  user         User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
+  payrollSlips PayrollSlip[]
+  advances     EmployeeAdvance[]
+
+  @@unique([farmId, employeeCode])
+  @@map("hr_employees")
+}
+
+enum PayrollStatus {
+  DRAFT
+  APPROVED
+  PAID
+}
+
+model PayrollPeriod {
+  id             String        @id @default(uuid())
+  farmId         String
+  fiscalPeriodId String
+  monthName      String // مثال: "راتب شهر مارس 2026"
+  startDate      DateTime      @db.Date
+  endDate        DateTime      @db.Date
+  status         PayrollStatus @default(DRAFT)
+  journalEntryId String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  farm            Farm              @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  fiscalPeriod    FiscalPeriod      @relation(fields: [fiscalPeriodId], references: [id], onDelete: Restrict)
+  journalEntry    JournalEntry?     @relation(fields: [journalEntryId], references: [id], onDelete: SetNull)
+  slips           PayrollSlip[]
+  advancesSettled EmployeeAdvance[]
+
+  @@unique([farmId, fiscalPeriodId])
+  @@map("hr_payroll_periods")
+}
+
+model PayrollSlip {
+  id              String  @id @default(uuid())
+  periodId        String
+  employeeId      String
+  baseSalary      Decimal @db.Decimal(12, 3)
+  bonuses         Decimal @default(0) @db.Decimal(12, 3)
+  deductions      Decimal @default(0) @db.Decimal(12, 3)
+  advancesSettled Decimal @default(0) @db.Decimal(12, 3)
+  netSalary       Decimal @db.Decimal(12, 3)
+  notes           String?
+
+  period   PayrollPeriod @relation(fields: [periodId], references: [id], onDelete: Cascade)
+  employee Employee      @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+
+  @@unique([periodId, employeeId])
+  @@map("hr_payroll_slips")
+}
+
+model EmployeeAdvance {
+  id              String   @id @default(uuid())
+  employeeId      String
+  requestDate     DateTime @db.Date
+  amount          Decimal  @db.Decimal(12, 3)
+  reason          String?
+  isSettled       Boolean  @default(false)
+  settledPeriodId String?
+  journalEntryId  String?
+  createdAt       DateTime @default(now())
+
+  employee      Employee       @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  settledPeriod PayrollPeriod? @relation(fields: [settledPeriodId], references: [id], onDelete: SetNull)
+  journalEntry  JournalEntry?  @relation(fields: [journalEntryId], references: [id], onDelete: SetNull)
+
+  @@map("hr_employee_advances")
 }

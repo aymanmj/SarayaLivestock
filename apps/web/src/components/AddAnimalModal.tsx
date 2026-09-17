@@ -1,8 +1,37 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Plus, Layers, Tag, Scale, Calendar, Building, Sparkles } from 'lucide-react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
 import { Species, Gender, Purpose, LifeStage } from '../api/types';
-import { createAnimal } from '../api/client';
 import { getBreedsForSpecies } from '../utils/breeds.data';
+import { useCreateAnimalMutation } from '../api/queries';
+
+const animalSchema = z.object({
+  tagNumber: z.string().min(1, 'يرجى إدخال رقم القرط أو الوسم').trim(),
+  rfidTag: z.string().trim().optional(),
+  name: z.string().trim().optional(),
+  species: z.enum(['CATTLE', 'SHEEP', 'GOAT'] as const),
+  breed: z.string().min(1, 'يرجى اختيار أو إدخال السلالة').trim(),
+  customBreed: z.string().trim().optional(),
+  gender: z.enum(['FEMALE', 'MALE'] as const),
+  purpose: z.enum(['DAIRY', 'BEEF', 'DUAL'] as const),
+  currentLifeStage: z.enum(['CALF', 'WEANED', 'HEIFER', 'PREGNANT_HEIFER', 'LACTATING', 'DRY', 'FATTENING', 'SIRE'] as const),
+  birthDate: z.string().optional(),
+  entryWeightKg: z.number({ message: 'الوزن يجب أن يكون رقماً' }).positive('يجب أن يكون الوزن أكبر من الصفر').optional().or(z.nan().transform(() => undefined)),
+  motherId: z.string().trim().optional(),
+  fatherSemenCode: z.string().trim().optional(),
+}).refine((data) => {
+  if (data.breed === '__CUSTOM__' && (!data.customBreed || data.customBreed.trim() === '')) {
+    return false;
+  }
+  return true;
+}, {
+  message: "يرجى إدخال اسم السلالة المخصصة",
+  path: ["customBreed"]
+});
+
+type AnimalFormData = z.infer<typeof animalSchema>;
 
 interface Props {
   isOpen: boolean;
@@ -11,56 +40,69 @@ interface Props {
 }
 
 export const AddAnimalModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
-  const [tagNumber, setTagNumber] = useState('');
-  const [rfidTag, setRfidTag] = useState('');
-  const [name, setName] = useState('');
-  const [species, setSpecies] = useState<Species>('CATTLE');
-  const [breed, setBreed] = useState('هولشتاين فريزيان (Holstein Friesian)');
-  const [isCustomBreed, setIsCustomBreed] = useState(false);
-  const [gender, setGender] = useState<Gender>('FEMALE');
-  const [purpose, setPurpose] = useState<Purpose>('DAIRY');
-  const [currentLifeStage, setCurrentLifeStage] = useState<LifeStage>('LACTATING');
-  const [birthDate, setBirthDate] = useState('');
-  const [entryWeightKg, setEntryWeightKg] = useState<number>(550);
-  const [motherId, setMotherId] = useState('');
-  const [fatherSemenCode, setFatherSemenCode] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const createAnimalMutation = useCreateAnimalMutation();
+
+  const { register, handleSubmit, watch, setValue, reset, formState: { errors, isSubmitting } } = useForm<AnimalFormData>({
+    resolver: zodResolver(animalSchema),
+    defaultValues: {
+      species: 'CATTLE',
+      breed: 'هولشتاين فريزيان (Holstein Friesian)',
+      gender: 'FEMALE',
+      purpose: 'DAIRY',
+      currentLifeStage: 'LACTATING',
+      entryWeightKg: 550,
+      tagNumber: '',
+      rfidTag: '',
+      name: '',
+      customBreed: '',
+      birthDate: '',
+      motherId: '',
+      fatherSemenCode: ''
+    }
+  });
+
+  const selectedSpecies = watch('species');
+  const selectedBreed = watch('breed');
+  
+  // When species changes, update the breed list default
+  useEffect(() => {
+    const firstBreed = getBreedsForSpecies(selectedSpecies)[0]?.name || '';
+    setValue('breed', firstBreed);
+  }, [selectedSpecies, setValue]);
+
+  // Reset form when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      reset();
+      setSubmitError(null);
+    }
+  }, [isOpen, reset]);
 
   if (!isOpen) return null;
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!tagNumber.trim()) {
-      setError('يرجى إدخال رقم القرط أو الوسم');
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-
+  const onSubmit = async (data: AnimalFormData) => {
+    setSubmitError(null);
     try {
-      await createAnimal({
-        tagNumber: tagNumber.trim(),
-        rfidTag: rfidTag.trim() || undefined,
-        name: name.trim() || undefined,
-        species,
-        breed: breed.trim(),
-        gender,
-        purpose,
-        currentLifeStage,
-        birthDate: birthDate ? new Date(birthDate).toISOString() : undefined,
-        entryWeightKg: Number(entryWeightKg) || undefined,
-        motherId: motherId.trim() || undefined,
-        fatherSemenCode: fatherSemenCode.trim() || undefined,
+      await createAnimalMutation.mutateAsync({
+        tagNumber: data.tagNumber,
+        rfidTag: data.rfidTag || undefined,
+        name: data.name || undefined,
+        species: data.species,
+        breed: data.breed === '__CUSTOM__' && data.customBreed ? data.customBreed : data.breed,
+        gender: data.gender,
+        purpose: data.purpose,
+        currentLifeStage: data.currentLifeStage,
+        birthDate: data.birthDate ? new Date(data.birthDate).toISOString() : undefined,
+        entryWeightKg: data.entryWeightKg || undefined,
+        motherId: data.motherId || undefined,
+        fatherSemenCode: data.fatherSemenCode || undefined,
       });
 
       onSuccess();
       onClose();
     } catch (err: any) {
-      setError(err.message || 'حدث خطأ أثناء حفظ سجل الحيوان');
-    } finally {
-      setLoading(false);
+      setSubmitError(err.message || 'حدث خطأ أثناء حفظ سجل الحيوان');
     }
   };
 
@@ -79,6 +121,7 @@ export const AddAnimalModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) 
             </div>
           </div>
           <button
+            type="button"
             onClick={onClose}
             className="p-2 hover:bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-white rounded-xl transition"
           >
@@ -87,10 +130,10 @@ export const AddAnimalModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) 
         </div>
 
         {/* Form Body */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          {error && (
+        <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-4">
+          {submitError && (
             <div className="p-3.5 bg-red-500/10 border border-red-500/30 rounded-xl text-xs text-red-400">
-              {error}
+              {submitError}
             </div>
           )}
 
@@ -103,12 +146,11 @@ export const AddAnimalModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) 
               </label>
               <input
                 type="text"
-                required
-                value={tagNumber}
-                onChange={e => setTagNumber(e.target.value)}
+                {...register('tagNumber')}
                 placeholder="مثال: 1042"
-                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-emerald-500 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none transition"
+                className={`w-full bg-slate-50 dark:bg-slate-950 border ${errors.tagNumber ? 'border-red-500' : 'border-slate-200 dark:border-slate-800'} focus:border-emerald-500 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none transition`}
               />
+              {errors.tagNumber && <p className="text-red-500 text-[10px] mt-1">{errors.tagNumber.message}</p>}
             </div>
 
             {/* RFID Tag */}
@@ -118,8 +160,7 @@ export const AddAnimalModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) 
               </label>
               <input
                 type="text"
-                value={rfidTag}
-                onChange={e => setRfidTag(e.target.value)}
+                {...register('rfidTag')}
                 placeholder="982000345678912"
                 className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-emerald-500 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none transition"
               />
@@ -132,8 +173,7 @@ export const AddAnimalModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) 
               </label>
               <input
                 type="text"
-                value={name}
-                onChange={e => setName(e.target.value)}
+                {...register('name')}
                 placeholder="مثال: جميلة"
                 className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-emerald-500 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none transition"
               />
@@ -143,14 +183,7 @@ export const AddAnimalModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) 
             <div>
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">النوع / الفصيلة</label>
               <select
-                value={species}
-                onChange={e => {
-                  const val = e.target.value as Species;
-                  setSpecies(val);
-                  const firstBreed = getBreedsForSpecies(val)[0]?.name || '';
-                  setBreed(firstBreed);
-                  setIsCustomBreed(false);
-                }}
+                {...register('species')}
                 className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-emerald-500 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none transition"
               >
                 <option value="CATTLE">أبقار (Cattle)</option>
@@ -166,19 +199,10 @@ export const AddAnimalModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) 
                 <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-normal">سلالات معتمدة</span>
               </label>
               <select
-                value={isCustomBreed ? '__CUSTOM__' : breed}
-                onChange={e => {
-                  if (e.target.value === '__CUSTOM__') {
-                    setIsCustomBreed(true);
-                    setBreed('');
-                  } else {
-                    setIsCustomBreed(false);
-                    setBreed(e.target.value);
-                  }
-                }}
+                {...register('breed')}
                 className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-emerald-500 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none transition"
               >
-                {getBreedsForSpecies(species).map(b => (
+                {getBreedsForSpecies(selectedSpecies).map(b => (
                   <option key={b.id} value={b.name}>
                     {b.name} — [{b.origin} | {b.primaryPurpose}]
                   </option>
@@ -186,15 +210,16 @@ export const AddAnimalModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) 
                 <option value="__CUSTOM__">✨ سلالة أخرى (كتابة يدوية مخصصة)...</option>
               </select>
 
-              {isCustomBreed && (
-                <input
-                  type="text"
-                  value={breed}
-                  onChange={e => setBreed(e.target.value)}
-                  placeholder="أدخل اسم السلالة يدوياً..."
-                  required
-                  className="mt-2 w-full bg-slate-50 dark:bg-slate-950 border border-emerald-500/60 rounded-xl px-3.5 py-2 text-sm text-slate-900 dark:text-white focus:outline-none transition"
-                />
+              {selectedBreed === '__CUSTOM__' && (
+                <div>
+                  <input
+                    type="text"
+                    {...register('customBreed')}
+                    placeholder="أدخل اسم السلالة يدوياً..."
+                    className={`mt-2 w-full bg-slate-50 dark:bg-slate-950 border ${errors.customBreed ? 'border-red-500' : 'border-emerald-500/60'} rounded-xl px-3.5 py-2 text-sm text-slate-900 dark:text-white focus:outline-none transition`}
+                  />
+                  {errors.customBreed && <p className="text-red-500 text-[10px] mt-1">{errors.customBreed.message}</p>}
+                </div>
               )}
             </div>
 
@@ -202,8 +227,7 @@ export const AddAnimalModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) 
             <div>
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">الجنس</label>
               <select
-                value={gender}
-                onChange={e => setGender(e.target.value as Gender)}
+                {...register('gender')}
                 className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-emerald-500 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none transition"
               >
                 <option value="FEMALE">أنثى</option>
@@ -215,8 +239,7 @@ export const AddAnimalModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) 
             <div>
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">الغرض الإنتاجي</label>
               <select
-                value={purpose}
-                onChange={e => setPurpose(e.target.value as Purpose)}
+                {...register('purpose')}
                 className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-emerald-500 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none transition"
               >
                 <option value="DAIRY">إنتاج حليب (Dairy)</option>
@@ -229,17 +252,17 @@ export const AddAnimalModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) 
             <div>
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">المرحلة الإنتاجية الحالية</label>
               <select
-                value={currentLifeStage}
-                onChange={e => setCurrentLifeStage(e.target.value as LifeStage)}
+                {...register('currentLifeStage')}
                 className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-emerald-500 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none transition"
               >
-                <option value="LACTATING">حلابة نشطة (Lactating)</option>
-                <option value="DRY">جافة / عشار (Dry)</option>
+                <option value="CALF">عجل رضيع / حديث الولادة (Calf)</option>
+                <option value="WEANED">مفطوم (Weaned)</option>
                 <option value="HEIFER">عجلة بكارة / شبوبة (Heifer)</option>
-                <option value="CALF">عجل رضيع / مفطوم (Calf)</option>
-                <option value="FATTENING_1">تسمين مرحلة 1 (Fattening 1)</option>
-                <option value="FATTENING_2">تسمين مرحلة 2 (Fattening 2)</option>
-                <option value="BULL">فحل تلقيح (Breeding Bull)</option>
+                <option value="PREGNANT_HEIFER">عجلة عشار (Pregnant Heifer)</option>
+                <option value="LACTATING">حلابة نشطة (Lactating)</option>
+                <option value="DRY">جافة (Dry)</option>
+                <option value="FATTENING">تسمين (Fattening)</option>
+                <option value="SIRE">فحل تلقيح (Sire / Bull)</option>
               </select>
             </div>
 
@@ -252,11 +275,11 @@ export const AddAnimalModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) 
               <input
                 type="number"
                 step="0.5"
-                value={entryWeightKg}
-                onChange={e => setEntryWeightKg(Number(e.target.value))}
+                {...register('entryWeightKg', { valueAsNumber: true })}
                 placeholder="550"
-                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-emerald-500 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none transition"
+                className={`w-full bg-slate-50 dark:bg-slate-950 border ${errors.entryWeightKg ? 'border-red-500' : 'border-slate-200 dark:border-slate-800'} focus:border-emerald-500 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none transition`}
               />
+              {errors.entryWeightKg && <p className="text-red-500 text-[10px] mt-1">{errors.entryWeightKg.message}</p>}
             </div>
 
             {/* Birth Date */}
@@ -267,8 +290,7 @@ export const AddAnimalModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) 
               </label>
               <input
                 type="date"
-                value={birthDate}
-                onChange={e => setBirthDate(e.target.value)}
+                {...register('birthDate')}
                 className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-emerald-500 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none transition"
               />
             </div>
@@ -278,8 +300,7 @@ export const AddAnimalModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) 
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">رقم قرط الأم (Mother Tag)</label>
               <input
                 type="text"
-                value={motherId}
-                onChange={e => setMotherId(e.target.value)}
+                {...register('motherId')}
                 placeholder="0890"
                 className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-emerald-500 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none transition"
               />
@@ -290,8 +311,7 @@ export const AddAnimalModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) 
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">رمز السائل المنوي / الأب</label>
               <input
                 type="text"
-                value={fatherSemenCode}
-                onChange={e => setFatherSemenCode(e.target.value)}
+                {...register('fatherSemenCode')}
                 placeholder="USA-HO-9942 (Sire Straw)"
                 className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-emerald-500 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none transition"
               />
@@ -309,10 +329,10 @@ export const AddAnimalModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) 
             </button>
             <button
               type="submit"
-              disabled={loading}
+              disabled={isSubmitting || createAnimalMutation.isPending}
               className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition shadow-lg shadow-emerald-900/30 flex items-center gap-2 disabled:opacity-50"
             >
-              {loading ? 'جاري الحفظ...' : 'حفظ وتسجيل الحيوان'}
+              {isSubmitting || createAnimalMutation.isPending ? 'جاري الحفظ...' : 'حفظ وتسجيل الحيوان'}
             </button>
           </div>
         </form>

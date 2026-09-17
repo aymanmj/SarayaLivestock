@@ -31,7 +31,9 @@ export class LicenseService implements OnModuleInit {
       if (fs.existsSync(this.licenseFilePath)) {
         return fs.readFileSync(this.licenseFilePath, 'utf8').trim();
       }
-    } catch {}
+    } catch (err: any) {
+      this.logger.warn(`⚠️ تعذر قراءة ملف الترخيص المحفوظ من ${this.licenseFilePath}: ${err.message}`);
+    }
     return process.env.SARAYA_LICENSE_KEY || '';
   }
 

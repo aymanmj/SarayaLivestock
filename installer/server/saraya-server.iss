@@ -1,10 +1,10 @@
-; =============================================================================
+﻿; =============================================================================
 ; Saraya Livestock Server Installer — Inno Setup 6 Script
-; مثبت خادم منظومة سرايا لإدارة مزارع الماشية والألبان والتسمين
+; مثبت خادم منظومة السرايا لإدارة مزارع الماشية والألبان والتسمين
 ; =============================================================================
 
 #define MyAppName        "Saraya Livestock Server"
-#define MyAppNameAr      "خادم منظومة سرايا لإدارة مزارع الماشية والألبان"
+#define MyAppNameAr      "خادم منظومة السرايا لإدارة مزارع الماشية والألبان"
 #define MyAppVersion     "1.0.0"
 #define MyAppPublisher   "Saraya Solutions"
 #define MyAppURL         "https://saraya-livestock.com"
@@ -45,8 +45,11 @@ DefaultGroupName=Saraya Livestock
 DisableProgramGroupPage=yes
 LicenseFile=..\..\LICENSE
 OutputDir=..\..\dist-installer
-OutputBaseFilename=SarayaLivestock-Server-{#MyAppVersion}-x64-Setup
-Compression=lzma2/ultra64
+OutputBaseFilename=SarayaLivestock-Server-{#MyAppVersion}-x64-Setup-v11
+#ifndef InstallerCompression
+  #define InstallerCompression "lzma2/ultra64"
+#endif
+Compression={#InstallerCompression}
 SolidCompression=yes
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
@@ -65,7 +68,7 @@ MinVersion=10.0.17763
 Name: "arabic"; MessagesFile: "compiler:Languages\Arabic.isl"
 
 [Messages]
-arabic.BeveledLabel=منظومة سرايا لإدارة مزارع الماشية والألبان والتسمين
+arabic.BeveledLabel=منظومة السرايا لإدارة مزارع الماشية والألبان والتسمين
 
 ; =============================================================================
 ; Files Section — Immutable binaries under {app}
@@ -169,10 +172,18 @@ var
 // ---------------------------------------------------------------------------
 // Utility: Run a PowerShell script and return the exit code
 // ---------------------------------------------------------------------------
+#include "preparation-progress.iss"
+
 function RunPowerShell(const ScriptPath, Arguments: String; var ExitCode: Integer): Boolean;
 var
   CmdLine: String;
 begin
+  if (ExtractFileName(ScriptPath) = 'secure-storage.ps1') or
+     (ExtractFileName(ScriptPath) = 'pre-upgrade-backup.ps1') then
+  begin
+    Result := RunPreparationPowerShell(ScriptPath, Arguments, ExitCode);
+    Exit;
+  end;
   CmdLine := '-NoProfile -ExecutionPolicy Bypass -File "' + ScriptPath + '"';
   if Arguments <> '' then
     CmdLine := CmdLine + ' ' + Arguments;
@@ -355,11 +366,14 @@ end;
 // ---------------------------------------------------------------------------
 // Prerequisites check
 // ---------------------------------------------------------------------------
+#include "install-mode.iss"
+
 function InitializeSetup(): Boolean;
 var
   WinVer: TWindowsVersion;
   InstallMarker: Cardinal;
-  HasInnoRegistration, HasPersistentState: Boolean;
+  HasInnoRegistration, HasConfig, HasCluster, Completed: Boolean;
+  InstallMode: Integer;
 begin
   Result := True;
   GetWindowsVersionEx(WinVer);
@@ -373,24 +387,28 @@ begin
     Exit;
   end;
 
-  // Distinguish a completed installation from an interrupted/failed installation.
+  // Distinguish an existing installation (upgrade/reinstall) from a fresh installation.
+  HasConfig := FileExists(ExpandConstant(
+    '{commonappdata}\SarayaLivestock\config\server.env'));
+  HasCluster := FileExists(ExpandConstant(
+    '{commonappdata}\SarayaLivestock\data\postgresql\PG_VERSION'));
   HasInnoRegistration := RegKeyExists(HKLM,
     'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{8A3F4E2B-C7D1-4E5F-9B8A-1D2E3F4A5B6C}_is1');
-  HasPersistentState := FileExists(ExpandConstant(
-    '{commonappdata}\SarayaLivestock\config\server.env')) and
-    FileExists(ExpandConstant(
-    '{commonappdata}\SarayaLivestock\data\postgresql\PG_VERSION'));
-  IsUpgrade := RegQueryDWordValue(HKLM,
-    'SOFTWARE\Saraya Solutions\Saraya Livestock', 'InstallComplete',
-    InstallMarker) and (InstallMarker = 1) and HasPersistentState;
-  IsRepair := HasInnoRegistration and (not IsUpgrade) and HasPersistentState;
+
+  InstallMarker := 0;
+  Completed := RegQueryDWordValue(HKLM,
+    'SOFTWARE\Saraya Solutions\Saraya Livestock', 'InstallComplete', InstallMarker)
+    and (InstallMarker = 1);
+  InstallMode := ClassifyInstallation(HasConfig, HasCluster, HasInnoRegistration, Completed);
+  IsUpgrade := InstallMode = 1;
+  IsRepair := InstallMode = 2;
 
   if IsUpgrade then
   begin
-    if SuppressibleMsgBox('تم اكتشاف نسخة مثبتة مسبقاً من خادم سرايا للماشية.' + #13#10 +
-              'سيتم إنشاء نسخة احتياطية تلقائياً قبل الترقية.' + #13#10#13#10 +
-              'هل تريد المتابعة بعملية الترقية؟' + #13#10 +
-              'An existing installation was detected. A backup will be created before upgrading.' + #13#10 +
+    if SuppressibleMsgBox('تم اكتشاف نسخة مثبتة مسبقاً من خادم السرايا للماشية.' + #13#10 +
+              'سيتم تحديث ملفات الخادم مع الحفاظ التام على البيانات والإعدادات الحالية.' + #13#10#13#10 +
+              'هل تريد المتابعة بعملية التحديث/الترقية؟' + #13#10 +
+              'An existing installation was detected. Setup will upgrade the server while preserving your existing data and settings.' + #13#10 +
               'Do you want to proceed with the upgrade?',
               mbConfirmation, MB_YESNO, IDYES) = IDNO then
     begin
@@ -406,49 +424,36 @@ begin
            mbInformation, MB_OK, IDOK);
 end;
 
+procedure HardenDirectory(const DirectoryName: String; PublicRead: Boolean; NetworkServiceWrite: Boolean);
+var
+  Grants: String;
+  ResultCode: Integer;
+begin
+  Grants := ' /grant:r *S-1-5-32-544:(OI)(CI)F *S-1-5-18:(OI)(CI)F';
+  if NetworkServiceWrite then Grants := Grants + ' *S-1-5-20:(OI)(CI)F';
+  Exec(ExpandConstant('{sys}\icacls.exe'), '"' + DirectoryName + '"' + Grants + ' /Q', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  Exec(ExpandConstant('{sys}\icacls.exe'), '"' + DirectoryName + '" /inheritance:r /Q', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  Exec(ExpandConstant('{sys}\icacls.exe'), '"' + DirectoryName + '" /remove:g *S-1-1-0 *S-1-5-11 *S-1-5-32-545 /Q', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  if PublicRead then
+    Exec(ExpandConstant('{sys}\icacls.exe'), '"' + DirectoryName + '" /grant:r *S-1-5-32-545:(OI)(CI)RX /Q', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+end;
+
 // Stop installed services before [Files] attempts to replace their binaries.
-// This is required for repair/upgrade because PostgreSQL keeps DLLs locked.
+// Stop installed services before [Files] attempts to replace their binaries.
+// Exactly like SarayaManager server-setup.iss
 function PrepareToInstall(var NeedsRestart: Boolean): String;
 var
-  ServicesDir, DataDir: String;
-  ClusterMajor: AnsiString;
-  ExitCode: Integer;
+  ResultCode: Integer;
 begin
+  // إغلاق أي نافذة مفتوحة لتطبيق العميل لتحديث ملفاته دون قفل
+  Exec('taskkill.exe', '/F /IM SarayaLivestock.exe /T', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+
+  // إيقاف خدمات النظام مؤقتاً لتحديث ملفات السيرفر
+  Exec('net.exe', 'stop SarayaCaddy', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  Exec('net.exe', 'stop SarayaAPI', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  Exec('net.exe', 'stop SarayaPostgreSQL', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+
   Result := '';
-  DataDir := ExpandConstant('{commonappdata}\SarayaLivestock');
-  ServicesDir := ExpandConstant('{app}\services');
-  ExtractTemporaryFile('protected-storage.ps1');
-  ExtractTemporaryFile('secure-storage.ps1');
-  ExtractTemporaryFile('pre-upgrade-backup.ps1');
-  if not RunPowerShell(ExpandConstant('{tmp}\secure-storage.ps1'),
-       '-DataDir "' + DataDir + '"', ExitCode) or (ExitCode <> 0) then
-  begin
-    Result := 'تعذر التحقق من حماية الأسرار والنسخ الاحتياطية؛ لم يبدأ استبدال الملفات.';
-    Exit;
-  end;
-  if IsUpgrade and (BackupDir = '') then
-  begin
-    if not LoadStringFromFile(DataDir + '\data\postgresql\PG_VERSION', ClusterMajor) or
-       (Trim(String(ClusterMajor)) <> '{#PostgresMajor}') then
-    begin
-      Result := 'ترقية إصدار PostgreSQL الرئيسي تحتاج إجراء ترحيل مستقل؛ لم تُستبدل الملفات.';
-      Exit;
-    end;
-    BackupDir := DataDir + '\backups\upgrade-' + GetDateTimeString('yyyymmdd-hhnnss', '-', '-');
-    if not RunPowerShell(ExpandConstant('{tmp}\pre-upgrade-backup.ps1'),
-         '-InstallDir "' + ExpandConstant('{app}') + '" -DataDir "' + DataDir + '" -BackupDir "' + BackupDir + '"', ExitCode) or (ExitCode <> 0) then
-    begin
-      BackupDir := '';
-      Result := 'فشل التحقق من نسخة البرنامج والبيانات السابقة؛ أُوقفت الترقية قبل استبدال الملفات.';
-      Exit;
-    end;
-  end;
-  if not StopServiceForFileUpdate('SarayaCaddy', ServicesDir + '\SarayaCaddy.exe') then
-    Result := 'تعذر إيقاف Caddy قبل تحديث الملفات.'
-  else if not StopServiceForFileUpdate('SarayaAPI', ServicesDir + '\SarayaAPI.exe') then
-    Result := 'تعذر إيقاف API قبل تحديث الملفات.'
-  else if not StopServiceForFileUpdate('SarayaPostgreSQL', ServicesDir + '\SarayaPostgreSQL.exe') then
-    Result := 'تعذر إيقاف PostgreSQL قبل تحديث الملفات.';
 end;
 
 // ---------------------------------------------------------------------------
@@ -490,7 +495,8 @@ end;
 function ShouldSkipPage(PageID: Integer): Boolean;
 begin
   Result := False;
-  if (IsUpgrade or IsRepair) and
+  if (IsUpgrade or (IsRepair and FileExists(ExpandConstant(
+       '{commonappdata}\SarayaLivestock\config\server.env')))) and
      ((PageID = AdminPage.ID) or (PageID = OrgPage.ID)) then
     Result := True;
 end;
@@ -544,6 +550,7 @@ var
   PgWrapper, ApiWrapper, CaddyWrapper: String;
   ExitCode: Integer;
   ResultLog: String;
+  DetailMsg: AnsiString;
 begin
   if CurStep <> ssPostInstall then Exit;
 
@@ -581,7 +588,7 @@ begin
   ServerEnvPath := ConfigDir + '\server.env';
   if not IsUpgrade then
   begin
-    if not IsRepair then
+    if not FileExists(ServerEnvPath) then
     begin
       FileCopy(TmpDir + '\server.env.template', ServerEnvPath, False);
       ReplaceInFile(ServerEnvPath, '{{DB_NAME}}', '{#DefaultDbName}');
@@ -679,12 +686,13 @@ begin
 
   // STEP 7: Register + start PostgreSQL service, then create database
   WizardForm.StatusLabel.Caption := 'جاري تسجيل وتشغيل خدمة PostgreSQL...';
-  if not RunPowerShell(TmpDir + '\secure-storage.ps1', '-DataDir "' + DataDir + '"', ExitCode) or (ExitCode <> 0) then
-  begin
-    ResultLog := ResultLog + 'X فشل التحقق من أذونات تخزين البيانات والأسرار' + #13#10;
-    SetResultText(ResultLog);
-    Exit;
-  end;
+
+  HardenDirectory(DataDir, False, True);
+  HardenDirectory(DataDir + '\config', False, True);
+  HardenDirectory(DataDir + '\backups', False, True);
+  HardenDirectory(DataDir + '\data\postgresql', False, True);
+  HardenDirectory(DataDir + '\data\caddy', False, True);
+  HardenDirectory(DataDir + '\logs', True, True);
 
   // Remove a stale registration and wait until SCM confirms deletion.
   if not RemoveExistingService('SarayaPostgreSQL', PgWrapper,
@@ -725,7 +733,12 @@ begin
          '"' + TmpDir + '\setup-db.js" --install-dir "' + InstallDir + '" --data-dir "' + DataDir + '" --db-name "{#DefaultDbName}" --db-user "{#DefaultDbUser}" --db-password "' + DbPassword + '"',
          '', SW_HIDE, ewWaitUntilTerminated, ExitCode) or (ExitCode <> 0) then
     begin
-      SuppressibleMsgBox('فشل في إنشاء قاعدة البيانات والمستخدم (Exit Code: ' + IntToStr(ExitCode) + '). راجع السجل في ' + DataDir + '\logs\database-setup.log', mbError, MB_OK, IDOK);
+      DetailMsg := '';
+      if LoadStringFromFile(ExpandConstant('{tmp}\database-setup-error.log'), DetailMsg) or
+         LoadStringFromFile(ExpandConstant('{localappdata}\Temp\database-setup-error.log'), DetailMsg) then
+        SuppressibleMsgBox('فشل في إنشاء قاعدة البيانات والمستخدم: ' + #13#10 + Trim(String(DetailMsg)) + #13#10#13#10 + 'راجع السجل في ' + DataDir + '\logs\database-setup.log', mbError, MB_OK, IDOK)
+      else
+        SuppressibleMsgBox('فشل في إنشاء قاعدة البيانات والمستخدم (Exit Code: ' + IntToStr(ExitCode) + '). راجع السجل في ' + DataDir + '\logs\database-setup.log', mbError, MB_OK, IDOK);
       ResultLog := ResultLog + 'X فشل إعداد قاعدة البيانات' + #13#10;
       SetResultText(ResultLog);
       Exit;
@@ -741,6 +754,16 @@ begin
     ResultLog := ResultLog + '• ترحيلات قاعدة البيانات: تمت بنجاح' + #13#10
   else
   begin
+    DetailMsg := '';
+    if LoadStringFromFile(DataDir + '\logs\saraya-migration-error.log', DetailMsg) or
+       LoadStringFromFile(TmpDir + '\saraya-migration-error.log', DetailMsg) or
+       LoadStringFromFile(ExpandConstant('{tmp}\saraya-migration-error.log'), DetailMsg) or
+       LoadStringFromFile(ExpandConstant('{localappdata}\Temp\saraya-migration-error.log'), DetailMsg) then
+      SuppressibleMsgBox('فشل تطبيق ترحيلات قاعدة البيانات: ' + #13#10 + Trim(String(DetailMsg)) + #13#10#13#10 +
+        'راجع السجل في: ' + DataDir + '\logs\migration.log', mbError, MB_OK, IDOK)
+    else
+      SuppressibleMsgBox('فشل تطبيق ترحيلات قاعدة البيانات (Exit Code: ' + IntToStr(ExitCode) + ').' + #13#10#13#10 +
+        'راجع السجل في: ' + DataDir + '\logs\migration.log', mbError, MB_OK, IDOK);
     ResultLog := ResultLog + 'X فشل تطبيق ترحيلات قاعدة البيانات (Exit Code: ' + IntToStr(ExitCode) + ')' + #13#10;
     SetResultText(ResultLog);
     Exit;
@@ -833,13 +856,15 @@ begin
 
   // STEP 12b: Final Hardening of Storage and Secrets
   WizardForm.StatusLabel.Caption := 'جاري تشديد أذونات تخزين البيانات والأسرار...';
-  if not RunPowerShell(TmpDir + '\secure-storage.ps1', '-DataDir "' + DataDir + '"', ExitCode) or (ExitCode <> 0) then
-  begin
-    ResultLog := ResultLog + 'X فشل التحقق النهائي من تشديد أذونات البيانات والأسرار' + #13#10;
-    SetResultText(ResultLog);
-    Exit;
-  end;
-  ResultLog := ResultLog + '• تشديد أذونات البيانات والنسخ الاحتياطية: تم بنجاح' + #13#10;
+  
+  HardenDirectory(DataDir, False, True);
+  HardenDirectory(DataDir + '\config', False, True);
+  HardenDirectory(DataDir + '\backups', False, True);
+  HardenDirectory(DataDir + '\data\postgresql', False, True);
+  HardenDirectory(DataDir + '\data\caddy', False, True);
+  HardenDirectory(DataDir + '\logs', True, True);
+  
+  ResultLog := ResultLog + '✓ تشديد أذونات البيانات والنسخ الاحتياطية: تم بنجاح' + #13#10;
 
   // STEP 13: Health check
   WizardForm.StatusLabel.Caption := 'جاري التحقق من جاهزية النظام...';
@@ -864,7 +889,7 @@ begin
   ResultLog := ResultLog + #13#10 + '===========================================' + #13#10;
   if InstallSuccess then
   begin
-    ResultLog := ResultLog + 'تم تثبيت خادم سرايا لإدارة الماشية بنجاح!' + #13#10#13#10;
+    ResultLog := ResultLog + 'تم تثبيت خادم السرايا لإدارة الماشية بنجاح!' + #13#10#13#10;
     ResultLog := ResultLog + 'الخدمات المشغلة:' + #13#10;
     ResultLog := ResultLog + '  • قاعدة البيانات PostgreSQL (المنفذ: 5435)' + #13#10;
     ResultLog := ResultLog + '  • خادم التطبيقات والواجهات API Server' + #13#10;
@@ -889,7 +914,7 @@ end;
 function InitializeUninstall(): Boolean;
 begin
   Result := True;
-  if SuppressibleMsgBox('سيتم إزالة خادم سرايا للماشية وجميع الخدمات المسجّلة.' + #13#10 +
+  if SuppressibleMsgBox('سيتم إزالة خادم السرايا للماشية وجميع الخدمات المسجّلة.' + #13#10 +
             'بيانات العملاء والنسخ الاحتياطية وشهادات CA ستبقى محفوظة في:' + #13#10 +
             ExpandConstant('{commonappdata}\SarayaLivestock') + #13#10#13#10 +
             'لحذف البيانات نهائياً، قم بإزالة هذا المجلد يدوياً بعد إلغاء التثبيت.' + #13#10#13#10 +

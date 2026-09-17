@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Milk, 
   ShieldAlert, 
@@ -22,7 +22,8 @@ import {
   Volume2
 } from 'lucide-react';
 import { MilkingShift } from '../api/types';
-import { logMilkingSession, getAnimals, getMilkingDailySummary } from '../api/client';
+import { logMilkingSession } from '../api/client';
+import { useAnimalsQuery, useMilkingSummaryQuery } from '../api/queries';
 import { Money, formatMoney, formatNumber, formatDate, OFFICIAL_CURRENCY } from '../utils/money.util';
 
 interface CowInfo {
@@ -53,7 +54,6 @@ interface RecentMilkLog {
 
 export const MilkingQuickEntry: React.FC = () => {
   const [tagInput, setTagInput] = useState<string>('');
-  const [availableCows, setAvailableCows] = useState<CowInfo[]>([]);
   const [selectedCow, setSelectedCow] = useState<CowInfo | null>(null);
   const [currentYield, setCurrentYield] = useState<string>('');
   const [fatPct, setFatPct] = useState<string>('');
@@ -73,78 +73,77 @@ export const MilkingQuickEntry: React.FC = () => {
   const targetTankCapacity = 5000;
   const milkSellingPricePerLiter = 3.5; // LYD
 
-  // Load real cows from API
-  const loadCowsFromApi = async () => {
-    try {
-      const [animals, summary] = await Promise.all([
-        getAnimals(),
-        getMilkingDailySummary(undefined, new Date().toISOString().slice(0, 10)),
-      ]);
-      if (Array.isArray(animals)) {
-        const mapped: CowInfo[] = animals.filter(a => (a.purpose === 'DAIRY' || a.purpose === 'DUAL')).map(a => {
-          const isQuar = a.withdrawalEndDate ? new Date(a.withdrawalEndDate) > new Date() : false;
-          return {
-            id: a.id,
-            tagNumber: a.tagNumber,
-            name: a.name || `بقرة #${a.tagNumber}`,
-            breed: a.breed || 'غير محدد',
-            avgYield: 0,
-            daysInMilk: 0,
-            isQuarantined: isQuar,
-            quarantineEndDate: a.withdrawalEndDate ? String(a.withdrawalEndDate).slice(0, 10) : undefined,
-            quarantineReason: isQuar ? 'علاج مضاد حيوي بيطري (صمام الأمان نشط)' : undefined,
-            lastMilkingYield: undefined,
-          };
-        });
-        setAvailableCows(mapped);
-        if (mapped.length > 0) {
-          selectCow(mapped[0]);
-        } else {
-          setSelectedCow(null);
-        }
-      }
-      setRecentLogs(summary.logs.map(log => ({
-        id: log.id,
-        tagNumber: log.animal?.tagNumber || '',
-        cowName: log.animal?.name || '',
-        yieldLiters: Number(log.yieldLiters),
-        shift: log.shift,
-        time: new Date(log.logDate).toLocaleTimeString('ar-LY', { hour: '2-digit', minute: '2-digit' }),
-        logDate: String(log.logDate),
-        isDiscarded: log.isDiscarded,
-        discardReason: log.discardReason,
-        value: log.isDiscarded ? 0 : Money.mul(log.yieldLiters as any, milkSellingPricePerLiter),
-      })));
-      setDailyTotalLiters(Number(summary.totalLiters || 0));
-      setDailyUsableLiters(Number(summary.usableLiters || 0));
-      setBulkTankVolume(Number(summary.usableLiters || 0));
+  // --- React Query: load animals & milking summary ---
+  const todayDate = new Date().toISOString().slice(0, 10);
+  const { data: rawAnimals = [] } = useAnimalsQuery();
+  const { data: summary } = useMilkingSummaryQuery(todayDate);
 
+  // Map raw animals to CowInfo for dairy/dual purpose only
+  const availableCows: CowInfo[] = React.useMemo(() => {
+    return rawAnimals
+      .filter((a: any) => a.purpose === 'DAIRY' || a.purpose === 'DUAL')
+      .map((a: any) => {
+        const isQuar = a.withdrawalEndDate ? new Date(a.withdrawalEndDate) > new Date() : false;
+        return {
+          id: a.id,
+          tagNumber: a.tagNumber,
+          name: a.name || `بقرة #${a.tagNumber}`,
+          breed: a.breed || 'غير محدد',
+          avgYield: 0,
+          daysInMilk: 0,
+          isQuarantined: isQuar,
+          quarantineEndDate: a.withdrawalEndDate ? String(a.withdrawalEndDate).slice(0, 10) : undefined,
+          quarantineReason: isQuar ? 'علاج مضاد حيوي بيطري (صمام الأمان نشط)' : undefined,
+          lastMilkingYield: undefined,
+        };
+      });
+  }, [rawAnimals]);
+
+  // Sync summary data when it arrives
+  useEffect(() => {
+    if (!summary) return;
+    setRecentLogs(summary.logs.map((log: any) => ({
+      id: log.id,
+      tagNumber: log.animal?.tagNumber || '',
+      cowName: log.animal?.name || '',
+      yieldLiters: Number(log.yieldLiters),
+      shift: log.shift,
+      time: new Date(log.logDate).toLocaleTimeString('ar-LY', { hour: '2-digit', minute: '2-digit' }),
+      logDate: String(log.logDate),
+      isDiscarded: log.isDiscarded,
+      discardReason: log.discardReason,
+      value: log.isDiscarded ? 0 : Money.mul(log.yieldLiters as any, milkSellingPricePerLiter),
+    })));
+    setDailyTotalLiters(Number(summary.totalLiters || 0));
+    setDailyUsableLiters(Number(summary.usableLiters || 0));
+    setBulkTankVolume(Number(summary.usableLiters || 0));
+  }, [summary]);
+
+  // Auto-select first cow when cows load
+  useEffect(() => {
+    if (availableCows.length > 0 && !selectedCow) {
+      selectCow(availableCows[0]);
+    }
+  }, [availableCows]);
+
+  // Fetch chiller telemetry (Electron only)
+  useEffect(() => {
+    (async () => {
       if ((window as any).electronAPI?.getTankTelemetry) {
         try {
           const telemetry = await (window as any).electronAPI.getTankTelemetry();
           if (telemetry?.temperature !== undefined && telemetry?.connected) {
             setChillerTemp(telemetry.temperature);
-          } else {
-            setChillerTemp(null);
           }
         } catch {
           setChillerTemp(null);
         }
       }
-    } catch (error: any) {
-      setAvailableCows([]);
-      setSelectedCow(null);
-      setRecentLogs([]);
-      setBulkTankVolume(0);
-      setDailyTotalLiters(0);
-      setDailyUsableLiters(0);
-      setChillerTemp(null);
-      setFeedback(error.message || 'تعذر تحميل بيانات محطة الحلب');
-    }
-  };
+    })();
+  }, []);
 
   // Select a cow and update quarantine interlock
-  const selectCow = (cow: CowInfo) => {
+  const selectCow = useCallback((cow: CowInfo) => {
     setSelectedCow(cow);
     setTagInput(cow.tagNumber);
     setIsDiscarded(cow.isQuarantined);
@@ -152,7 +151,7 @@ export const MilkingQuickEntry: React.FC = () => {
       setCurrentYield(String(cow.lastMilkingYield));
     }
     setFeedback(null);
-  };
+  }, []);
 
   // Search by tag number or RFID
   const handleSearch = (tag: string) => {
@@ -167,10 +166,6 @@ export const MilkingQuickEntry: React.FC = () => {
       setFeedback('لم يتم العثور على الحيوان في مزرعة المستخدم');
     }
   };
-
-  useEffect(() => {
-    loadCowsFromApi();
-  }, []);
 
   // Quick Yield Increment Presets
   const handleQuickAdd = (liters: number) => {

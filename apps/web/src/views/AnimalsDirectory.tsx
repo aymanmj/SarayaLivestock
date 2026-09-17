@@ -1,40 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import { Search, Filter, Plus, ShieldAlert, HeartPulse, Scale, Milk, Layers, RefreshCw, Eye, ShoppingBag } from 'lucide-react';
 import { Animal, Species } from '../api/types';
-import { getAnimals } from '../api/client';
+import { useAnimalsQuery } from '../api/queries';
 import { AddAnimalModal } from '../components/AddAnimalModal';
 import { AnimalProfileModal } from '../components/AnimalProfileModal';
 
 export const AnimalsDirectory: React.FC = () => {
-  const [animals, setAnimals] = useState<Animal[]>([]);
-  const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [speciesFilter, setSpeciesFilter] = useState<string>('ALL');
   const [purposeFilter, setPurposeFilter] = useState<string>('ALL');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedAnimalId, setSelectedAnimalId] = useState<string | null>(null);
-  const [loadError, setLoadError] = useState<string | null>(null);
 
-  const loadAnimals = async () => {
-    setLoading(true);
-    setLoadError(null);
-    try {
-      const res = await getAnimals({ search: searchTerm });
-      if (Array.isArray(res)) {
-        setAnimals(res);
-      }
-    } catch (error: any) {
-      setAnimals([]);
-      setLoadError(error.message || 'تعذر تحميل سجل القطيع');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadAnimals();
-  }, [searchTerm]);
+  const { data: animals = [], isLoading: loading, error, refetch: loadAnimals } = useAnimalsQuery(searchTerm);
+  const loadError = error ? (error as Error).message || 'تعذر تحميل سجل القطيع' : null;
 
   const filtered = animals.filter(animal => {
     const matchesSearch = 
@@ -68,7 +48,7 @@ export const AnimalsDirectory: React.FC = () => {
 
         <div className="flex items-center gap-2 self-start md:self-auto">
           <button
-            onClick={loadAnimals}
+            onClick={() => { loadAnimals(); }}
             disabled={loading}
             className="p-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold transition flex items-center gap-1.5"
             title="تحديث القائمة"

@@ -152,6 +152,11 @@ try {
     exit 0
 }
 catch {
-    Write-Error "Failed to run migrations / فشل في تشغيل الترحيلات: $($_.Exception.Message)"
+    $errMessage = "Failed to run migrations: " + $_.Exception.Message + "`n" + $_.ScriptStackTrace
+    $logPath = Join-Path $DataDir "logs\saraya-migration-error.log"
+    $tmpPath = Join-Path $env:TEMP "saraya-migration-error.log"
+    try { [System.IO.File]::WriteAllText($logPath, $errMessage) } catch {}
+    try { [System.IO.File]::WriteAllText($tmpPath, $errMessage) } catch {}
+    Write-Error $errMessage
     exit 1
 }
