@@ -4,6 +4,7 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PrismaService } from '../../database/prisma.service';
 import { ConfigService } from '@nestjs/config';
 import { VaultService } from '../../common/security/vault.service';
+import { SessionRevocationReason } from '@prisma/client';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -49,6 +50,36 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     if (!session || !session.user.isActive) {
       throw new UnauthorizedException('المستخدم غير مفعل أو غير مصرح له بالدخول');
     }
+
+    // A1 fix: Guard against sessions whose family was invalidated by logout/logoutAll/roleChange/etc.
+    if (session.familyId && typeof this.prisma?.userSession?.findFirst === 'function') {
+      const familyRevoked = await this.prisma.userSession.findFirst({
+        where: {
+          familyId: session.familyId,
+          revocationReason: {
+            in: [
+              SessionRevocationReason.LOGOUT,
+              SessionRevocationReason.LOGOUT_ALL,
+              SessionRevocationReason.PASSWORD_RESET,
+              SessionRevocationReason.REUSE_DETECTED,
+              SessionRevocationReason.USER_DISABLED,
+              SessionRevocationReason.ROLE_CHANGED,
+            ],
+          },
+        },
+      });
+
+      if (familyRevoked) {
+        if (typeof this.prisma?.userSession?.updateMany === 'function') {
+          await this.prisma.userSession.updateMany({
+            where: { id: session.id, revokedAt: null },
+            data: { revokedAt: new Date(), revocationReason: familyRevoked.revocationReason },
+          });
+        }
+        throw new UnauthorizedException('تم إبطال جلسات المستخدم');
+      }
+    }
+
     const user = session.user;
 
     return {

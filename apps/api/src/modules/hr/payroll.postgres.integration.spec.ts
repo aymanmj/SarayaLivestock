@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
+import { INestApplication, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { PayrollService } from './payroll.service';
 import { EmployeesService } from './employees.service';
@@ -315,5 +315,139 @@ describeDatabase('Payroll & HR Integration Suite', () => {
 
     const updated = await prisma.payrollPeriod.findUniqueOrThrow({ where: { id: draft.id } });
     expect(updated.status).toBe('PAID');
+  });
+
+  it('correctly handles fully consumed advance in subsequent draft (B1 fix): slip advancesSettled is 0, netSalary is full, account 1106 balance is exactly 0 and not negative', async () => {
+    // Create new employee with salary 1000 and advance 500
+    const empB1 = await employeesService.create(
+      farmId,
+      {
+        employeeCode: 'EMP-B1',
+        firstName: 'علي',
+        lastName: 'عامل',
+        nationalId: '112233446',
+        hireDate: '2026-01-01T00:00:00Z',
+        baseSalary: 1000,
+        jobTitle: 'عامل',
+      },
+      mockActor,
+    );
+
+    // Only empB1 is active
+    await prisma.employee.updateMany({
+      where: { id: { not: empB1.id } },
+      data: { status: 'TERMINATED' },
+    });
+
+    const cashAcc = await prisma.account.findFirstOrThrow({ where: { farmId, code: '1101' } });
+    const advB1 = await advancesService.requestAdvance(farmId, empB1.id, {
+      amount: 500,
+      requestDate: '2026-05-01T00:00:00Z',
+      reason: 'سلفة 500',
+      paymentAccountId: cashAcc.id,
+    }, mockActor as any);
+
+    // Two drafts: Month 5 and Month 6
+    const draft5 = await payrollService.generatePayroll(farmId, {
+      monthName: '2026-05',
+      startDate: '2026-05-01T00:00:00Z',
+      endDate: '2026-05-31T23:59:59Z',
+    }, mockActor as any);
+
+    const draft6 = await payrollService.generatePayroll(farmId, {
+      monthName: '2026-06',
+      startDate: '2026-06-01T00:00:00Z',
+      endDate: '2026-06-30T23:59:59Z',
+    }, mockActor as any);
+
+    // Approve Month 5: settles 500
+    await payrollService.approvePayroll(farmId, draft5.id, mockActor as any);
+    const advAfterM5 = await prisma.employeeAdvance.findUniqueOrThrow({ where: { id: advB1.id } });
+    expect(advAfterM5.settledAmount.toNumber()).toBe(500);
+    expect(advAfterM5.isSettled).toBe(true);
+
+    // Approve Month 6: advance is already fully settled!
+    // B1 fix guarantees: slip in Month 6 is updated so advancesSettled = 0, netSalary = 1000!
+    await payrollService.approvePayroll(farmId, draft6.id, mockActor as any);
+
+    const slip6 = await prisma.payrollSlip.findFirstOrThrow({ where: { periodId: draft6.id, employeeId: empB1.id } });
+    expect(slip6.advancesSettled.toNumber()).toBe(0);
+    expect(slip6.netSalary.toNumber()).toBe(1000);
+
+    // Account 1106 balance must be non-negative (specifically 0, not -500!)
+    const advAccount = await prisma.account.findFirstOrThrow({ where: { farmId, code: '1106' } });
+    expect(advAccount.currentBalance.toNumber()).toBe(0);
+
+    // Reservations in advanceSettlement for Month 6 must be 0
+    const reservations6 = await prisma.advanceSettlement.count({ where: { periodId: draft6.id } });
+    expect(reservations6).toBe(0);
+  });
+
+  it('rejects deleting a draft period if concurrently approved (B2 fix)', async () => {
+    const draft7 = await payrollService.generatePayroll(farmId, {
+      monthName: '2026-07',
+      startDate: '2026-07-01T00:00:00Z',
+      endDate: '2026-07-31T23:59:59Z',
+    }, mockActor as any);
+
+    // Approve the period first
+    await payrollService.approvePayroll(farmId, draft7.id, mockActor as any);
+
+    // Attempting to delete draft must fail because it is APPROVED
+    await expect(payrollService.deleteDraft(farmId, draft7.id, mockActor as any))
+      .rejects.toThrow(BadRequestException);
+
+    // Verify period and slips still exist, and journal entry is not orphaned
+    const periodCount = await prisma.payrollPeriod.count({ where: { id: draft7.id } });
+    expect(periodCount).toBe(1);
+    const journalCount = await prisma.journalEntry.count({ where: { referenceId: draft7.id } });
+    expect(journalCount).toBe(1);
+  });
+
+  it('records a domain audit event when paying zero-net payroll (A2 fix)', async () => {
+    const empZero = await employeesService.create(
+      farmId,
+      {
+        employeeCode: 'EMP-ZERO',
+        firstName: 'طارق',
+        lastName: 'عامل',
+        nationalId: '112233447',
+        hireDate: '2026-01-01T00:00:00Z',
+        baseSalary: 400,
+        jobTitle: 'عامل',
+      },
+      mockActor,
+    );
+    await prisma.employee.updateMany({
+      where: { id: { not: empZero.id } },
+      data: { status: 'TERMINATED' },
+    });
+
+    const cashAcc = await prisma.account.findFirstOrThrow({ where: { farmId, code: '1101' } });
+    await advancesService.requestAdvance(farmId, empZero.id, {
+      amount: 400,
+      requestDate: '2026-08-01T00:00:00Z',
+      reason: 'سلفة كامل الراتب',
+      paymentAccountId: cashAcc.id,
+    }, mockActor as any);
+
+    const draft8 = await payrollService.generatePayroll(farmId, {
+      monthName: '2026-08',
+      startDate: '2026-08-01T00:00:00Z',
+      endDate: '2026-08-31T23:59:59Z',
+    }, mockActor as any);
+
+    await payrollService.approvePayroll(farmId, draft8.id, mockActor as any);
+
+    const auditBeforePay = await prisma.auditEvent.count({ where: { farmId } });
+    await payrollService.payPayroll(farmId, draft8.id, { paymentAccountId: cashAcc.id }, mockActor as any);
+    const auditAfterPay = await prisma.auditEvent.count({ where: { farmId } });
+
+    // Must have logged the hr.payroll.paid domain audit event!
+    expect(auditAfterPay).toBeGreaterThan(auditBeforePay);
+    const paidAuditEvent = await prisma.auditEvent.findFirst({
+      where: { farmId, action: 'hr.payroll.paid', entityId: draft8.id },
+    });
+    expect(paidAuditEvent).toBeDefined();
   });
 });

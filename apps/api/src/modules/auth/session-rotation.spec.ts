@@ -140,7 +140,18 @@ describe('Refresh session rotation', () => {
 
   it('accepts an access token only while its server-side session remains active', async () => {
     const prisma = {
-      userSession: { findFirst: jest.fn().mockResolvedValue({ user }) },
+      userSession: {
+        findFirst: jest.fn().mockImplementation((args: any) => {
+          if (args.where?.id === 'session-a') {
+            return Promise.resolve({ id: 'session-a', familyId: 'family-a', user });
+          }
+          if (args.where?.familyId === 'family-a') {
+            return Promise.resolve(null); // family is healthy
+          }
+          return Promise.resolve(null);
+        }),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+      },
     } as any;
     const strategy = new JwtStrategy(prisma, { get: () => 'x'.repeat(32) } as any);
 
@@ -154,5 +165,30 @@ describe('Refresh session rotation', () => {
     prisma.userSession.findFirst.mockResolvedValueOnce(null);
     await expect(strategy.validate({ sub: 'user-a', sid: 'revoked-session' }))
       .rejects.toBeInstanceOf(UnauthorizedException);
+  });
+
+  it('rejects an access token if its session family has been invalidated by logout', async () => {
+    const prisma = {
+      userSession: {
+        findFirst: jest.fn().mockImplementation((args: any) => {
+          if (args.where?.id === 'session-b') {
+            return Promise.resolve({ id: 'session-b', familyId: 'family-b', user });
+          }
+          if (args.where?.familyId === 'family-b') {
+            return Promise.resolve({ id: 'session-old', revocationReason: SessionRevocationReason.LOGOUT });
+          }
+          return Promise.resolve(null);
+        }),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+      },
+    } as any;
+    const strategy = new JwtStrategy(prisma, { get: () => 'x'.repeat(32) } as any);
+
+    await expect(strategy.validate({ sub: 'user-a', sid: 'session-b' }))
+      .rejects.toBeInstanceOf(UnauthorizedException);
+    expect(prisma.userSession.updateMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: { id: 'session-b', revokedAt: null },
+      data: expect.objectContaining({ revocationReason: SessionRevocationReason.LOGOUT }),
+    }));
   });
 });

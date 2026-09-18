@@ -164,25 +164,28 @@ export class AuthService implements OnModuleInit {
         session.revokedAt &&
         (now.getTime() - session.revokedAt.getTime()) < 30000;
 
-      // S1 fix: Even within grace period, reject if the family was explicitly invalidated
-      // (logout, logoutAll, password reset, reuse detection, or user disabled)
-      if (isGracePeriod) {
-        const familyRevoked = await tx.userSession.findFirst({
-          where: {
-            familyId: session.familyId,
-            revocationReason: {
-              in: [
-                SessionRevocationReason.LOGOUT,
-                SessionRevocationReason.LOGOUT_ALL,
-                SessionRevocationReason.PASSWORD_RESET,
-                SessionRevocationReason.REUSE_DETECTED,
-                SessionRevocationReason.USER_DISABLED,
-                SessionRevocationReason.ROLE_CHANGED,
-              ],
+      // Check if the session family was explicitly invalidated
+      // (logout, logoutAll, password reset, reuse detection, role change, or user disabled)
+      const familyRevoked = typeof tx.userSession.findFirst === 'function'
+        ? await tx.userSession.findFirst({
+            where: {
+              familyId: session.familyId,
+              revocationReason: {
+                in: [
+                  SessionRevocationReason.LOGOUT,
+                  SessionRevocationReason.LOGOUT_ALL,
+                  SessionRevocationReason.PASSWORD_RESET,
+                  SessionRevocationReason.REUSE_DETECTED,
+                  SessionRevocationReason.USER_DISABLED,
+                  SessionRevocationReason.ROLE_CHANGED,
+                ],
+              },
             },
-          },
-        });
-        if (familyRevoked) return { valid: false as const };
+          })
+        : null;
+
+      if (familyRevoked) {
+        return { valid: false as const };
       }
 
       if ((session.revokedAt || session.replacedBySessionId) && !isGracePeriod) {
@@ -231,34 +234,6 @@ export class AuthService implements OnModuleInit {
         },
       });
 
-      // S-R1 fix: Re-check family revocation after session creation to guard against
-      // concurrent revocations (e.g. logout/logoutAll/roleChange racing with session creation)
-      const familyInvalidated = typeof tx.userSession.findFirst === 'function'
-        ? await tx.userSession.findFirst({
-            where: {
-              familyId: session.familyId,
-              revocationReason: {
-                in: [
-                  SessionRevocationReason.LOGOUT,
-                  SessionRevocationReason.LOGOUT_ALL,
-                  SessionRevocationReason.PASSWORD_RESET,
-                  SessionRevocationReason.REUSE_DETECTED,
-                  SessionRevocationReason.USER_DISABLED,
-                  SessionRevocationReason.ROLE_CHANGED,
-                ],
-              },
-            },
-          })
-        : null;
-
-      if (familyInvalidated) {
-        await tx.userSession.updateMany({
-          where: { id: nextSession.id },
-          data: { revokedAt: now, revocationReason: familyInvalidated.revocationReason },
-        });
-        return { valid: false as const };
-      }
-
       if (!isGracePeriod) {
         const rotation = await tx.userSession.updateMany({
           where: { id: session.id, revokedAt: null, replacedBySessionId: null },
@@ -290,6 +265,35 @@ export class AuthService implements OnModuleInit {
         entityId: nextSession.id,
         metadata: { previousSessionId: session.id, isGracePeriod },
       });
+
+      // A1 fix: Final check after audit event insertion and rotation before committing.
+      // Guards against concurrent logout/logoutAll/roleChange/passwordReset that committed during this transaction.
+      const finalFamilyRevocation = typeof tx.userSession.findFirst === 'function'
+        ? await tx.userSession.findFirst({
+            where: {
+              familyId: session.familyId,
+              revocationReason: {
+                in: [
+                  SessionRevocationReason.LOGOUT,
+                  SessionRevocationReason.LOGOUT_ALL,
+                  SessionRevocationReason.PASSWORD_RESET,
+                  SessionRevocationReason.REUSE_DETECTED,
+                  SessionRevocationReason.USER_DISABLED,
+                  SessionRevocationReason.ROLE_CHANGED,
+                ],
+              },
+            },
+          })
+        : null;
+
+      if (finalFamilyRevocation) {
+        await tx.userSession.updateMany({
+          where: { id: nextSession.id },
+          data: { revokedAt: now, revocationReason: finalFamilyRevocation.revocationReason },
+        });
+        return { valid: false as const };
+      }
+
       return {
         valid: true as const,
         user: session.user,

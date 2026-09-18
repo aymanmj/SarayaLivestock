@@ -168,7 +168,11 @@ export class PayrollService {
 
       // Recalculate each settlement against current (locked) advance state
       let actualTotalAdvancesSettled = 0;
-      const slipAdjustments = new Map<string, number>(); // employeeId -> adjusted settlement amount
+      // B1 fix: Track settled amount per employee for ALL employees with slips in this period
+      const employeeSettlements = new Map<string, number>();
+      for (const slip of period.slips) {
+        employeeSettlements.set(slip.employeeId, 0);
+      }
 
       for (const settlement of period.advanceSettlements) {
         const freshAdvance = advanceLookup.get(settlement.advanceId);
@@ -186,7 +190,8 @@ export class PayrollService {
         const originalSettlementAmount = Money.fromPrisma(settlement.amount as any);
 
         if (currentBalance <= 0) {
-          // F-R2: Advance already fully settled by another payroll — remove this settlement
+          // F-R2 & B1 fix: Advance already fully settled by another payroll — remove this settlement
+          // Note: employeeSettlements remains 0 for this employee unless another advance exists
           await tx.advanceSettlement.delete({ where: { id: settlement.id } });
           continue;
         }
@@ -216,33 +221,30 @@ export class PayrollService {
 
         actualTotalAdvancesSettled = Money.add(actualTotalAdvancesSettled, adjustedAmount);
 
-        // Track per-employee adjustment to recalculate slip if needed
-        // We need to find which employee this advance belongs to
+        // Track per-employee adjustment to recalculate slip
         const employeeAdvance = await tx.employeeAdvance.findUnique({
           where: { id: freshAdvance.id },
           select: { employeeId: true },
         });
         if (employeeAdvance) {
-          const current = slipAdjustments.get(employeeAdvance.employeeId) || 0;
-          slipAdjustments.set(employeeAdvance.employeeId, Money.add(current, adjustedAmount));
+          const current = employeeSettlements.get(employeeAdvance.employeeId) ?? 0;
+          employeeSettlements.set(employeeAdvance.employeeId, Money.add(current, adjustedAmount));
         }
       }
 
-      // Update slips if settlements were adjusted
+      // B1 fix: Update every slip in this period to reflect its true surviving settled advance amount
       for (const slip of period.slips) {
-        const adjustedSettlement = slipAdjustments.get(slip.employeeId);
-        if (adjustedSettlement !== undefined) {
-          const originalSlipSettlement = Money.fromPrisma(slip.advancesSettled as any);
-          if (adjustedSettlement !== originalSlipSettlement) {
-            const newNetSalary = Money.sub(Money.fromPrisma(slip.baseSalary as any), adjustedSettlement);
-            await tx.payrollSlip.update({
-              where: { id: slip.id },
-              data: {
-                advancesSettled: Money.toDb(adjustedSettlement),
-                netSalary: Money.toDb(newNetSalary),
-              },
-            });
-          }
+        const settledAmount = employeeSettlements.get(slip.employeeId) ?? 0;
+        const currentSlipSettled = Money.fromPrisma(slip.advancesSettled as any);
+        if (settledAmount !== currentSlipSettled) {
+          const newNetSalary = Money.sub(Money.fromPrisma(slip.baseSalary as any), settledAmount);
+          await tx.payrollSlip.update({
+            where: { id: slip.id },
+            data: {
+              advancesSettled: Money.toDb(settledAmount),
+              netSalary: Money.toDb(newNetSalary),
+            },
+          });
         }
       }
 
@@ -251,6 +253,11 @@ export class PayrollService {
       const totalSalaries = updatedSlips.reduce((sum, slip) => Money.add(sum, slip.baseSalary as any), 0);
       const totalAdvancesSettled = updatedSlips.reduce((sum, slip) => Money.add(sum, slip.advancesSettled as any), 0);
       const totalNetPayable = updatedSlips.reduce((sum, slip) => Money.add(sum, slip.netSalary as any), 0);
+
+      // Verify integrity: sum of slip settlements must match actualTotalAdvancesSettled
+      if (totalAdvancesSettled !== actualTotalAdvancesSettled) {
+        throw new Error(`خلل في تطابق تسويات السلف: إجمالي القسائم (${totalAdvancesSettled}) لا يطابق التسويات المحسوبة (${actualTotalAdvancesSettled})`);
+      }
 
       // Accounting
       const expAccount = await tx.account.findFirst({ where: { farmId, code: '5103' } });
@@ -296,15 +303,32 @@ export class PayrollService {
 
   async deleteDraft(farmId: string, periodId: string, actor?: AuditActor) {
     return this.prisma.$transaction(async tx => {
-      // F-R1 fix: Atomic state check — only DRAFT can be deleted, and only once
+      // Find period for verification and metadata
       const period = await tx.payrollPeriod.findFirst({
         where: { id: periodId, farmId },
       });
 
       if (!period) throw new NotFoundException('فترة الرواتب غير موجودة');
-      if (period.status !== PayrollStatus.DRAFT) throw new BadRequestException('يمكن حذف مسودات الرواتب فقط');
+      if (period.status !== PayrollStatus.DRAFT) {
+        throw new BadRequestException('يمكن حذف مسودات الرواتب فقط');
+      }
 
-      // S-R4 fix: Audit trail for draft deletion
+      // B2 fix: Atomic conditional deletion — only delete if still in DRAFT status.
+      // If approvePayroll committed concurrently between read and delete, deleted.count will be 0.
+      const deleted = await tx.payrollPeriod.deleteMany({
+        where: { id: periodId, farmId, status: PayrollStatus.DRAFT },
+      });
+
+      if (deleted.count === 0) {
+        throw new BadRequestException('يمكن حذف مسودات الرواتب فقط أو تم اعتمادها مسبقاً');
+      }
+
+      // Explicitly delete advance settlements for this period
+      await tx.advanceSettlement.deleteMany({
+        where: { periodId },
+      });
+
+      // S-R4 fix: Audit trail for draft deletion inside the transaction
       const effectiveActor: AuditActor = actor ?? { id: 'system', orgId: 'system', farmId };
       await appendDomainAudit(tx, effectiveActor, {
         action: 'hr.payroll.draft-deleted',
@@ -314,15 +338,7 @@ export class PayrollService {
         metadata: { monthName: period.monthName },
       });
 
-      // F6 fix: Since we didn't touch employeeAdvance, we just delete the advance settlements
-      await tx.advanceSettlement.deleteMany({
-        where: { periodId },
-      });
-
-      // Delete period (slips cascade)
-      return tx.payrollPeriod.delete({
-        where: { id: periodId },
-      });
+      return period;
     });
   }
 
@@ -346,7 +362,22 @@ export class PayrollService {
 
       const totalPayable = period.slips.reduce((sum, slip) => Money.add(sum, slip.netSalary as any), 0);
 
-      // F-R3 fix: Zero net payroll — no cash flow, just mark as paid
+      // A2 fix: Record domain audit event for payroll disbursement inside transaction
+      // even if totalPayable === 0 (zero-net payroll)
+      const effectiveActor: AuditActor = actor ?? { id: 'system', orgId: 'system', farmId };
+      await appendDomainAudit(tx, effectiveActor, {
+        action: 'hr.payroll.paid',
+        entityType: 'payrollPeriod',
+        entityId: period.id,
+        farmId,
+        metadata: {
+          monthName: period.monthName,
+          totalPayable,
+          zeroNet: totalPayable === 0,
+        },
+      });
+
+      // F-R3 fix: Zero net payroll — no cash flow, already marked as PAID
       if (totalPayable === 0) {
         return period;
       }

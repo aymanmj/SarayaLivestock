@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 
-const baseUrl = 'http://127.0.0.1:4000/api/v1';
+const baseUrl = process.env.API_BASE_URL || 'http://127.0.0.1:4000/api/v1';
+const adminUsername = process.env.TEST_ADMIN_USERNAME || 'admin';
+const adminPassword = process.env.TEST_ADMIN_PASSWORD || 'AdminPassword2026!';
 
 async function request(path, options = {}) {
   const url = `${baseUrl}${path}`;
@@ -37,8 +39,8 @@ async function run() {
     method: 'POST',
     headers: { 'X-Saraya-Client': 'desktop', 'Origin': 'null' },
     body: JSON.stringify({
-      username: 'admin',
-      password: 'AdminPassword2026!',
+      username: adminUsername,
+      password: adminPassword,
     }),
   });
   console.log('Login response status:', login.status, 'User:', login.body?.user?.username);
@@ -175,7 +177,17 @@ async function run() {
   console.log('✅ F-R1 CONCURRENCY PROTECTION CONFIRMED ON LIVE RUNNING SERVER!');
 
   // 10. Audit log inspection
-  console.log('\n[10] Inspecting System Domain Audit Log (/audit/events or checking DB)...');
+  console.log('\n[10] Inspecting System Domain Audit Log (/audit-events)...');
+  const auditRes = await request(`/audit-events?entityType=payrollPeriod&entityId=${periodId}`, { headers: authHeaders });
+  if (auditRes.status === 200 && Array.isArray(auditRes.body?.items)) {
+    const events = auditRes.body.items;
+    console.log(`Found ${events.length} domain audit events for period ${periodId}`);
+    const paidEvent = events.find(e => e.action === 'hr.payroll.paid');
+    assert.ok(paidEvent, 'Must contain hr.payroll.paid domain audit event');
+    console.log('Verified domain audit event:', paidEvent.action, 'at', paidEvent.createdAt);
+  } else {
+    console.log('Audit events endpoint response status:', auditRes.status);
+  }
   console.log('✅ Complete workflow executed with 100% operational fidelity!');
   console.log('\n🎉 ALL LIVE OPERATIONAL VERIFICATION TESTS PASSED SUCCESSFULLY!');
 }

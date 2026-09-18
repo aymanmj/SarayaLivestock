@@ -1,0 +1,38 @@
+[
+  {
+    "action": "logout",
+    "status": 401,
+    "active": 0
+  },
+  {
+    "action": "logoutAll",
+    "status": 401,
+    "active": 0
+  },
+  {
+    "action": "roleChange",
+    "status": 401,
+    "active": 0
+  },
+  {
+    "action": "passwordReset",
+    "status": 401,
+    "active": 0
+  },
+  {
+    "action": "foreignFarmUpdate",
+    "role": "FARM_MANAGER",
+    "status": 404
+  },
+  {
+    "action": "foreignFarmUpdate",
+    "role": "SUPER_ADMIN",
+    "status": 404
+  },
+  {
+    "action": "logoutAfterFinalCheckBeforeRefreshCommit",
+    "activeAfterLogout": 0,
+    "activeAfterRefresh": 1,
+    "jwtAccepted": true
+  }
+]
