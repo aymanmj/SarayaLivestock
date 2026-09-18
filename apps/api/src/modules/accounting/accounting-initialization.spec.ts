@@ -32,7 +32,7 @@ describe('AccountingService production initialization', () => {
         upsert: jest.fn().mockResolvedValue(fiscalYear),
       },
       fiscalPeriod: { createMany: jest.fn().mockResolvedValue({ count: 12 }) },
-      account: { createMany: jest.fn().mockResolvedValue({ count: 23 }) },
+      account: { createMany: jest.fn().mockResolvedValue({ count: 24 }) },
     } as unknown as PrismaService;
 
     const service = new AccountingService(prisma);
@@ -45,7 +45,8 @@ describe('AccountingService production initialization', () => {
 
     const accounts = (prisma as any).account.createMany.mock.calls[0][0];
     expect(accounts.skipDuplicates).toBe(true);
-    expect(accounts.data).toHaveLength(23);
+    expect(accounts.data).toHaveLength(24);
+    expect(accounts.data.some((a: { code: string }) => a.code === '1106')).toBe(true);
     expect(accounts.data.every((account: { currentBalance: number }) => account.currentBalance === 0)).toBe(true);
   });
 

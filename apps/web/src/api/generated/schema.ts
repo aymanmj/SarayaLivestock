@@ -1294,6 +1294,20 @@ export interface components {
         ActivateLicenseDto: {
             licenseKey: string;
         };
+        AdvanceResponseDto: {
+            amount: Record<string, never>;
+            /** Format: date-time */
+            createdAt: string;
+            employeeId: string;
+            id: string;
+            isSettled: boolean;
+            journalEntryId?: string | null;
+            reason?: string | null;
+            /** Format: date-time */
+            requestDate: string;
+            settledAmount: Record<string, never>;
+            settledPeriodId?: string | null;
+        };
         AnimalBookValueResponseDto: {
             /** Format: uuid */
             animalId: string;
@@ -1837,6 +1851,41 @@ export interface components {
             message: string;
             totalCost: number;
         };
+        EmployeeDeleteResponseDto: {
+            /** @description Indicates if the employee was deleted (true) or terminated (false) */
+            deleted?: boolean;
+            id?: string;
+            /** @enum {string} */
+            status?: "ACTIVE" | "ON_LEAVE" | "TERMINATED" | "SUSPENDED";
+            /** Format: date-time */
+            terminationDate?: string | null;
+            terminationReason?: string | null;
+        };
+        EmployeeResponseDto: {
+            bankAccount?: string | null;
+            baseSalary: Record<string, never>;
+            /** Format: date-time */
+            createdAt: string;
+            employeeCode: string;
+            farmId: string;
+            firstName: string;
+            /** Format: date-time */
+            hireDate: string;
+            id: string;
+            jobTitle: string;
+            lastName: string;
+            nationalId?: string | null;
+            notes?: string | null;
+            phone?: string | null;
+            /** @enum {string} */
+            status: "ACTIVE" | "ON_LEAVE" | "TERMINATED" | "SUSPENDED";
+            /** Format: date-time */
+            terminationDate?: string | null;
+            terminationReason?: string | null;
+            /** Format: date-time */
+            updatedAt: string;
+            userId?: string | null;
+        };
         ExecutiveDashboardResponseDto: {
             alerts: components["schemas"]["DashboardAlertsResponseDto"];
             kpis: components["schemas"]["DashboardKpisResponseDto"];
@@ -1846,6 +1895,30 @@ export interface components {
             profitMarginPct: number;
             totalExpenses: number;
             totalRevenue: number;
+        };
+        FarmResponseDto: {
+            /**
+             * Format: date-time
+             * @description تاريخ الإنشاء
+             */
+            createdAt: string;
+            /** @description معرّف المزرعة */
+            id: string;
+            /** @description الموقع / العنوان */
+            location?: string;
+            /** @description اسم المدير */
+            managerName?: string;
+            /** @description اسم المنشأة / المزرعة */
+            name: string;
+            /** @description معرّف المؤسسة */
+            orgId: string;
+            /** @description رقم الهاتف */
+            phone?: string;
+            /**
+             * Format: date-time
+             * @description تاريخ التحديث
+             */
+            updatedAt: string;
         };
         FatteningPerformanceResponseDto: {
             adgKgPerDay: number | null;
@@ -2285,6 +2358,33 @@ export interface components {
         };
         /** @enum {string} */
         PaymentMethod: "CASH" | "BANK" | "ON_ACCOUNT";
+        PayrollPeriodResponseDto: {
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            endDate: string;
+            farmId: string;
+            fiscalPeriodId: string;
+            id: string;
+            journalEntryId?: string | null;
+            monthName: string;
+            /** Format: date-time */
+            startDate: string;
+            /** @enum {string} */
+            status: "DRAFT" | "APPROVED" | "PAID";
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        PayrollSlipResponseDto: {
+            advancesSettled: Record<string, never>;
+            baseSalary: Record<string, never>;
+            employee?: components["schemas"]["EmployeeResponseDto"];
+            employeeId: string;
+            id: string;
+            netSalary: Record<string, never>;
+            notes?: string | null;
+            periodId: string;
+        };
         /** @enum {string} */
         PregnancyResult: "PENDING" | "PREGNANT" | "OPEN";
         ProcessPayrollPaymentDto: {
@@ -3447,7 +3547,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["FarmResponseDto"];
+                };
             };
         };
     };
@@ -3549,7 +3651,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["AdvanceResponseDto"][];
+                };
             };
         };
     };
@@ -3573,7 +3677,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["AdvanceResponseDto"];
+                };
             };
         };
     };
@@ -3591,7 +3697,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["EmployeeResponseDto"][];
+                };
             };
         };
     };
@@ -3613,7 +3721,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["EmployeeResponseDto"];
+                };
             };
         };
     };
@@ -3633,7 +3743,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["EmployeeResponseDto"];
+                };
             };
         };
     };
@@ -3653,7 +3765,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["EmployeeDeleteResponseDto"];
+                };
             };
         };
     };
@@ -3677,7 +3791,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["EmployeeResponseDto"];
+                };
             };
         };
     };
@@ -3697,7 +3813,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["PayrollPeriodResponseDto"];
+                };
             };
         };
     };
@@ -3717,7 +3835,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["PayrollPeriodResponseDto"];
+                };
             };
         };
     };
@@ -3741,7 +3861,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["PayrollPeriodResponseDto"];
+                };
             };
         };
     };
@@ -3763,7 +3885,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["PayrollPeriodResponseDto"];
+                };
             };
         };
     };
@@ -3781,7 +3905,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["PayrollPeriodResponseDto"][];
+                };
             };
         };
     };
@@ -3801,7 +3927,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["PayrollSlipResponseDto"][];
+                };
             };
         };
     };

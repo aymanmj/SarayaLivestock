@@ -1,0 +1,8 @@
+{
+  "scenario": "pg_hba.conf hardening write denied after successful database setup",
+  "isolation": "Mocked filesystem and child_process; no PostgreSQL or production changes",
+  "hbaWriteAttempted": true,
+  "exitCode": 0,
+  "reportedSuccessfulSetup": true,
+  "securityGatePassedDespiteFailure": true
+}

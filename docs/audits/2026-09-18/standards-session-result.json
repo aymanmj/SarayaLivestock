@@ -1,0 +1,20 @@
+[
+  {
+    "action": "logout",
+    "activeSessionsAfterRevocation": 0,
+    "ancestorReplaySucceeded": true,
+    "newSessionAccepted": true
+  },
+  {
+    "action": "logoutAll",
+    "activeSessionsAfterRevocation": 0,
+    "ancestorReplaySucceeded": true,
+    "newSessionAccepted": true
+  },
+  {
+    "action": "passwordReset",
+    "activeSessionsAfterRevocation": 0,
+    "ancestorReplaySucceeded": true,
+    "newSessionAccepted": true
+  }
+]

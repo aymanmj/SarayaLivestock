@@ -2596,9 +2596,21 @@
         },
         "responses": {
           "200": {
-            "description": "تم تحديث بيانات المزرعة بنجاح"
+            "description": "تم تحديث بيانات المزرعة بنجاح",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FarmResponseDto"
+                }
+              }
+            }
           }
         },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
         "tags": [
           "Farms"
         ]
@@ -2620,7 +2632,14 @@
         },
         "responses": {
           "201": {
-            "description": "تم إضافة الموظف بنجاح"
+            "description": "تم إضافة الموظف بنجاح",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmployeeResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -2637,7 +2656,17 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": "قائمة الموظفين"
+            "description": "قائمة الموظفين",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/EmployeeResponseDto"
+                  }
+                }
+              }
+            }
           }
         },
         "security": [
@@ -2665,7 +2694,14 @@
         ],
         "responses": {
           "200": {
-            "description": "بيانات الموظف"
+            "description": "بيانات الموظف",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmployeeResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -2701,7 +2737,14 @@
         },
         "responses": {
           "200": {
-            "description": "تم تحديث بيانات الموظف"
+            "description": "تم تحديث بيانات الموظف",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmployeeResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -2727,7 +2770,14 @@
         ],
         "responses": {
           "200": {
-            "description": "تم حذف الموظف"
+            "description": "تم حذف الموظف",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmployeeDeleteResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -2756,7 +2806,14 @@
         },
         "responses": {
           "201": {
-            "description": "تم إنشاء كشوف الرواتب بنجاح"
+            "description": "تم إنشاء كشوف الرواتب بنجاح",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PayrollPeriodResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -2784,7 +2841,14 @@
         ],
         "responses": {
           "200": {
-            "description": "تم اعتماد كشوف الرواتب"
+            "description": "تم اعتماد كشوف الرواتب",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PayrollPeriodResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -2812,7 +2876,14 @@
         ],
         "responses": {
           "200": {
-            "description": "تم حذف مسودة الرواتب"
+            "description": "تم حذف مسودة الرواتب",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PayrollPeriodResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -2850,7 +2921,14 @@
         },
         "responses": {
           "200": {
-            "description": "تم صرف الرواتب"
+            "description": "تم صرف الرواتب",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PayrollPeriodResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -2869,7 +2947,17 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": "قائمة فترات الرواتب"
+            "description": "قائمة فترات الرواتب",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PayrollPeriodResponseDto"
+                  }
+                }
+              }
+            }
           }
         },
         "security": [
@@ -2897,7 +2985,17 @@
         ],
         "responses": {
           "200": {
-            "description": "تفاصيل القسائم لفترة الراتب"
+            "description": "تفاصيل القسائم لفترة الراتب",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PayrollSlipResponseDto"
+                  }
+                }
+              }
+            }
           }
         },
         "security": [
@@ -2935,7 +3033,14 @@
         },
         "responses": {
           "201": {
-            "description": "تم صرف السلفة بنجاح"
+            "description": "تم صرف السلفة بنجاح",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdvanceResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -2954,7 +3059,17 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": "قائمة السلف"
+            "description": "قائمة السلف",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AdvanceResponseDto"
+                  }
+                }
+              }
+            }
           }
         },
         "security": [
@@ -8168,6 +8283,52 @@
           }
         }
       },
+      "FarmResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "معرّف المزرعة"
+          },
+          "orgId": {
+            "type": "string",
+            "description": "معرّف المؤسسة"
+          },
+          "name": {
+            "type": "string",
+            "description": "اسم المنشأة / المزرعة"
+          },
+          "location": {
+            "type": "string",
+            "description": "الموقع / العنوان"
+          },
+          "managerName": {
+            "type": "string",
+            "description": "اسم المدير"
+          },
+          "phone": {
+            "type": "string",
+            "description": "رقم الهاتف"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "تاريخ الإنشاء"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "تاريخ التحديث"
+          }
+        },
+        "required": [
+          "id",
+          "orgId",
+          "name",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
       "CreateEmployeeDto": {
         "type": "object",
         "properties": {
@@ -8239,6 +8400,95 @@
           "baseSalary"
         ]
       },
+      "EmployeeResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "farmId": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string",
+            "nullable": true
+          },
+          "employeeCode": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "lastName": {
+            "type": "string"
+          },
+          "jobTitle": {
+            "type": "string"
+          },
+          "nationalId": {
+            "type": "string",
+            "nullable": true
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true
+          },
+          "hireDate": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "baseSalary": {
+            "type": "object"
+          },
+          "status": {
+            "enum": [
+              "ACTIVE",
+              "ON_LEAVE",
+              "TERMINATED",
+              "SUSPENDED"
+            ],
+            "type": "string"
+          },
+          "terminationDate": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
+          "terminationReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "bankAccount": {
+            "type": "string",
+            "nullable": true
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "farmId",
+          "employeeCode",
+          "firstName",
+          "lastName",
+          "jobTitle",
+          "hireDate",
+          "baseSalary",
+          "status",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
       "UpdateEmployeeDto": {
         "type": "object",
         "properties": {
@@ -8297,6 +8547,36 @@
           }
         }
       },
+      "EmployeeDeleteResponseDto": {
+        "type": "object",
+        "properties": {
+          "deleted": {
+            "type": "boolean",
+            "description": "Indicates if the employee was deleted (true) or terminated (false)"
+          },
+          "id": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "ACTIVE",
+              "ON_LEAVE",
+              "TERMINATED",
+              "SUSPENDED"
+            ],
+            "type": "string"
+          },
+          "terminationDate": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
+          "terminationReason": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
       "GeneratePayrollPeriodDto": {
         "type": "object",
         "properties": {
@@ -8319,6 +8599,62 @@
           "monthName"
         ]
       },
+      "PayrollPeriodResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "farmId": {
+            "type": "string"
+          },
+          "fiscalPeriodId": {
+            "type": "string"
+          },
+          "monthName": {
+            "type": "string"
+          },
+          "startDate": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "endDate": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "DRAFT",
+              "APPROVED",
+              "PAID"
+            ],
+            "type": "string"
+          },
+          "journalEntryId": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "farmId",
+          "fiscalPeriodId",
+          "monthName",
+          "startDate",
+          "endDate",
+          "status",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
       "ProcessPayrollPaymentDto": {
         "type": "object",
         "properties": {
@@ -8329,6 +8665,44 @@
         },
         "required": [
           "paymentAccountId"
+        ]
+      },
+      "PayrollSlipResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "periodId": {
+            "type": "string"
+          },
+          "employeeId": {
+            "type": "string"
+          },
+          "baseSalary": {
+            "type": "object"
+          },
+          "advancesSettled": {
+            "type": "object"
+          },
+          "netSalary": {
+            "type": "object"
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true
+          },
+          "employee": {
+            "$ref": "#/components/schemas/EmployeeResponseDto"
+          }
+        },
+        "required": [
+          "id",
+          "periodId",
+          "employeeId",
+          "baseSalary",
+          "advancesSettled",
+          "netSalary"
         ]
       },
       "RequestAdvanceDto": {
@@ -8356,6 +8730,55 @@
           "amount",
           "requestDate",
           "paymentAccountId"
+        ]
+      },
+      "AdvanceResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "employeeId": {
+            "type": "string"
+          },
+          "requestDate": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "amount": {
+            "type": "object"
+          },
+          "reason": {
+            "type": "string",
+            "nullable": true
+          },
+          "settledAmount": {
+            "type": "object"
+          },
+          "isSettled": {
+            "type": "boolean"
+          },
+          "settledPeriodId": {
+            "type": "string",
+            "nullable": true
+          },
+          "journalEntryId": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "employeeId",
+          "requestDate",
+          "amount",
+          "settledAmount",
+          "isSettled",
+          "createdAt"
         ]
       }
     }

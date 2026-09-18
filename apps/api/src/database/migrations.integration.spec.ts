@@ -47,7 +47,7 @@ describeDatabase('PostgreSQL migration integrity guards', () => {
       VALUES ('10000000-0000-4000-8000-000000000007', '10000000-0000-4000-8000-000000000006',
         '10000000-0000-4000-8000-000000000005', 10, 0);
     `);
-    expect(inserted[0].rows[0].fiscalPeriodId).toBe('10000000-0000-4000-8000-000000000004');
+    expect((inserted as any)[0].rows[0].fiscalPeriodId).toBe('10000000-0000-4000-8000-000000000004');
 
     await expectGuardError(
       `UPDATE "journal_entries" SET "description" = 'tampered' WHERE "id" = '10000000-0000-4000-8000-000000000006'`,

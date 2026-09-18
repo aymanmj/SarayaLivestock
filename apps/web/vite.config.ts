@@ -34,12 +34,22 @@ export default defineConfig({
     })
   ],
   server: {
-    port: 3050,
-    host: true,
+    port: 5173,
     proxy: {
       '/api': {
-        target: 'http://localhost:4001',
+        target: 'http://localhost:4000',
         changeOrigin: true,
+      },
+    },
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom'],
+          'vendor-tanstack': ['@tanstack/react-query'],
+          'vendor-ui': ['lucide-react', 'clsx', 'tailwind-merge'],
+        },
       },
     },
   },

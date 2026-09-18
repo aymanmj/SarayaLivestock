@@ -45,8 +45,9 @@ async function bootstrap() {
   }
 
   const port = Number(process.env.PORT || 4000);
-  await app.listen(port);
-  console.log(`🚀 SarayaLivestock API Server is running on port ${port}/api/v1`);
+  const host = process.env.HOST || '127.0.0.1';
+  await app.listen(port, host);
+  console.log(`🚀 SarayaLivestock API Server is running on ${host}:${port}/api/v1`);
   if (!isProduction || process.env.ENABLE_SWAGGER === 'true') {
     console.log(`📚 Interactive Swagger Docs available at: http://localhost:${port}/docs`);
   }

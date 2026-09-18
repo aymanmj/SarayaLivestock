@@ -344,7 +344,7 @@ function initAutoUpdater() {
       message: `تم تنزيل تحديث جديد (الإصدار ${info.version}). سيتم تثبيته تلقائياً عند إعادة تشغيل التطبيق.`,
       buttons: ['إعادة التشغيل الآن', 'لاحقاً'],
       defaultId: 0,
-    }).then(({ response }) => {
+    }).then(({ response }: { response: number }) => {
       if (response === 0) autoUpdater.quitAndInstall();
     });
   });

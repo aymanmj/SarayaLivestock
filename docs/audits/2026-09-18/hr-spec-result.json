@@ -1,0 +1,16 @@
+{
+  "excessAdvance": {
+    "deducted": 1000,
+    "originalAdvance": 1500,
+    "remainingCollectibleViaUnsettledAdvances": 0,
+    "draftAlreadySettled": true
+  },
+  "failedGeneration": {
+    "orphanDrafts": 1,
+    "advanceStillSettled": true
+  },
+  "concurrentPayment": {
+    "successfulRequests": 2,
+    "postedJournals": 2
+  }
+}

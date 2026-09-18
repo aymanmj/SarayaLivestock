@@ -136,7 +136,8 @@ try {
   runPsql(['-c', 'SELECT pg_reload_conf();']);
   log('pg_hba.conf secured and PostgreSQL reloaded successfully.');
 } catch (hbaErr) {
-  log('Notice while securing pg_hba.conf: ' + hbaErr.message);
+  log('FATAL: Failed to secure pg_hba.conf: ' + hbaErr.message);
+  process.exit(1);
 }
 
 log('Database setup completed successfully.');

@@ -19,6 +19,7 @@ const SYSTEM_ACCOUNTS = [
   { code: '1103', name: 'العملاء ومدينو مبيعات الحليب والماشية (AR)', category: AccountCategory.ASSET, isLocked: true },
   { code: '1104', name: 'مخزون خامات وأعلاف التغذية (Feed Stock)', category: AccountCategory.ASSET, isLocked: true },
   { code: '1105', name: 'مخزون الأدوية واللقاحات البيطرية (Medical Stock)', category: AccountCategory.ASSET, isLocked: true },
+  { code: '1106', name: 'سلف الموظفين والعمالة', category: AccountCategory.ASSET, isLocked: true },
   { code: '1201', name: 'الأصول البيولوجية - قطيع الألبان الحلاب (IAS 41 Dairy Herd)', category: AccountCategory.ASSET, isLocked: true },
   { code: '1202', name: 'الأصول البيولوجية - قطيع التسمين واللحم (IAS 41 Beef Cattle)', category: AccountCategory.ASSET, isLocked: true },
   { code: '1203', name: 'الأصول البيولوجية - العجول والمواليد الرضيعة (Calves)', category: AccountCategory.ASSET, isLocked: true },
@@ -195,6 +196,7 @@ export class AccountingService implements OnModuleInit {
         { code: '1103', name: 'العملاء ومدينو مبيعات الحليب والماشية (AR)', category: AccountCategory.ASSET, isLocked: true },
         { code: '1104', name: 'مخزون خامات وأعلاف التغذية (Feed Stock)', category: AccountCategory.ASSET, isLocked: true },
         { code: '1105', name: 'مخزون الأدوية واللقاحات البيطرية (Medical Stock)', category: AccountCategory.ASSET, isLocked: true },
+        { code: '1106', name: 'سلف الموظفين والعمالة', category: AccountCategory.ASSET, isLocked: true },
         { code: '1201', name: 'الأصول البيولوجية - قطيع الألبان الحلاب (IAS 41 Dairy Herd)', category: AccountCategory.ASSET, isLocked: true },
         { code: '1202', name: 'الأصول البيولوجية - قطيع التسمين واللحم (IAS 41 Beef Cattle)', category: AccountCategory.ASSET, isLocked: true },
         { code: '1203', name: 'الأصول البيولوجية - العجول والمواليد الرضيعة (Calves)', category: AccountCategory.ASSET, isLocked: true },
@@ -358,6 +360,7 @@ export class AccountingService implements OnModuleInit {
     farmId: string,
     actor?: AuditActor,
     idempotency?: IdempotencyContext,
+    externalTx?: Prisma.TransactionClient,
   ) {
     await this.ensureAccountingStructure(farmId);
     if (!dto.lines?.length) throw new BadRequestException('يجب أن يحتوي القيد على سطرين محاسبيين على الأقل');
@@ -365,21 +368,28 @@ export class AccountingService implements OnModuleInit {
     let totalDebit = new Decimal(0);
     let totalCredit = new Decimal(0);
 
-    for (const line of dto.lines) {
-      if ((line.debit > 0 && line.credit > 0) || (line.debit === 0 && line.credit === 0)) {
-        throw new BadRequestException('كل سطر محاسبي يجب أن يحتوي مبلغاً في جانب المدين أو الدائن فقط');
+    for (const [index, line] of Object.entries(dto.lines)) {
+      const lineD = new Decimal(line.debit || 0);
+      const lineC = new Decimal(line.credit || 0);
+
+      if (lineD.gt(0) && lineC.gt(0)) {
+        throw new BadRequestException(`السطر المحاسبي رقم ${Number(index) + 1} لا يمكن أن يحتوي على قيمة مدينة ودائنة معاً.`);
       }
-      totalDebit = totalDebit.plus(line.debit || 0);
-      totalCredit = totalCredit.plus(line.credit || 0);
+      if (lineD.lte(0) && lineC.lte(0)) {
+        throw new BadRequestException(`السطر المحاسبي رقم ${Number(index) + 1} يجب أن يحتوي إما على قيمة مدينة أو دائنة.`);
+      }
+
+      totalDebit = totalDebit.plus(lineD);
+      totalCredit = totalCredit.plus(lineC);
     }
 
     if (!totalDebit.equals(totalCredit)) {
       throw new BadRequestException(
-        `القيد غير متوازن! إجمالي المدين (${totalDebit.toFixed(3)}) لا يساوي إجمالي الدائن (${totalCredit.toFixed(3)})`
+        `القيد المحاسبي غير متزن. إجمالي المدين: ${totalDebit.toNumber()}، إجمالي الدائن: ${totalCredit.toNumber()}`
       );
     }
 
-    return runIdempotentTransaction(this.prisma, actor, idempotency, async tx => {
+    const runWithTx = async (tx: Prisma.TransactionClient) => {
       let fiscalYearId = dto.fiscalYearId;
       if (!fiscalYearId) {
         const activeYear = await tx.fiscalYear.findFirst({
@@ -481,7 +491,12 @@ export class AccountingService implements OnModuleInit {
       });
 
       return entry;
-    }, this.serializableOptions());
+    };
+
+    if (externalTx) {
+      return runWithTx(externalTx);
+    }
+    return runIdempotentTransaction(this.prisma, actor, idempotency, runWithTx, this.serializableOptions());
   }
 
   /**

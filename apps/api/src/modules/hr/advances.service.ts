@@ -4,6 +4,7 @@ import { AccountingService } from '../accounting/accounting.service';
 import { RequestAdvanceDto } from './dto/payroll.dto';
 import { AuditActor } from '../../common/audit/domain-audit';
 import { JournalEntryType } from '@prisma/client';
+import { Money } from '../../common/utils/money.util';
 
 @Injectable()
 export class AdvancesService {
@@ -27,7 +28,7 @@ export class AdvancesService {
       const advance = await tx.employeeAdvance.create({
         data: {
           employeeId,
-          amount: dto.amount,
+          amount: Money.toDb(dto.amount),
           requestDate: new Date(dto.requestDate),
           reason: dto.reason,
         },
@@ -42,7 +43,7 @@ export class AdvancesService {
           { accountId: advAccount.id, debit: dto.amount, credit: 0 },
           { accountId: dto.paymentAccountId, debit: 0, credit: dto.amount },
         ],
-      }, farmId, actor);
+      }, farmId, actor, undefined, tx);
 
       return tx.employeeAdvance.update({
         where: { id: advance.id },

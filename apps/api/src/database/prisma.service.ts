@@ -3,7 +3,7 @@ import { PrismaClient } from '@prisma/client';
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
 
-export const REQUIRED_DATABASE_MIGRATION = '0009_milk_policy_effective_date';
+export const REQUIRED_DATABASE_MIGRATION = '20260918120000_hr_advance_integrity';
 function getDatabaseUrl(): string {
   if (!process.env.DATABASE_URL) {
     throw new Error('DATABASE_URL must be configured before starting the API');

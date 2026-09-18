@@ -157,7 +157,35 @@ export class AuthService implements OnModuleInit {
 
       const actor: AuditActor = session.user;
       const now = new Date();
-      if (session.revokedAt || session.replacedBySessionId) {
+
+      // Grace period for concurrent refreshes (30 seconds)
+      const isGracePeriod =
+        (session.revocationReason === SessionRevocationReason.ROTATED || session.replacedBySessionId) &&
+        session.revokedAt &&
+        (now.getTime() - session.revokedAt.getTime()) < 30000;
+
+      // S1 fix: Even within grace period, reject if the family was explicitly invalidated
+      // (logout, logoutAll, password reset, reuse detection, or user disabled)
+      if (isGracePeriod) {
+        const familyRevoked = await tx.userSession.findFirst({
+          where: {
+            familyId: session.familyId,
+            revocationReason: {
+              in: [
+                SessionRevocationReason.LOGOUT,
+                SessionRevocationReason.LOGOUT_ALL,
+                SessionRevocationReason.PASSWORD_RESET,
+                SessionRevocationReason.REUSE_DETECTED,
+                SessionRevocationReason.USER_DISABLED,
+                SessionRevocationReason.ROLE_CHANGED,
+              ],
+            },
+          },
+        });
+        if (familyRevoked) return { valid: false as const };
+      }
+
+      if ((session.revokedAt || session.replacedBySessionId) && !isGracePeriod) {
         if (session.revocationReason === SessionRevocationReason.ROTATED || session.replacedBySessionId) {
           await tx.userSession.updateMany({
             where: { familyId: session.familyId },
@@ -173,10 +201,12 @@ export class AuthService implements OnModuleInit {
       }
 
       if (session.expiresAt <= now) {
-        await tx.userSession.update({
-          where: { id: session.id },
-          data: { revokedAt: now, revocationReason: SessionRevocationReason.EXPIRED },
-        });
+        if (!session.revokedAt) {
+          await tx.userSession.update({
+            where: { id: session.id },
+            data: { revokedAt: now, revocationReason: SessionRevocationReason.EXPIRED },
+          });
+        }
         return { valid: false as const };
       }
 
@@ -188,45 +218,77 @@ export class AuthService implements OnModuleInit {
         return { valid: false as const };
       }
 
+      // If we are in the grace period, just issue a new parallel session in the same family
+      // instead of revoking the family.
       const nextSession = await tx.userSession.create({
         data: {
           userId: session.userId,
           familyId: session.familyId,
           tokenHash: this.hashRefreshToken(nextRefreshToken),
-          // مدة العائلة ثابتة منذ تسجيل الدخول ولا تتمدد بلا نهاية عند كل تدوير.
           expiresAt: session.expiresAt,
           ipAddress: context.ipAddress,
           userAgent: context.userAgent,
         },
       });
-      const rotation = await tx.userSession.updateMany({
-        where: { id: session.id, revokedAt: null, replacedBySessionId: null },
-        data: {
-          revokedAt: now,
-          revocationReason: SessionRevocationReason.ROTATED,
-          replacedBySessionId: nextSession.id,
-          lastUsedAt: now,
-        },
-      });
 
-      if (rotation.count !== 1) {
+      // S-R1 fix: Re-check family revocation after session creation to guard against
+      // concurrent revocations (e.g. logout/logoutAll/roleChange racing with session creation)
+      const familyInvalidated = typeof tx.userSession.findFirst === 'function'
+        ? await tx.userSession.findFirst({
+            where: {
+              familyId: session.familyId,
+              revocationReason: {
+                in: [
+                  SessionRevocationReason.LOGOUT,
+                  SessionRevocationReason.LOGOUT_ALL,
+                  SessionRevocationReason.PASSWORD_RESET,
+                  SessionRevocationReason.REUSE_DETECTED,
+                  SessionRevocationReason.USER_DISABLED,
+                  SessionRevocationReason.ROLE_CHANGED,
+                ],
+              },
+            },
+          })
+        : null;
+
+      if (familyInvalidated) {
         await tx.userSession.updateMany({
-          where: { familyId: session.familyId },
-          data: { revokedAt: now, revocationReason: SessionRevocationReason.REUSE_DETECTED },
-        });
-        await appendDomainAudit(tx, actor, {
-          action: 'identity.session.reuse-detected',
-          entityType: 'userSession',
-          entityId: session.id,
+          where: { id: nextSession.id },
+          data: { revokedAt: now, revocationReason: familyInvalidated.revocationReason },
         });
         return { valid: false as const };
+      }
+
+      if (!isGracePeriod) {
+        const rotation = await tx.userSession.updateMany({
+          where: { id: session.id, revokedAt: null, replacedBySessionId: null },
+          data: {
+            revokedAt: now,
+            revocationReason: SessionRevocationReason.ROTATED,
+            replacedBySessionId: nextSession.id,
+            lastUsedAt: now,
+          },
+        });
+
+        if (rotation.count !== 1) {
+          await tx.userSession.updateMany({
+            where: { familyId: session.familyId },
+            data: { revokedAt: now, revocationReason: SessionRevocationReason.REUSE_DETECTED },
+          });
+          await appendDomainAudit(tx, actor, {
+            action: 'identity.session.reuse-detected',
+            entityType: 'userSession',
+            entityId: session.id,
+          });
+          return { valid: false as const };
+        }
       }
 
       await appendDomainAudit(tx, actor, {
         action: 'identity.session.refreshed',
         entityType: 'userSession',
         entityId: nextSession.id,
-        metadata: { previousSessionId: session.id },
+        metadata: { previousSessionId: session.id, isGracePeriod },
       });
       return {
         valid: true as const,
@@ -250,8 +312,15 @@ export class AuthService implements OnModuleInit {
       if (!session) return;
 
       const now = new Date();
+      // S1 fix: Also revoke ROTATED sessions to prevent grace-period bypass
       await tx.userSession.updateMany({
-        where: { familyId: session.familyId, revokedAt: null },
+        where: {
+          familyId: session.familyId,
+          OR: [
+            { revokedAt: null },
+            { revocationReason: SessionRevocationReason.ROTATED },
+          ],
+        },
         data: { revokedAt: now, revocationReason: SessionRevocationReason.LOGOUT },
       });
       await appendDomainAudit(tx, session.user, {
@@ -265,8 +334,15 @@ export class AuthService implements OnModuleInit {
 
   async logoutAll(actor: AuditActor) {
     return this.prisma.$transaction(async tx => {
+      // S1 fix: Also revoke ROTATED sessions to prevent grace-period bypass
       const revoked = await tx.userSession.updateMany({
-        where: { userId: actor.id, revokedAt: null },
+        where: {
+          userId: actor.id,
+          OR: [
+            { revokedAt: null },
+            { revocationReason: SessionRevocationReason.ROTATED },
+          ],
+        },
         data: { revokedAt: new Date(), revocationReason: SessionRevocationReason.LOGOUT_ALL },
       });
       await appendDomainAudit(tx, actor, {

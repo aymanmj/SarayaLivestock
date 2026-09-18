@@ -31,10 +31,10 @@ export const HrPayrollView: React.FC = () => {
   const handleGenerateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await generatedApiClient.POST('/api/v1/hr/payroll/generate', {
+      unwrapGenerated(await generatedApiClient.POST('/api/v1/hr/payroll/generate', {
         body: { monthName, startDate: new Date(startDate).toISOString(), endDate: new Date(endDate).toISOString() }
-      });
-      setFeedback('تم إنشاء كشوف الرواتب وترحيلها بنجاح');
+      }), 'توليد الرواتب');
+      setFeedback('تم إنشاء مسودة كشوف الرواتب بنجاح');
       setIsGenerating(false);
       fetchPeriods();
     } catch (error: any) {
@@ -129,7 +129,7 @@ export const HrPayrollView: React.FC = () => {
                       <button 
                         onClick={async () => {
                           try {
-                            await generatedApiClient.POST('/api/v1/hr/payroll/{id}/approve', { params: { path: { id: period.id } } });
+                            unwrapGenerated(await generatedApiClient.POST('/api/v1/hr/payroll/{id}/approve', { params: { path: { id: period.id } } }), 'اعتماد المسودة');
                             fetchPeriods();
                             setFeedback('تم اعتماد المسودة وإنشاء القيد المحاسبي بنجاح');
                           } catch(err: any) { setFeedback(err.message); }
@@ -142,7 +142,7 @@ export const HrPayrollView: React.FC = () => {
                         onClick={async () => {
                           if(!window.confirm('هل أنت متأكد من حذف هذه المسودة؟')) return;
                           try {
-                            await generatedApiClient.DELETE('/api/v1/hr/payroll/{id}', { params: { path: { id: period.id } } });
+                            unwrapGenerated(await generatedApiClient.DELETE('/api/v1/hr/payroll/{id}', { params: { path: { id: period.id } } }), 'حذف المسودة');
                             fetchPeriods();
                             setFeedback('تم حذف المسودة بنجاح');
                           } catch(err: any) { setFeedback(err.message); }

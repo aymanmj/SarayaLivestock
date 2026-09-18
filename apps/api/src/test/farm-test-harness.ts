@@ -133,7 +133,19 @@ export function matchesFilter(item: any, where: any, state?: FarmState): boolean
         const filterTime = toTime(f.gt);
         if (valTime !== null && filterTime !== null) {
           if (!(valTime > filterTime)) return false;
-        }
+        } else if (!(val > f.gt)) return false;
+      }
+      if ('gte' in f) {
+        const filterTime = toTime(f.gte);
+        if (valTime !== null && filterTime !== null) {
+          if (!(valTime >= filterTime)) return false;
+        } else if (!(val >= f.gte)) return false;
+      }
+      if ('lt' in f) {
+        const filterTime = toTime(f.lt);
+        if (valTime !== null && filterTime !== null) {
+          if (!(valTime < filterTime)) return false;
+        } else if (!(val < f.lt)) return false;
       }
       if ('lte' in f) {
         const filterTime = toTime(f.lte);

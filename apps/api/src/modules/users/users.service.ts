@@ -94,8 +94,15 @@ export class UsersService {
         data: { role },
         select: { id: true, username: true, fullName: true, role: true, isActive: true },
       });
+      // S-R2 fix: Also revoke ROTATED sessions to prevent grace-period bypass
       const revoked = await tx.userSession.updateMany({
-        where: { userId: id, revokedAt: null },
+        where: {
+          userId: id,
+          OR: [
+            { revokedAt: null },
+            { revocationReason: SessionRevocationReason.ROTATED },
+          ],
+        },
         data: { revokedAt: new Date(), revocationReason: SessionRevocationReason.ROLE_CHANGED },
       });
       await appendDomainAudit(tx, actor, {
@@ -120,10 +127,17 @@ export class UsersService {
         data: { isActive: !user.isActive },
         select: { id: true, username: true, fullName: true, role: true, isActive: true },
       });
+      // S-R2 fix: Also revoke ROTATED sessions to prevent grace-period bypass
       const revoked = updated.isActive
         ? { count: 0 }
         : await tx.userSession.updateMany({
-            where: { userId: id, revokedAt: null },
+            where: {
+              userId: id,
+              OR: [
+                { revokedAt: null },
+                { revocationReason: SessionRevocationReason.ROTATED },
+              ],
+            },
             data: { revokedAt: new Date(), revocationReason: SessionRevocationReason.USER_DISABLED },
           });
       await appendDomainAudit(tx, actor, {
@@ -145,8 +159,15 @@ export class UsersService {
     return this.prisma.$transaction(async tx => {
       await this.assertUserInOrganization(tx, id, orgId);
       await tx.user.update({ where: { id }, data: { password: passwordHash } });
+      // S1 fix: Also revoke ROTATED sessions to prevent grace-period bypass
       const revoked = await tx.userSession.updateMany({
-        where: { userId: id, revokedAt: null },
+        where: {
+          userId: id,
+          OR: [
+            { revokedAt: null },
+            { revocationReason: SessionRevocationReason.ROTATED },
+          ],
+        },
         data: { revokedAt: new Date(), revocationReason: SessionRevocationReason.PASSWORD_RESET },
       });
       await appendDomainAudit(tx, actor, {

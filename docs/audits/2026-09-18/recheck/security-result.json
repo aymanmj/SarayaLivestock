@@ -1,0 +1,55 @@
+{
+  "sessions": [
+    {
+      "action": "logout",
+      "ancestorReplayAcceptedByJwt": false,
+      "status": 401,
+      "activeSessions": 0
+    },
+    {
+      "action": "logoutAll",
+      "ancestorReplayAcceptedByJwt": false,
+      "status": 401,
+      "activeSessions": 0
+    },
+    {
+      "action": "passwordReset",
+      "ancestorReplayAcceptedByJwt": false,
+      "status": 401,
+      "activeSessions": 0
+    },
+    {
+      "action": "roleChange",
+      "ancestorReplayAcceptedByJwt": false,
+      "status": 401,
+      "activeSessions": 0
+    },
+    {
+      "action": "concurrentLogout",
+      "ancestorReplayAcceptedByJwt": false,
+      "status": 401,
+      "activeSessions": 0
+    }
+  ],
+  "farms": [
+    {
+      "role": "FARM_MANAGER",
+      "status": 404,
+      "foreignFarmModified": false
+    },
+    {
+      "role": "SUPER_ADMIN",
+      "status": 404,
+      "foreignFarmModified": false
+    }
+  ],
+  "employeeAudit": [
+    "hr.employee.created",
+    "hr.employee.updated",
+    "hr.employee.deleted"
+  ],
+  "payrollAudit": {
+    "generatedAndDeleted": true,
+    "auditEvents": 2
+  }
+}
