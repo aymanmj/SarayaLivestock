@@ -1,4 +1,4 @@
-﻿; =============================================================================
+; =============================================================================
 ; Saraya Livestock Server Installer — Inno Setup 6 Script
 ; مثبت خادم منظومة السرايا لإدارة مزارع الماشية والألبان والتسمين
 ; =============================================================================
@@ -45,7 +45,7 @@ DefaultGroupName=Saraya Livestock
 DisableProgramGroupPage=yes
 LicenseFile=..\..\LICENSE
 OutputDir=..\..\dist-installer
-OutputBaseFilename=SarayaLivestock-Server-{#MyAppVersion}-x64-Setup-v11
+OutputBaseFilename=SarayaLivestock-Server-{#MyAppVersion}-x64-Setup-v12
 #ifndef InstallerCompression
   #define InstallerCompression "lzma2/ultra64"
 #endif
