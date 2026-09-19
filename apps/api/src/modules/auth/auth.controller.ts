@@ -130,7 +130,10 @@ export class AuthController {
   }
 
   private isDesktopClient(request: Request) {
-    return request.get('origin') === 'null' && request.get('x-saraya-client') === 'desktop';
+    const clientHeader = request.get('x-saraya-client');
+    const origin = request.get('origin');
+    const isDesktopOrigin = !origin || origin === 'null' || origin === 'file://' || origin.startsWith('file:');
+    return clientHeader === 'desktop' || isDesktopOrigin;
   }
 
   private sessionContext(request: Request) {

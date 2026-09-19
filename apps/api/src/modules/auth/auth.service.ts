@@ -420,6 +420,7 @@ export class AuthService implements OnModuleInit {
         email: true,
         role: true,
         farmId: true,
+        orgId: true,
         farm: {
           select: {
             id: true,
@@ -436,8 +437,25 @@ export class AuthService implements OnModuleInit {
 
     if (!user) throw new UnauthorizedException('المستخدم غير موجود');
 
+    let farm = user.farm;
+    if (!farm && (user as any).orgId && typeof this.prisma?.farm?.findFirst === 'function') {
+      farm = await this.prisma.farm.findFirst({
+        where: { orgId: (user as any).orgId },
+        orderBy: { createdAt: 'asc' },
+        select: {
+          id: true,
+          name: true,
+          location: true,
+          managerName: true,
+          phone: true,
+        },
+      });
+    }
+
     return {
       ...user,
+      farmId: user.farmId || farm?.id || null,
+      farm: farm || undefined,
       permissions: this.getRolePermissions(user.role),
     };
   }
@@ -469,6 +487,25 @@ export class AuthService implements OnModuleInit {
     const accessToken = secret
       ? this.jwtService.sign(payload, { secret })
       : this.jwtService.sign(payload);
+
+    let farm: { id: string; name: string; location: string | null; managerName: string | null; phone: string | null } | null = null;
+    try {
+      if (user.farmId && typeof this.prisma?.farm?.findFirst === 'function') {
+        farm = await this.prisma.farm.findFirst({
+          where: { id: user.farmId, orgId: user.orgId },
+          select: { id: true, name: true, location: true, managerName: true, phone: true },
+        });
+      } else if (user.orgId && typeof this.prisma?.farm?.findFirst === 'function') {
+        farm = await this.prisma.farm.findFirst({
+          where: { orgId: user.orgId },
+          orderBy: { createdAt: 'asc' },
+          select: { id: true, name: true, location: true, managerName: true, phone: true },
+        });
+      }
+    } catch {
+      // Ignore if farm lookup fails
+    }
+
     return {
       accessToken,
       refreshToken,
@@ -478,7 +515,16 @@ export class AuthService implements OnModuleInit {
         fullName: user.fullName,
         email: user.email,
         role: user.role,
-        farmId: user.farmId,
+        farmId: user.farmId || farm?.id || null,
+        farm: farm
+          ? {
+              id: farm.id,
+              name: farm.name,
+              location: farm.location,
+              managerName: farm.managerName,
+              phone: farm.phone,
+            }
+          : undefined,
       },
       permissions: this.getRolePermissions(user.role),
     };

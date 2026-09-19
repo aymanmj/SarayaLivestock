@@ -75,7 +75,9 @@ export async function refreshSession(): Promise<AuthenticationResponse | null> {
       body: JSON.stringify(refreshToken ? { refreshToken } : {}),
     });
     if (!response.ok) {
-      await clearAuthentication();
+      if (response.status === 401) {
+        await clearAuthentication();
+      }
       return null;
     }
     const data = (await response.json()) as AuthenticationResponse;
@@ -85,6 +87,15 @@ export async function refreshSession(): Promise<AuthenticationResponse | null> {
     refreshInFlight = null;
   });
   return refreshInFlight;
+}
+
+export async function getUserProfile() {
+  const response = await apiFetch('/api/v1/auth/profile', { method: 'GET' });
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || 'تعذر استعادة جلسة المستخدم');
+  }
+  return response.json();
 }
 
 export async function logoutSession() {
@@ -429,11 +440,37 @@ export async function getMilkingDailySummary(
 // ----------------------------------------------------
 // 4. التناسل والولادات (Breeding & Calving)
 // ----------------------------------------------------
-export const updateFarm = async (id: string, data: components['schemas']['UpdateFarmDto']) => {
-  return unwrapGenerated(await generatedApiClient.PATCH('/api/v1/farms/{id}', {
-    params: { path: { id } },
-    body: data,
-  }), 'تحديث بيانات المزرعة');
+export interface FarmData {
+  id: string;
+  name: string;
+  location?: string | null;
+  managerName?: string | null;
+  phone?: string | null;
+  orgId?: string;
+  licenseKey?: string | null;
+}
+
+export async function getCurrentFarm(): Promise<FarmData> {
+  const response = await apiFetch('/api/v1/farms/current', { method: 'GET' });
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || 'تعذر تحميل بيانات المزرعة');
+  }
+  return response.json();
+}
+
+export const updateFarm = async (id: string, data: Partial<Omit<FarmData, 'id'>>): Promise<FarmData> => {
+  const path = id && id !== 'current' ? `/api/v1/farms/${encodeURIComponent(id)}` : '/api/v1/farms/current';
+  const response = await apiFetch(path, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    const message = Array.isArray(errorData.message) ? errorData.message.join('، ') : errorData.message;
+    throw new Error(message || 'تعذر تحديث بيانات المزرعة');
+  }
+  return response.json();
 };
 
 export interface InseminatePayload {

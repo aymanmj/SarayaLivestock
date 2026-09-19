@@ -1,6 +1,14 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { UserRole } from '@prisma/client';
 
+export class UserFarmDto {
+  @ApiProperty({ format: 'uuid' }) id: string;
+  @ApiProperty() name: string;
+  @ApiProperty({ nullable: true }) location: string | null;
+  @ApiPropertyOptional({ nullable: true }) managerName?: string | null;
+  @ApiPropertyOptional({ nullable: true }) phone?: string | null;
+}
+
 export class AuthUserResponseDto {
   @ApiProperty({ format: 'uuid' }) id: string;
   @ApiProperty() username: string;
@@ -8,6 +16,7 @@ export class AuthUserResponseDto {
   @ApiProperty({ nullable: true }) email: string | null;
   @ApiProperty({ enum: UserRole, enumName: 'UserRole' }) role: UserRole;
   @ApiProperty({ format: 'uuid', nullable: true }) farmId: string | null;
+  @ApiPropertyOptional({ type: () => UserFarmDto, nullable: true }) farm?: UserFarmDto | null;
 }
 
 export class AuthenticationResponseDto {
