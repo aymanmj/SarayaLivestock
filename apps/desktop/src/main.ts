@@ -154,9 +154,48 @@ function createWindow() {
     });
   }
 
+  // دالة إعادة تحميل الواجهة بشكل آمن تمنع أي شاشة فارغة أو انهيار في التوجيه
+  const safeReloadUI = () => {
+    if (!mainWindow) return;
+    try {
+      const currentUrl = mainWindow.webContents.getURL();
+      if (currentUrl.startsWith('file:') && !currentUrl.includes('index.html')) {
+        console.warn(`[Desktop SafeReload] Broken file URL detected: ${currentUrl}. Reloading distPath...`);
+        mainWindow.loadFile(distPath);
+      } else {
+        mainWindow.reload();
+      }
+    } catch {
+      mainWindow.loadFile(distPath);
+    }
+  };
+
+  // حماية: منع تحول النافذة إلى شاشة فارغة في حال فشل تحميل أي مسار
+  mainWindow.webContents.on('did-fail-load', (_event, errorCode, errorDescription, validatedURL) => {
+    if (errorCode === -3) return; // ERR_ABORTED
+    console.warn(`[Desktop] Page failed to load (${errorCode}: ${errorDescription}) at ${validatedURL}`);
+    if (isProductionRuntime() && fs.existsSync(distPath)) {
+      console.log('[Desktop] Fallback to local index.html');
+      mainWindow?.loadFile(distPath);
+    }
+  });
+
+  // اعتراض اختصارات لوحة المفاتيح لإعادة التحميل (Ctrl+R / F5) وضمان تمريرها عبر safeReloadUI
+  mainWindow.webContents.on('before-input-event', (event, input) => {
+    if (input.type === 'keyDown') {
+      const isR = input.key.toLowerCase() === 'r' && (input.control || input.meta);
+      const isF5 = input.key === 'F5';
+      if (isR || isF5) {
+        event.preventDefault();
+        safeReloadUI();
+      }
+    }
+  });
+
   // إنشاء قائمة التطبيق باللغة العربية
   const systemMenu: Electron.MenuItemConstructorOptions[] = [
-    { label: 'إعادة تحميل الواجهة', accelerator: 'CmdOrCtrl+R', click: () => mainWindow?.reload() },
+    { label: 'إعادة تحميل الواجهة', accelerator: 'CmdOrCtrl+R', click: () => safeReloadUI() },
+    { label: 'تحديث الواجهة', accelerator: 'F5', click: () => safeReloadUI() },
     { label: 'ملء الشاشة', accelerator: 'F11', click: () => mainWindow?.setFullScreen(!mainWindow.isFullScreen()) },
   ];
   if (!isProductionRuntime()) {

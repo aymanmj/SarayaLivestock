@@ -1,5 +1,5 @@
 import React from 'react';
-import { createRouter, createRoute, createRootRoute } from '@tanstack/react-router';
+import { createRouter, createRoute, createRootRoute, createHashHistory } from '@tanstack/react-router';
 import { AppLayout } from './AppLayout';
 import { ExecutiveDashboard } from './views/ExecutiveDashboard';
 import { MilkingQuickEntry } from './views/MilkingQuickEntry';
@@ -142,9 +142,13 @@ const routeTree = rootRoute.addChildren([
   aboutRoute,
 ]);
 
+// استخدام Hash History لضمان استقرار التوجيه وإعادة التحميل (Ctrl+R) داخل تطبيق سطح المكتب Electron وملفات file://
+const hashHistory = createHashHistory();
+
 // Router Instance
 export const router = createRouter({
   routeTree,
+  history: hashHistory,
   defaultNotFoundComponent: NotFoundView,
 });
 

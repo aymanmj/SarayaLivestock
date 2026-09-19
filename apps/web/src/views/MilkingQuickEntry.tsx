@@ -514,7 +514,7 @@ export const MilkingQuickEntry: React.FC = () => {
                 كمية الحليب المسجلة لهذه الوردية (باللتر):
               </label>
               <button 
-                onClick={handleReadScale}
+                onClick={() => handleReadScale()}
                 className="text-xs text-emerald-700 dark:text-emerald-400 hover:text-emerald-300 font-bold flex items-center gap-1 transition"
               >
                 <Scale className="w-3.5 h-3.5" />

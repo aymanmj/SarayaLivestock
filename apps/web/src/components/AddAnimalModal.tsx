@@ -50,7 +50,7 @@ export const AddAnimalModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) 
     watch,
     reset,
     setValue,
-    formState: { errors },
+    formState: { errors, isSubmitting },
   } = useForm<AnimalFormData>({
     resolver: zodResolver(animalSchema),
     defaultValues: {
