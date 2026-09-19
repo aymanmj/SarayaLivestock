@@ -45,7 +45,7 @@ DefaultGroupName=Saraya Livestock
 DisableProgramGroupPage=yes
 LicenseFile=..\..\LICENSE
 OutputDir=..\..\dist-installer
-OutputBaseFilename=SarayaLivestock-Server-{#MyAppVersion}-x64-Setup-v12
+OutputBaseFilename=SarayaLivestock-Server-{#MyAppVersion}-x64-Setup-v13
 #ifndef InstallerCompression
   #define InstallerCompression "lzma2/ultra64"
 #endif

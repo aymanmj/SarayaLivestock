@@ -15,8 +15,14 @@ npm ci --omit=dev --no-fund --no-audit
 Pop-Location
 
 Write-Host "Copying Prisma Client from apps/api to prod_build..."
-Copy-Item -Path "..\..\apps\api\node_modules\@prisma\client" -Destination "prod_build\node_modules\@prisma\client" -Recurse -Force
-Copy-Item -Path "..\..\apps\api\node_modules\.prisma\client" -Destination "prod_build\node_modules\.prisma\client" -Recurse -Force
+if (Test-Path "prod_build\node_modules\@prisma\client") {
+    Remove-Item -Recurse -Force "prod_build\node_modules\@prisma\client"
+}
+if (Test-Path "prod_build\node_modules\.prisma\client") {
+    Remove-Item -Recurse -Force "prod_build\node_modules\.prisma\client"
+}
+Copy-Item -Path "..\..\apps\api\node_modules\@prisma\client" -Destination "prod_build\node_modules\@prisma\" -Recurse -Force
+Copy-Item -Path "..\..\apps\api\node_modules\.prisma\client" -Destination "prod_build\node_modules\.prisma\" -Recurse -Force
 
 Write-Host "Compiling InnoSetup Installer..."
 & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "saraya-server.iss"
