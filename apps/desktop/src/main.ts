@@ -6,6 +6,8 @@ import { autoUpdater } from 'electron-updater';
 // فرض اتجاه الواجهة والقوائم من اليمين إلى اليسار (RTL) باللغة العربية
 app.commandLine.appendSwitch('force-ui-direction', 'rtl');
 app.commandLine.appendSwitch('lang', 'ar');
+app.commandLine.appendSwitch('ignore-certificate-errors');
+app.commandLine.appendSwitch('allow-insecure-localhost', 'true');
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -40,7 +42,7 @@ function loadDesktopConfiguration(): Required<DesktopConfiguration> {
       console.error(`Invalid desktop configuration file: ${candidate}`);
     }
   }
-  const rawApiBaseUrl = process.env.SARAYA_API_BASE_URL || configured.apiBaseUrl || 'https://saraya.local/api/v1';
+  const rawApiBaseUrl = process.env.SARAYA_API_BASE_URL || configured.apiBaseUrl || 'https://saraya.local:18443/api/v1';
   const parsed = new URL(rawApiBaseUrl);
   const developmentLocalHttp = !isProductionRuntime()
     && parsed.protocol === 'http:' && ['localhost', '127.0.0.1'].includes(parsed.hostname);
@@ -81,15 +83,35 @@ function createWindow() {
     }
   });
 
+  // قبول شهادات TLS المحلية لمحطة الخادم ومزارع السرايا
+  mainWindow.webContents.session.setCertificateVerifyProc((request, callback) => {
+    const { hostname } = request;
+    if (
+      hostname === 'saraya.local' ||
+      hostname.endsWith('.saraya.local') ||
+      hostname === 'localhost' ||
+      hostname === '127.0.0.1'
+    ) {
+      callback(0); // net::OK
+    } else {
+      callback(-2); // net::ERR_FAILED
+    }
+  });
+
   // ---------------------------------------------------------------------------
   // أمان: سياسة أمان المحتوى (CSP) لحماية تطبيق سطح المكتب
   // ---------------------------------------------------------------------------
+  let apiOrigin = 'https://saraya.local:18443';
+  try {
+    apiOrigin = new URL(desktopConfiguration.apiBaseUrl).origin;
+  } catch {}
+
   mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
     callback({
       responseHeaders: {
         ...details.responseHeaders,
         'Content-Security-Policy': [
-          "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://localhost:* https://*.saraya.local https://*.saraya.ly; img-src 'self' data:; font-src 'self' data:;",
+          `default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://localhost:* http://127.0.0.1:* https://saraya.local:* https://*.saraya.local:* https://*.saraya.ly:* ${apiOrigin}; img-src 'self' data: blob:; font-src 'self' data:;`,
         ],
       },
     });
@@ -355,6 +377,23 @@ function initAutoUpdater() {
 
   autoUpdater.checkForUpdatesAndNotify();
 }
+
+app.on('certificate-error', (event, webContents, url, error, certificate, callback) => {
+  try {
+    const parsedUrl = new URL(url);
+    if (
+      parsedUrl.hostname === 'saraya.local' ||
+      parsedUrl.hostname.endsWith('.saraya.local') ||
+      parsedUrl.hostname === 'localhost' ||
+      parsedUrl.hostname === '127.0.0.1'
+    ) {
+      event.preventDefault();
+      callback(true);
+      return;
+    }
+  } catch {}
+  callback(false);
+});
 
 app.whenReady().then(() => {
   createWindow();
