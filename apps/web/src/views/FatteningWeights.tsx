@@ -62,23 +62,10 @@ export const FatteningWeights: React.FC = () => {
     loadData();
   }, []);
 
-  const handleReadElectronicScale = async (animalTag?: string) => {
-    if ((window as any).electronAPI?.readSerialScale) {
-      try {
-        const res = await (window as any).electronAPI.readSerialScale();
-        if (res?.weightKg) {
-          setSelectedTag(animalTag);
-          setSelectedWeight(Number(res.weightKg));
-          setIsAddWeightOpen(true);
-        }
-      } catch (err) {
-        console.error('Scale error:', err);
-      }
-    } else {
-      setSelectedTag(animalTag);
-      setSelectedWeight(undefined);
-      setIsAddWeightOpen(true);
-    }
+  const handleOpenAddWeight = (animalTag?: string, weight?: number) => {
+    setSelectedTag(animalTag);
+    setSelectedWeight(weight);
+    setIsAddWeightOpen(true);
   };
 
   const animalsWithAdg = data.filter(animal => animal.adgKg != null);
@@ -101,7 +88,7 @@ export const FatteningWeights: React.FC = () => {
         </div>
 
         <button 
-          onClick={() => handleReadElectronicScale()}
+          onClick={() => handleOpenAddWeight()}
           className="px-5 py-2.5 bg-purple-600 hover:bg-purple-500 text-white rounded-xl font-bold text-xs flex items-center gap-2 transition self-start md:self-auto shadow-lg shadow-purple-900/30"
         >
           <Plus className="w-4 h-4" />
@@ -190,7 +177,7 @@ export const FatteningWeights: React.FC = () => {
                   </td>
                   <td className="py-3 px-3 text-left">
                     <button
-                      onClick={() => handleReadElectronicScale(row.tagNumber)}
+                      onClick={() => handleOpenAddWeight(row.tagNumber)}
                       className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 rounded-lg font-bold text-[11px] transition border border-slate-300 dark:border-slate-700"
                     >
                       وزن جديد

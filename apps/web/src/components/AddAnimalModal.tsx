@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { X, Plus, Layers, Tag, Scale, Calendar, Building, Sparkles } from 'lucide-react';
+import { X, Plus, Layers, Tag, Scale, Calendar, Building, Sparkles, Loader2, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Species, Gender, Purpose, LifeStage } from '../api/types';
 import { getBreedsForSpecies } from '../utils/breeds.data';
 import { useCreateAnimalMutation } from '../api/queries';
+import { useElectronicScale } from '../hooks/useElectronicScale';
 
 const animalSchema = z.object({
   tagNumber: z.string().min(1, 'يرجى إدخال رقم القرط أو الوسم').trim(),
@@ -43,14 +44,21 @@ export const AddAnimalModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) 
   const [submitError, setSubmitError] = useState<string | null>(null);
   const createAnimalMutation = useCreateAnimalMutation();
 
-  const { register, handleSubmit, watch, setValue, reset, formState: { errors, isSubmitting } } = useForm<AnimalFormData>({
+  const {
+    register,
+    handleSubmit,
+    watch,
+    reset,
+    setValue,
+    formState: { errors },
+  } = useForm<AnimalFormData>({
     resolver: zodResolver(animalSchema),
     defaultValues: {
       species: 'CATTLE',
-      breed: 'هولشتاين فريزيان (Holstein Friesian)',
       gender: 'FEMALE',
       purpose: 'DAIRY',
-      currentLifeStage: 'LACTATING',
+      currentLifeStage: 'HEIFER',
+      breed: '',
       entryWeightKg: 550,
       tagNumber: '',
       rfidTag: '',
@@ -71,13 +79,23 @@ export const AddAnimalModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) 
     setValue('breed', firstBreed);
   }, [selectedSpecies, setValue]);
 
+  const { readScale, reading: scaleReading, scaleError, lastResult: scaleResult, clearStatus } = useElectronicScale();
+
   // Reset form when modal opens
   useEffect(() => {
     if (isOpen) {
       reset();
       setSubmitError(null);
+      clearStatus();
     }
-  }, [isOpen, reset]);
+  }, [isOpen, reset, clearStatus]);
+
+  const handleReadScale = async (simulate = false) => {
+    const val = await readScale(simulate);
+    if (val != null) {
+      setValue('entryWeightKg', val, { shouldValidate: true, shouldDirty: true });
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -266,12 +284,33 @@ export const AddAnimalModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) 
               </select>
             </div>
 
-            {/* Weight */}
+            {/* Weight with Scale Integration */}
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-1.5">
-                <Scale className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400" />
-                الوزن الابتدائي (كجم)
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                  <Scale className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400" />
+                  الوزن الابتدائي (كجم)
+                </label>
+                <button
+                  type="button"
+                  onClick={() => handleReadScale(false)}
+                  disabled={scaleReading}
+                  className="px-2.5 py-0.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 rounded-lg text-[10px] font-bold flex items-center gap-1 transition disabled:opacity-50"
+                  title="التقاط الوزن لحظياً من الميزان الإلكتروني"
+                >
+                  {scaleReading ? (
+                    <>
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                      <span>جاري القراءة...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Scale className="w-3 h-3" />
+                      <span>قراءة من الميزان</span>
+                    </>
+                  )}
+                </button>
+              </div>
               <input
                 type="number"
                 step="0.5"
@@ -279,6 +318,27 @@ export const AddAnimalModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) 
                 placeholder="550"
                 className={`w-full bg-slate-50 dark:bg-slate-950 border ${errors.entryWeightKg ? 'border-red-500' : 'border-slate-200 dark:border-slate-800'} focus:border-emerald-500 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none transition`}
               />
+              {scaleResult && (
+                <p className="text-emerald-500 text-[10px] mt-1 flex items-center gap-1">
+                  <CheckCircle2 className="w-3 h-3 shrink-0" />
+                  <span>تم استلام الوزن: {scaleResult.weightKg} كجم {scaleResult.isSimulated ? '(محاكاة تجريبية)' : 'من الميزان'}</span>
+                </p>
+              )}
+              {scaleError && (
+                <div className="text-amber-400 text-[10px] mt-1 space-y-0.5">
+                  <p className="flex items-center gap-1">
+                    <AlertTriangle className="w-3 h-3 shrink-0" />
+                    <span>{scaleError}</span>
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => handleReadScale(true)}
+                    className="text-purple-400 hover:text-purple-300 underline font-bold"
+                  >
+                    تجربة قراءة محاكاة (Demo)
+                  </button>
+                </div>
+              )}
               {errors.entryWeightKg && <p className="text-red-500 text-[10px] mt-1">{errors.entryWeightKg.message}</p>}
             </div>
 

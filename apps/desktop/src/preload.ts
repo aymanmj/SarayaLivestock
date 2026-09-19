@@ -5,7 +5,7 @@ const apiBaseUrl = apiArgument ? decodeURIComponent(apiArgument.slice('--saraya-
 
 contextBridge.exposeInMainWorld('electronAPI', {
   apiBaseUrl,
-  readSerialScale: () => ipcRenderer.invoke('read-serial-scale'),
+  readSerialScale: (options?: any) => ipcRenderer.invoke('read-serial-scale', options),
   printReceipt: (data: any) => ipcRenderer.invoke('print-receipt', data),
   getStationInfo: () => ipcRenderer.invoke('get-station-info'),
   getRefreshToken: () => ipcRenderer.invoke('session:get-refresh-token'),

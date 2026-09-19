@@ -222,41 +222,88 @@ import { ReadlineParser } from '@serialport/parser-readline';
 import ThermalPrinter from 'node-thermal-printer';
 
 // 1. قراءة الوزن من الميزان الإلكتروني للماشية (RS232 / USB Scale Listener)
-ipcMain.handle('read-serial-scale', async () => {
-  return new Promise((resolve) => {
+ipcMain.handle('read-serial-scale', async (_event, options?: { simulateIfNoDevice?: boolean }) => {
+  return new Promise(async (resolve) => {
     try {
-      // افتراض أن الميزان موصول على COM3 أو /dev/ttyUSB0
-      // في الإنتاج الحقيقي، يمكن قراءة اسم المنفذ من إعدادات محلية
-      const portPath = process.platform === 'win32' ? 'COM3' : '/dev/ttyUSB0';
-      
-      const port = new SerialPort({ path: portPath, baudRate: 9600 }, (err) => {
+      // فحص المنافذ التسلسلية المتوفرة على النظام
+      const availablePorts = await SerialPort.list().catch(() => []);
+
+      if (availablePorts.length === 0) {
+        if (options?.simulateIfNoDevice) {
+          const simulatedWeight = Math.round((420 + Math.random() * 70) * 10) / 10;
+          resolve({
+            success: true,
+            weightKg: simulatedWeight,
+            scaleModel: 'محاكاة ميزان ذكي (وضع تجريبي)',
+            timestamp: new Date().toISOString(),
+            isSimulated: true,
+          });
+          return;
+        }
+        resolve({
+          success: false,
+          error: 'لم يتم العثور على أي منفذ تسلسلي (COM) متصل بالجهاز. يرجى التأكد من توصيل كابل الميزان الإلكتروني (RS232/USB).',
+          noPortsAvailable: true,
+        });
+        return;
+      }
+
+      // اختيار المنفذ المهيأ أو أول منفذ متاح
+      const configuredPort = process.env.SARAYA_SCALE_PORT || 'COM3';
+      const portExists = availablePorts.some(p => p.path.toUpperCase() === configuredPort.toUpperCase());
+      const selectedPort = portExists ? configuredPort : availablePorts[0].path;
+
+      const port = new SerialPort({ path: selectedPort, baudRate: 9600 }, (err) => {
         if (err) {
-          console.error('SerialPort Error:', err.message);
-          resolve({ success: false, error: `تعذر الاتصال بالميزان: ${err.message}` });
+          console.error(`SerialPort Error on ${selectedPort}:`, err.message);
+          if (options?.simulateIfNoDevice) {
+            const simulatedWeight = Math.round((420 + Math.random() * 70) * 10) / 10;
+            resolve({
+              success: true,
+              weightKg: simulatedWeight,
+              scaleModel: 'محاكاة ميزان ذكي (وضع تجريبي)',
+              timestamp: new Date().toISOString(),
+              isSimulated: true,
+            });
+            return;
+          }
+          resolve({ success: false, error: `تعذر فتح منفذ الميزان (${selectedPort}): ${err.message}` });
           return;
         }
       });
 
       const parser = port.pipe(new ReadlineParser({ delimiter: '\r\n' }));
-      
+
       // مهلة زمنية للانتظار (5 ثوانٍ)
       const timeout = setTimeout(() => {
         if (port.isOpen) port.close();
-        resolve({ success: false, error: 'انتهى وقت الانتظار ولم يتم استلام وزن من الميزان' });
+        if (options?.simulateIfNoDevice) {
+          const simulatedWeight = Math.round((420 + Math.random() * 70) * 10) / 10;
+          resolve({
+            success: true,
+            weightKg: simulatedWeight,
+            scaleModel: 'محاكاة ميزان ذكي (وضع تجريبي)',
+            timestamp: new Date().toISOString(),
+            isSimulated: true,
+          });
+          return;
+        }
+        resolve({ success: false, error: `انتهى وقت الانتظار دون استلام وزن من الميزان على المنفذ (${selectedPort})` });
       }, 5000);
 
       parser.on('data', (data) => {
         clearTimeout(timeout);
-        port.close();
-        
+        if (port.isOpen) port.close();
+
         // استخراج الوزن من السلسلة (مثال: "  + 452.5 KG ")
-        const weightMatches = data.match(/[\d.]+/);
+        const weightMatches = data.toString().match(/[\d.]+/);
         const weightKg = weightMatches ? parseFloat(weightMatches[0]) : 0;
-        
+
         resolve({
           success: true,
           weightKg,
-          scaleModel: 'Mettler Toledo / Tru-Test',
+          scaleModel: 'Mettler Toledo / Tru-Test / A12E',
+          port: selectedPort,
           timestamp: new Date().toISOString(),
         });
       });

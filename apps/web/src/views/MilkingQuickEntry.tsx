@@ -173,20 +173,28 @@ export const MilkingQuickEntry: React.FC = () => {
   };
 
   // Hardware COM-Port Scale Reading
-  const handleReadScale = async () => {
+  const handleReadScale = async (simulate = false) => {
     if ((window as any).electronAPI?.readSerialScale) {
       try {
-        const res = await (window as any).electronAPI.readSerialScale();
-        if (res?.weightKg) {
+        const res = await (window as any).electronAPI.readSerialScale({ simulateIfNoDevice: simulate });
+        if (res?.success && res?.weightKg) {
           const liters = (res.weightKg / 1.03).toFixed(1);
           setCurrentYield(liters);
-          setFeedback(`تمت القراءة المباشرة من ميزان المحلب: ${liters} لتر`);
+          setFeedback(`✅ تمت القراءة من ميزان المحلب: ${liters} لتر ${res.isSimulated ? '(محاكاة تجريبية)' : ''}`);
+        } else {
+          setFeedback(`⚠️ ${res?.error || 'تعذر استلام قراءة الميزان'}`);
         }
-      } catch (err) {
-        console.error('Scale reading error:', err);
+      } catch (err: any) {
+        setFeedback(`❌ خطأ: ${err?.message || 'تعذر الاتصال بالميزان'}`);
       }
     } else {
-      setFeedback('حساس التدفق الإلكتروني غير متصل');
+      if (simulate) {
+        const fakeLiters = (18 + Math.random() * 8).toFixed(1);
+        setCurrentYield(fakeLiters);
+        setFeedback(`✅ قراءة محاكاة تجريبية: ${fakeLiters} لتر`);
+      } else {
+        setFeedback('⚠️ الاتصال بالميزان الإلكتروني متاح عبر تطبيق المحطة المكتبية (Desktop Client)');
+      }
     }
   };
 

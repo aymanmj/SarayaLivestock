@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { X, Scale, Sparkles, TrendingUp } from 'lucide-react';
+import { X, Scale, Loader2, CheckCircle2, AlertTriangle, Sparkles } from 'lucide-react';
 import { recordWeight } from '../api/client';
+import { useElectronicScale } from '../hooks/useElectronicScale';
 
 interface Props {
   isOpen: boolean;
@@ -23,15 +24,26 @@ export const AddWeightModal: React.FC<Props> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const { readScale, reading, scaleError, lastResult, clearStatus } = useElectronicScale();
+
   useEffect(() => {
     if (isOpen) {
       setAnimalTag(defaultTagNumber ?? '');
       setWeightKg(defaultWeight ?? '');
       setError(null);
+      clearStatus();
     }
-  }, [isOpen, defaultTagNumber, defaultWeight]);
+  }, [isOpen, defaultTagNumber, defaultWeight, clearStatus]);
 
   if (!isOpen) return null;
+
+  const handleFetchFromScale = async (simulate = false) => {
+    const val = await readScale(simulate);
+    if (val != null) {
+      setWeightKg(val);
+      setError(null);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,7 +51,7 @@ export const AddWeightModal: React.FC<Props> = ({
       setError('يرجى تحديد رقم قرط الحيوان');
       return;
     }
-    if (!weightKg || weightKg <= 0) {
+    if (!weightKg || Number(weightKg) <= 0) {
       setError('يرجى إدخال وزن صحيح');
       return;
     }
@@ -88,8 +100,9 @@ export const AddWeightModal: React.FC<Props> = ({
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4 text-xs">
           {error && (
-            <div className="p-3.5 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400">
-              {error}
+            <div className="p-3.5 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 flex items-start gap-2">
+              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+              <span>{error}</span>
             </div>
           )}
 
@@ -116,20 +129,74 @@ export const AddWeightModal: React.FC<Props> = ({
             />
           </div>
 
-          <div>
-            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center justify-between">
-              <span>الوزن المقروء (كجم) *</span>
-              <span className="text-purple-700 dark:text-purple-400 text-[11px] font-bold">من الميزان الإلكتروني</span>
-            </label>
-            <input
-              type="number"
-              step="0.1"
-              required
-              value={weightKg}
-              onChange={e => setWeightKg(Number(e.target.value))}
-              placeholder="480.5"
-              className="w-full bg-slate-50 dark:bg-slate-950 border border-purple-500/40 focus:border-purple-500 rounded-xl px-3.5 py-3 text-lg font-extrabold text-purple-700 dark:text-purple-300 focus:outline-none transition"
-            />
+          {/* Weight Section with Scale Integration */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="font-semibold text-slate-700 dark:text-slate-300">الوزن المقروء (كجم) *</label>
+              <button
+                type="button"
+                onClick={() => handleFetchFromScale(false)}
+                disabled={reading}
+                className="px-3 py-1 bg-purple-600/10 hover:bg-purple-600/20 text-purple-700 dark:text-purple-300 border border-purple-500/30 rounded-lg font-bold text-[11px] flex items-center gap-1.5 transition disabled:opacity-50"
+              >
+                {reading ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>جاري الاتصال بالميزان...</span>
+                  </>
+                ) : (
+                  <>
+                    <Scale className="w-3.5 h-3.5" />
+                    <span>قراءة من الميزان اللحظي</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            <div className="relative">
+              <input
+                type="number"
+                step="0.1"
+                required
+                value={weightKg}
+                onChange={e => setWeightKg(e.target.value === '' ? '' : Number(e.target.value))}
+                placeholder="480.5"
+                className="w-full bg-slate-50 dark:bg-slate-950 border border-purple-500/40 focus:border-purple-500 rounded-xl px-3.5 py-3 text-lg font-extrabold text-purple-700 dark:text-purple-300 focus:outline-none transition"
+              />
+              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">
+                كجم
+              </span>
+            </div>
+
+            {/* Scale Feedback Notification */}
+            {lastResult && (
+              <div className="p-2.5 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-emerald-400 text-[11px] flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span>تم استلام الوزن ({lastResult.weightKg} كجم) {lastResult.isSimulated ? '(محاكاة تجريبية)' : 'من الميزان'}</span>
+                </div>
+              </div>
+            )}
+
+            {scaleError && (
+              <div className="p-2.5 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-300 text-[11px] space-y-1.5">
+                <div className="flex items-start gap-1.5">
+                  <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                  <span>{scaleError}</span>
+                </div>
+                <div className="flex items-center justify-between pt-1 border-t border-amber-500/10 text-[10px]">
+                  <span className="text-slate-400">يمكنك كتابة الوزن يدوياً أعلاه، أو:</span>
+                  <button
+                    type="button"
+                    onClick={() => handleFetchFromScale(true)}
+                    className="text-purple-400 hover:text-purple-300 font-bold underline flex items-center gap-1"
+                  >
+                    <Sparkles className="w-3 h-3" />
+                    تجربة قراءة محاكاة (Demo)
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Action Buttons */}

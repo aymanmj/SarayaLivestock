@@ -19,7 +19,9 @@ import {
   X,
   Search,
   Filter,
+  Loader2,
 } from 'lucide-react';
+import { useElectronicScale } from '../hooks/useElectronicScale';
 import {
   getCommercialSales,
   getSalesSummary,
@@ -79,6 +81,15 @@ export const CommercialSales: React.FC = () => {
   const [saleBookValue, setSaleBookValue] = useState<{ animalId: string; value: number } | null>(null);
   const [saleBookValueError, setSaleBookValueError] = useState('');
   const currentSaleBookValue = saleBookValue?.animalId === saleAnimalId ? saleBookValue.value : null;
+
+  const { readScale: readSaleScale, reading: saleScaleReading, scaleError: saleScaleError, lastResult: saleScaleResult } = useElectronicScale();
+
+  const handleReadSaleWeight = async (simulate = false) => {
+    const val = await readSaleScale(simulate);
+    if (val != null) {
+      setSaleWeightKg(val);
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -872,7 +883,19 @@ export const CommercialSales: React.FC = () => {
               {salePricingMethod === 'BY_WEIGHT' ? (
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-slate-600 dark:text-slate-400 font-bold mb-1">الوزن القائم (كجم) *</label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-slate-600 dark:text-slate-400 font-bold text-xs">الوزن القائم (كجم) *</label>
+                      <button
+                        type="button"
+                        onClick={() => handleReadSaleWeight(false)}
+                        disabled={saleScaleReading}
+                        className="text-[10px] text-emerald-700 dark:text-emerald-400 font-bold flex items-center gap-1 hover:underline"
+                        title="قراءة الوزن من الميزان الإلكتروني"
+                      >
+                        {saleScaleReading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Scale className="w-3 h-3" />}
+                        قراءة من الميزان
+                      </button>
+                    </div>
                     <input
                       type="number"
                       step="1"
@@ -882,6 +905,17 @@ export const CommercialSales: React.FC = () => {
                       className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 font-mono font-bold"
                       required
                     />
+                    {saleScaleResult && (
+                      <p className="text-[10px] text-emerald-500 mt-1 flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3 shrink-0" /> تم استلام الوزن: {saleScaleResult.weightKg} كجم {saleScaleResult.isSimulated ? '(محاكاة)' : ''}
+                      </p>
+                    )}
+                    {saleScaleError && (
+                      <div className="text-[10px] text-amber-500 mt-1">
+                        <span>{saleScaleError}</span>
+                        <button type="button" onClick={() => handleReadSaleWeight(true)} className="text-purple-400 font-bold mr-1 underline">تجربة محاكاة</button>
+                      </div>
+                    )}
                   </div>
                   <div>
                     <label className="block text-slate-600 dark:text-slate-400 font-bold mb-1">سعر الكيلو ({OFFICIAL_CURRENCY.symbol}) *</label>
