@@ -5,13 +5,15 @@ import { PayrollController } from './payroll.controller';
 import { PayrollService } from './payroll.service';
 import { AdvancesController } from './advances.controller';
 import { AdvancesService } from './advances.service';
+import { JobTitlesController } from './job-titles.controller';
+import { JobTitlesService } from './job-titles.service';
 import { DatabaseModule } from '../../database/database.module';
 import { AccountingModule } from '../accounting/accounting.module';
 
 @Module({
   imports: [DatabaseModule, AccountingModule],
-  controllers: [EmployeesController, PayrollController, AdvancesController],
-  providers: [EmployeesService, PayrollService, AdvancesService],
-  exports: [EmployeesService],
+  controllers: [EmployeesController, PayrollController, AdvancesController, JobTitlesController],
+  providers: [EmployeesService, PayrollService, AdvancesService, JobTitlesService],
+  exports: [EmployeesService, JobTitlesService],
 })
 export class HrModule {}

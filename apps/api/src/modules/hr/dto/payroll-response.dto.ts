@@ -27,6 +27,21 @@ export class PayrollPeriodResponseDto {
   @ApiPropertyOptional()
   journalEntryId?: string | null;
 
+  @ApiPropertyOptional()
+  totalBaseSalary?: number;
+
+  @ApiPropertyOptional()
+  totalBonuses?: number;
+
+  @ApiPropertyOptional()
+  totalDeductions?: number;
+
+  @ApiPropertyOptional()
+  totalAdvancesSettled?: number;
+
+  @ApiPropertyOptional()
+  totalNetSalary?: number;
+
   @ApiProperty()
   createdAt: Date;
 
@@ -46,6 +61,12 @@ export class PayrollSlipResponseDto {
 
   @ApiProperty()
   baseSalary: number | string | any;
+
+  @ApiPropertyOptional()
+  bonuses?: number | string | any;
+
+  @ApiPropertyOptional()
+  deductions?: number | string | any;
 
   @ApiProperty()
   advancesSettled: number | string | any;

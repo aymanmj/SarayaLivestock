@@ -498,7 +498,10 @@ export class NumberUtils {
 /**
  * تنسيق التواريخ بالأرقام القياسية (YYYY-MM-DD)
  */
-export function formatDate(date: string | Date | null | undefined): string {
+/**
+ * تنسيق التواريخ بالأرقام اللاتينية القياسية (YYYY/MM/DD)
+ */
+export function formatDate(date: string | Date | null | undefined, separator: string = '/'): string {
   if (!date) return '-';
   const d = typeof date === 'string' ? new Date(date) : date;
   if (isNaN(d.getTime())) return '-';
@@ -507,7 +510,109 @@ export function formatDate(date: string | Date | null | undefined): string {
   const month = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
 
-  return `${year}-${month}-${day}`;
+  return `${year}${separator}${month}${separator}${day}`;
+}
+
+/**
+ * تفقيط المبالغ المالية بالدينار الليبي والدراهم
+ * مثال: 2500 -> "فقط ألفان وخمسمائة دينار ليبي لا غير"
+ */
+export function tafqeetLibyanDinars(amount: number | string | Decimal): string {
+  const num = typeof amount === 'number' ? amount : Number(amount);
+  if (isNaN(num) || num < 0) return '';
+  if (num === 0) return 'فقط صفر دينار ليبي لا غير';
+
+  const dinars = Math.floor(num);
+  const dirhams = Math.round((num - dinars) * 1000);
+
+  const ones = ['', 'واحد', 'اثنان', 'ثلاثة', 'أربعة', 'خمسة', 'ستة', 'سبعة', 'ثمانية', 'تسعة'];
+  const teens = ['عشرة', 'أحد عشر', 'اثنا عشر', 'ثلاثة عشر', 'أربعة عشر', 'خمسة عشر', 'ستة عشر', 'سبعة عشر', 'ثمانية عشر', 'تسعة عشر'];
+  const tens = ['', '', 'عشرون', 'ثلاثون', 'أربعون', 'خمسون', 'ستون', 'سبعون', 'ثمانون', 'تسعون'];
+  const hundreds = ['', 'مائة', 'مائتان', 'ثلاثمائة', 'أربعمائة', 'خمسمائة', 'ستمائة', 'سبعمائة', 'ثمانمائة', 'تسعمائة'];
+
+  function convertGroup(n: number): string {
+    if (n === 0) return '';
+    const h = Math.floor(n / 100);
+    const remainder = n % 100;
+    const parts: string[] = [];
+
+    if (h > 0) parts.push(hundreds[h]);
+
+    if (remainder > 0) {
+      if (remainder < 10) {
+        parts.push(ones[remainder]);
+      } else if (remainder < 20) {
+        parts.push(teens[remainder - 10]);
+      } else {
+        const u = remainder % 10;
+        const t = Math.floor(remainder / 10);
+        if (u > 0) {
+          parts.push(`${ones[u]} و${tens[t]}`);
+        } else {
+          parts.push(tens[t]);
+        }
+      }
+    }
+
+    return parts.join(' و');
+  }
+
+  function formatDinarsPart(val: number): string {
+    if (val === 0) return '';
+    if (val === 1) return 'دينار ليبي واحد';
+    if (val === 2) return 'ديناران ليبيان';
+    if (val >= 3 && val <= 10) return `${convertGroup(val)} دنانير ليبية`;
+
+    const b = Math.floor(val / 1_000_000_000);
+    let rem = val % 1_000_000_000;
+    const m = Math.floor(rem / 1_000_000);
+    rem = rem % 1_000_000;
+    const th = Math.floor(rem / 1000);
+    const r = rem % 1000;
+
+    const parts: string[] = [];
+
+    if (b > 0) {
+      if (b === 1) parts.push('مليار');
+      else if (b === 2) parts.push('ملياران');
+      else parts.push(`${convertGroup(b)} مليار`);
+    }
+    if (m > 0) {
+      if (m === 1) parts.push('مليون');
+      else if (m === 2) parts.push('مليونان');
+      else if (m >= 3 && m <= 10) parts.push(`${convertGroup(m)} ملايين`);
+      else parts.push(`${convertGroup(m)} مليون`);
+    }
+    if (th > 0) {
+      if (th === 1) parts.push('ألف');
+      else if (th === 2) parts.push('ألفان');
+      else if (th >= 3 && th <= 10) parts.push(`${convertGroup(th)} آلاف`);
+      else parts.push(`${convertGroup(th)} ألف`);
+    }
+    if (r > 0) {
+      parts.push(convertGroup(r));
+    }
+
+    return `${parts.join(' و')} دينار ليبي`;
+  }
+
+  const dinarStr = formatDinarsPart(dinars);
+  let dirhamStr = '';
+  if (dirhams > 0) {
+    if (dirhams === 1) dirhamStr = 'درهم واحد';
+    else if (dirhams === 2) dirhamStr = 'درهمان';
+    else if (dirhams >= 3 && dirhams <= 10) dirhamStr = `${convertGroup(dirhams)} دراهم`;
+    else dirhamStr = `${convertGroup(dirhams)} درهم`;
+  }
+
+  if (dinarStr && dirhamStr) {
+    return `فقط ${dinarStr} و${dirhamStr} لا غير`;
+  } else if (dinarStr) {
+    return `فقط ${dinarStr} لا غير`;
+  } else if (dirhamStr) {
+    return `فقط ${dirhamStr} لا غير`;
+  }
+  return 'فقط صفر دينار ليبي لا غير';
 }
 
 /** تنسيق التاريخ بالعربية */

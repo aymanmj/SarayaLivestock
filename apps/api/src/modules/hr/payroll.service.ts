@@ -401,19 +401,62 @@ export class PayrollService {
   }
 
   async findAllPeriods(farmId: string) {
-    return this.prisma.payrollPeriod.findMany({
+    const periods = await this.prisma.payrollPeriod.findMany({
       where: { farmId },
       orderBy: { startDate: 'desc' },
       include: {
         _count: { select: { slips: true } },
+        slips: {
+          select: {
+            baseSalary: true,
+            bonuses: true,
+            deductions: true,
+            advancesSettled: true,
+            netSalary: true,
+          },
+        },
       },
+    });
+
+    return periods.map(p => {
+      const totalBaseSalary = p.slips.reduce((sum, s) => Money.add(sum, s.baseSalary as any), 0);
+      const totalBonuses = p.slips.reduce((sum, s) => Money.add(sum, s.bonuses as any), 0);
+      const totalDeductions = p.slips.reduce((sum, s) => Money.add(sum, s.deductions as any), 0);
+      const totalAdvancesSettled = p.slips.reduce((sum, s) => Money.add(sum, s.advancesSettled as any), 0);
+      const totalNetSalary = p.slips.reduce((sum, s) => Money.add(sum, s.netSalary as any), 0);
+
+      const { slips, ...rest } = p;
+      return {
+        ...rest,
+        totalBaseSalary,
+        totalBonuses,
+        totalDeductions,
+        totalAdvancesSettled,
+        totalNetSalary,
+      };
     });
   }
 
   async findSlips(farmId: string, periodId: string) {
     return this.prisma.payrollSlip.findMany({
       where: { periodId, period: { farmId } },
-      include: { employee: true },
+      include: {
+        employee: {
+          select: {
+            id: true,
+            employeeCode: true,
+            firstName: true,
+            lastName: true,
+            jobTitle: true,
+            phone: true,
+            bankAccount: true,
+            baseSalary: true,
+            hireDate: true,
+            status: true,
+          },
+        },
+      },
+      orderBy: { employee: { employeeCode: 'asc' } },
     });
   }
 }

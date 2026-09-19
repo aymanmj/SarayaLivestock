@@ -1121,9 +1121,11 @@ export const CommercialSales: React.FC = () => {
                   <label className="block text-slate-600 dark:text-slate-400 font-bold mb-1">تاريخ النفوق *</label>
                   <input
                     type="date"
+                    dir="ltr"
+                    lang="en-CA"
                     value={mortDeathDate}
                     onChange={e => setMortDeathDate(e.target.value)}
-                    className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 font-mono"
+                    className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 font-mono text-right"
                     required
                   />
                 </div>

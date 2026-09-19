@@ -34,3 +34,35 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #475569;
 }
+
+/* Fix Chromium RTL bug on date, time, and month inputs */
+input[type="date"],
+input[type="datetime-local"],
+input[type="month"],
+input[type="time"] {
+  direction: ltr !important;
+  text-align: right !important;
+  unicode-bidi: isolate !important;
+  font-feature-settings: "tnum" 1;
+}
+
+input[type="date"]::-webkit-datetime-edit,
+input[type="date"]::-webkit-datetime-edit-fields-wrapper,
+input[type="date"]::-webkit-datetime-edit-text,
+input[type="date"]::-webkit-datetime-edit-month-field,
+input[type="date"]::-webkit-datetime-edit-day-field,
+input[type="date"]::-webkit-datetime-edit-year-field {
+  direction: ltr !important;
+  unicode-bidi: isolate !important;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.8;
+  transition: opacity 0.2s;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+

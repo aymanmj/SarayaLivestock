@@ -122,10 +122,12 @@ export const AddWeightModal: React.FC<Props> = ({
             <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1.5">تاريخ الوزن *</label>
             <input
               type="date"
+              dir="ltr"
+              lang="en-CA"
               required
               value={weighDate}
               onChange={e => setWeighDate(e.target.value)}
-              className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-purple-500 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none transition"
+              className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-purple-500 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none transition text-right font-mono"
             />
           </div>
 

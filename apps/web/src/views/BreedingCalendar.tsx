@@ -411,10 +411,12 @@ export const BreedingCalendar: React.FC = () => {
                   <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">تاريخ الولادة الفعلي</label>
                   <input
                     type="date"
+                    dir="ltr"
+                    lang="en-CA"
                     required
                     value={calvingModal.actualDate}
                     onChange={e => setCalvingModal(prev => prev ? { ...prev, actualDate: e.target.value } : null)}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-900 dark:text-white"
+                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-900 dark:text-white text-right font-mono"
                   />
                 </div>
                 <div>

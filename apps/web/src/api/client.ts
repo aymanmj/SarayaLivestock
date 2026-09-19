@@ -809,3 +809,104 @@ export async function updateMilkPolicy(payload: UpdateMilkPolicyPayload): Promis
   );
 }
 
+// ----------------------------------------------------
+// 12. شؤون الموظفين والمرتبات (HR & Payroll)
+// ----------------------------------------------------
+
+export async function getJobTitles(): Promise<string[]> {
+  const response = await apiFetch('/api/v1/hr/job-titles', { method: 'GET' });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.message || 'تعذر تحميل المسميات الوظيفية');
+  }
+  return response.json();
+}
+
+export async function createJobTitle(title: string): Promise<{ title: string }> {
+  const response = await apiFetch('/api/v1/hr/job-titles', {
+    method: 'POST',
+    body: JSON.stringify({ title }),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.message || 'تعذر إضافة المسمى الوظيفي');
+  }
+  return response.json();
+}
+
+export async function updateJobTitle(oldTitle: string, newTitle: string): Promise<{ success: boolean }> {
+  const response = await apiFetch(`/api/v1/hr/job-titles/${encodeURIComponent(oldTitle)}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ newTitle }),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.message || 'تعذر تعديل المسمى الوظيفي');
+  }
+  return response.json();
+}
+
+export async function deleteJobTitle(title: string): Promise<{ success: boolean }> {
+  const response = await apiFetch(`/api/v1/hr/job-titles/${encodeURIComponent(title)}`, {
+    method: 'DELETE',
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.message || 'تعذر حذف المسمى الوظيفي');
+  }
+  return response.json();
+}
+
+export async function getPayrollPeriods(): Promise<any[]> {
+  const response = await apiFetch('/api/v1/hr/payroll/periods', { method: 'GET' });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.message || 'تعذر تحميل فترات الرواتب');
+  }
+  return response.json();
+}
+
+export async function getPayrollSlips(periodId: string): Promise<any[]> {
+  const response = await apiFetch(`/api/v1/hr/payroll/periods/${encodeURIComponent(periodId)}/slips`, { method: 'GET' });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.message || 'تعذر تحميل قسائم الرواتب');
+  }
+  return response.json();
+}
+
+export async function generatePayrollPeriod(data: { monthName: string; startDate: string; endDate: string }) {
+  const response = await apiFetch('/api/v1/hr/payroll/generate', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.message || 'تعذر توليد الرواتب');
+  }
+  return response.json();
+}
+
+export async function approvePayrollPeriod(id: string) {
+  const response = await apiFetch(`/api/v1/hr/payroll/${encodeURIComponent(id)}/approve`, {
+    method: 'POST',
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.message || 'تعذر اعتماد الرواتب');
+  }
+  return response.json();
+}
+
+export async function deletePayrollPeriodDraft(id: string) {
+  const response = await apiFetch(`/api/v1/hr/payroll/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.message || 'تعذر حذف مسودة الرواتب');
+  }
+  return response.json();
+}
+
+
