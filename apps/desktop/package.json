@@ -50,6 +50,6 @@
   "devDependencies": {
     "electron": "^32.0.1",
     "electron-builder": "^24.13.3",
-    "typescript": "^5.5.4"
+    "typescript": "^7.0.2"
   }
 }
