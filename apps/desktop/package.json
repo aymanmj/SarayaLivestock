@@ -43,7 +43,7 @@
     }
   },
   "dependencies": {
-    "electron-updater": "^6.3.9",
+    "electron-updater": "^6.8.11",
     "node-thermal-printer": "^4.6.1",
     "serialport": "^13.0.0"
   },
